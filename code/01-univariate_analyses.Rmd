@@ -1,0 +1,34 @@
+---
+title: "univariate stuff"
+author: "An Bui"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source(here::here("code", "00-set_up.R"))
+```
+
+```{r}
+algae <- biomass %>% 
+  filter(group == "ALGAE")
+
+algae_NAPL <- algae %>% 
+  filter(site == "NAPL")
+```
+
+```{r}
+algae_NAPL_dm <- algae_NAPL %>% 
+  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
+  group_by(year, month, treatment, date) %>% 
+  summarize(total_biomass = sum(dry_gm2))
+
+ggplot(algae_NAPL_dm, aes(x = date, y = total_biomass)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~treatment)
+```
+
