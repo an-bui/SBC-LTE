@@ -8,7 +8,7 @@ All files were pulled from [SBC LTER Data Catalog](https://sbclter.msi.ucsb.edu/
 
 | Category | Files | Description | 
 | -------- | ----- | ----------- | 
-| (Cover of sessile organisms, UPC)[https://doi.org/10.6073/pasta/9ef0a3d317f6553e1600a0e5af016e43] | **LTE_Cover_All_Years_20200605.csv**, **LTE_Substrate_All_Years_20200605.csv** | description here | 
+| [Cover of sessile organisms, UPC](https://doi.org/10.6073/pasta/9ef0a3d317f6553e1600a0e5af016e43) | **LTE_Cover_All_Years_20200605.csv**, **LTE_Substrate_All_Years_20200605.csv** | description here | 
 
 ### Cover of sessile organisms, Uniform Point Contact
 #### Files
