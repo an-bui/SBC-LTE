@@ -18,7 +18,7 @@ All files were pulled from [SBC LTER Data Catalog](https://sbclter.msi.ucsb.edu/
 | [Understory kelp allometrics](https://doi.org/10.6073/pasta/53f4dea6d9cc028760859d386be6169c) | Allometrics_All_Years_20131009.csv | Taken for _Laminaria_ and _Pterygophora_ between 2008-2012 to predict biomass from density data of different size classes |
 | [Transect depth data](https://doi.org/10.6073/pasta/5b9116a15e1b2b47177ac835b6652596) | LTE_Transect_Depths_coors.csv | taken once by dive computer |
 | [Taxon-specific seasonal net primary production (NPP) for macroalgae](https://doi.org/10.6073/pasta/d338c48ec580c052a59aec02c847c2bc) | Understory_NPP_All_Year_season_20200605.csv, Understory_Summer_Bmass...20191122.csv | [methods -_-](https://sbclter.msi.ucsb.edu/external/Reef/Protocols/Long_Term_Kelp_Removal/SBC_LTER_protocol_Reed_LTE_NPP_macroalgae_20200821.pdf) |
-| [Hourly photon irradiance at the surface and seafloor](https://doi.org/10.6073/pasta/803abbcd7fb33bbfa9eff08521a397e8) | Hourly_Irrandiance_All_Year_20200320.csv |  |
+| [Hourly photon irradiance at the surface and seafloor](https://doi.org/10.6073/pasta/803abbcd7fb33bbfa9eff08521a397e8) | Hourly_Irrandiance_All_Year_20200320.csv | PAR sensors |
 
 
 ## Project 1: Algal functional traits
