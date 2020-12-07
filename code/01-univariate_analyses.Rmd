@@ -29,6 +29,7 @@ algae_NAPL_dm <- algae_NAPL %>%
 ggplot(algae_NAPL_dm, aes(x = date, y = total_biomass)) +
   geom_point() +
   geom_line() +
+  geom_vline(xintercept = as_date("2016-02-09"), color = "red") +
   facet_wrap(~treatment)
 ```
 
