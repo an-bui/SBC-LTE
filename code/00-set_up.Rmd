@@ -1,0 +1,41 @@
+---
+title: "set up"
+author: "An Bui"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. libraries
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+library(lubridate)
+```
+
+# 2. data
+## a. biomass
+```{r}
+biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20200605.csv")) %>% 
+  clean_names() %>% 
+  mutate(scientific_name = str_replace(scientific_name, " ", "_"), 
+         treatment = str_replace(treatment, " ", "_")) %>% 
+  unite("sample_ID", site, treatment, date, remove = FALSE) 
+```
+
+# 3. operators
+```{r}
+'%!in%' <- function(x,y)!('%in%'(x,y))
+```
+
+# 4. start and end dates
+## a. Naples (NAPL)
+```{r}
+napl_start_dates <- c("NAPL_CONTROL_2008-01-10", "NAPL_ANNUAL_2008-01-10", "NAPL_CONTINUAL_2010-04-27")
+
+napl_after_date <- as_date("2016-02-09")
+```
+
