@@ -21,8 +21,6 @@ library(lubridate)
 ```{r}
 biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20200605.csv")) %>% 
   clean_names() %>% 
-  mutate(scientific_name = str_replace(scientific_name, " ", "_"), 
-         treatment = str_replace(treatment, " ", "_")) %>% 
   unite("sample_ID", site, treatment, date, remove = FALSE) 
 ```
 
@@ -37,5 +35,24 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2020
 napl_start_dates <- c("NAPL_CONTROL_2008-01-10", "NAPL_ANNUAL_2008-01-10", "NAPL_CONTINUAL_2010-04-27")
 
 napl_after_date <- as_date("2016-02-09")
+```
+
+## b. Mohawk (MOHK)
+```{r}
+mohk_start_dates <- c("MOHK_ANNUAL_2008-01-17", "MOHK_CONTROL_2008-01-17", "MOHK_CONTINUAL_2010-05-05")
+
+mohk_after_date <- as_date("2017-02-13")
+```
+
+
+# 5. species codes --> scientific name
+```{r}
+spp_names <- biomass %>% 
+  select(sp_code, scientific_name) %>% 
+  unique()
+
+spp_codes <- biomass %>% 
+  pull(sp_code) %>% 
+  unique()
 ```
 
