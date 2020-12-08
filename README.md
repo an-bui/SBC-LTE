@@ -30,7 +30,8 @@ Upload later.
 ## Project 2: Recovery trajectories
 
 ### Files
-- 00-set_up: libraries, data
+- 00-set_up.Rmd: libraries, data, operators, start and end dates
+- 01-univariate_analyses.Rmd: univariate stuff (biomass)
 
 
 
