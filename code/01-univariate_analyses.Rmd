@@ -9,27 +9,98 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-source(here::here("code", "00-set_up.R"))
+source(here::here("code", "00-set_up.Rmd"))
+```
+
+# 1. algae
+## a. Naples (NAPL)
+
+```{r}
+spp_biomass_ts <- function(spp_code, this_site) {
+  
+  start_dates <- if(this_site == "NAPL") {
+    napl_start_dates
+  } else if(this_site == "MOHK") {
+    mohk_start_dates
+  }
+  
+  end_dates <- if(this_site == "NAPL") {
+    napl_after_date
+  } else if (this_site == "MOHK") {
+    mohk_after_date
+  }
+  
+  full_sci_name <- spp_names %>% filter(sp_code == spp_code) %>% pull(scientific_name)
+  
+  plot_label <- paste(full_sci_name, " - ", this_site, sep = "")
+  
+  biomass %>% 
+    filter(sp_code == spp_code & site == this_site) %>% 
+    # replace all -99999 values with NA
+    mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
+    # calculate total dry mass by each survey
+    group_by(year, month, treatment, date, sample_ID) %>% 
+    summarize(total_biomass = sum(dry_gm2)) %>% 
+    ungroup() %>% 
+    # make a new column designating "start", "during" and "after" removal
+    mutate(exp = case_when(sample_ID %in% start_dates ~ "start",
+                           date > end_dates ~ "after",
+                           TRUE ~ "during"),
+           exp = factor(exp, levels = c("start", "during", "after"))) %>% 
+    
+    ggplot(., aes(x = date, y = total_biomass)) +
+    geom_line(alpha = 0.5) +
+    geom_point(aes(color = exp)) +
+    labs(title = plot_label,
+         x = "Year",
+         y = "Total dry mass",
+         color = "Experiment") +
+    facet_wrap(~treatment) +
+    theme_bw()
+  
+}
+
+spp_biomass_ts("PTCA", "NAPL")
+spp_biomass_ts("PTCA", "MOHK")
+spp_biomass_ts("CYOS", "NAPL")
+spp_biomass_ts("AB", "NAPL")
+spp_biomass_ts("ANSP", "NAPL")
+
 ```
 
 ```{r}
-algae <- biomass %>% 
-  filter(group == "ALGAE")
+site_pc_dom_over_time_plot_list <- list()
 
-algae_NAPL <- algae %>% 
-  filter(site == "NAPL")
+for(i in 1:length(LTE_sites)) {
+  this_site <- LTE_sites[i]
+  
+  site_pc_dom_over_time_plot_list[[i]] <- site_pc_dom_over_time_plot(this_site)
+}
+
+plot_list <- list()
+
+for(i in 1:length(spp_codes)) {
+  this_sp <- spp_codes[i]
+  
+  plot_list[[i]] <- spp_biomass_ts(this_sp, "NAPL")
+}
+
+i <- spp_codes[168]
+i
+
+plot_vec[[1]]
+plot_vec[[168]]
 ```
 
-```{r}
-algae_NAPL_dm <- algae_NAPL %>% 
-  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
-  group_by(year, month, treatment, date) %>% 
-  summarize(total_biomass = sum(dry_gm2))
 
-ggplot(algae_NAPL_dm, aes(x = date, y = total_biomass)) +
-  geom_point() +
-  geom_line() +
-  geom_vline(xintercept = as_date("2016-02-09"), color = "red") +
-  facet_wrap(~treatment)
-```
+
+
+
+
+
+
+
+
+
+
 
