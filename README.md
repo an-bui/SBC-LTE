@@ -31,7 +31,8 @@ Upload later.
 
 ### Files
 - 00-set_up.Rmd: libraries, data, operators, start and end dates
-- 01-univariate_analyses.Rmd: univariate stuff (biomass)
+- 01-figure_functions.Rmd: functions for figures
+- 02-figure_outputs.Rmd: figure outputs in for() loops 
 
 
 
