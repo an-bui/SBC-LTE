@@ -16,6 +16,29 @@ source(here::here("code", "00-set_up.Rmd"))
 
 # a. species-specific function
 ```{r}
+biomass_summary <- biomass %>% 
+  # replace all -99999 values with NA
+  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
+  # calculate total dry mass by each survey
+  group_by(site, year, month, treatment, date, sample_ID, sp_code, common_name) %>% 
+  summarize(total_biomass = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  # make a new column designating "start", "during" and "after" removal
+  mutate(exp_dates = case_when(
+    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
+
 spp_biomass_ts <- function(spp_code, this_site) {
   
   start_dates <- if(this_site == "NAPL") {
@@ -48,23 +71,12 @@ spp_biomass_ts <- function(spp_code, this_site) {
   
   plot_label <- paste(full_sci_name, " (", full_common_name, ")", sep = "")
   
-  biomass %>% 
+  biomass_summary %>% 
     filter(sp_code == spp_code & site == this_site) %>% 
-    # replace all -99999 values with NA
-    mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
-    # calculate total dry mass by each survey
-    group_by(year, month, treatment, date, sample_ID) %>% 
-    summarize(total_biomass = sum(dry_gm2)) %>% 
-    ungroup() %>% 
-    # make a new column designating "start", "during" and "after" removal
-    mutate(exp = case_when(sample_ID %in% start_dates ~ "start",
-                           date > end_dates ~ "after",
-                           TRUE ~ "during"),
-           exp = factor(exp, levels = c("start", "during", "after"))) %>% 
     
     ggplot(., aes(x = date, y = total_biomass)) +
     geom_line(alpha = 0.5) +
-    geom_point(aes(color = exp)) +
+    geom_point(aes(color = exp_dates)) +
     labs(title = plot_label,
          subtitle = this_site,
          x = "Year",
