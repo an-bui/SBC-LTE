@@ -1,5 +1,5 @@
 ---
-title: "02-figure_outputs"
+title: "figure_outputs"
 author: "An Bui"
 date: "12/9/2020"
 output: html_document
