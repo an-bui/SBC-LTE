@@ -44,7 +44,8 @@ spp_biomass_ts <- function(spp_code, this_site) {
   
   full_sci_name <- spp_names %>% filter(sp_code == spp_code) %>% pull(scientific_name)
   
-  plot_label <- paste(full_sci_name, " - ", this_site, sep = "")
+  plot_label <- paste(full_sci_name, " (", spp_code, ")",
+                      " - ", this_site, sep = "")
   
   biomass %>% 
     filter(sp_code == spp_code & site == this_site) %>% 
@@ -71,14 +72,16 @@ spp_biomass_ts <- function(spp_code, this_site) {
     theme_bw()
   
 }
+```
 
+## b. tests
+```{r}
 spp_biomass_ts("PTCA", "NAPL")
 spp_biomass_ts("PTCA", "MOHK")
 spp_biomass_ts("PTCA", "IVEE")
 spp_biomass_ts("CYOS", "NAPL")
 spp_biomass_ts("AB", "NAPL")
 spp_biomass_ts("ANSP", "NAPL")
-
 ```
 
 
