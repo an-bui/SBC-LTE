@@ -1,0 +1,257 @@
+---
+title: "figure functions and loops"
+author: "An Bui"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source(here::here("code", "00-set_up.Rmd"))
+```
+
+# 1. biomass timeseries
+
+# a. species-specific function
+```{r}
+spp_biomass_ts <- function(spp_code, this_site) {
+  
+  start_dates <- if(this_site == "NAPL") {
+    napl_start_dates
+  } else if(this_site == "MOHK") {
+    mohk_start_dates
+  } else if(this_site == "AQUE") {
+    aque_start_dates
+  } else if(this_site == "CARP") {
+    carp_start_dates
+  } else if(this_site == "IVEE") {
+    ivee_start_dates
+  }
+  
+  end_dates <- if(this_site == "NAPL") {
+    napl_after_date
+  } else if (this_site == "MOHK") {
+    mohk_after_date
+  } else if(this_site == "AQUE") {
+    aque_after_date
+  } else if(this_site == "CARP") {
+    carp_after_date
+  } else if(this_site == "IVEE") {
+    ivee_after_date
+  }
+  
+  full_sci_name <- spp_names %>% filter(sp_code == spp_code) %>% pull(scientific_name)
+  
+  full_common_name <- spp_names %>% filter(sp_code == spp_code) %>% pull(common_name)
+  
+  plot_label <- paste(full_sci_name, " (", full_common_name, ")", sep = "")
+  
+  biomass %>% 
+    filter(sp_code == spp_code & site == this_site) %>% 
+    # replace all -99999 values with NA
+    mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
+    # calculate total dry mass by each survey
+    group_by(year, month, treatment, date, sample_ID) %>% 
+    summarize(total_biomass = sum(dry_gm2)) %>% 
+    ungroup() %>% 
+    # make a new column designating "start", "during" and "after" removal
+    mutate(exp = case_when(sample_ID %in% start_dates ~ "start",
+                           date > end_dates ~ "after",
+                           TRUE ~ "during"),
+           exp = factor(exp, levels = c("start", "during", "after"))) %>% 
+    
+    ggplot(., aes(x = date, y = total_biomass)) +
+    geom_line(alpha = 0.5) +
+    geom_point(aes(color = exp)) +
+    labs(title = plot_label,
+         subtitle = this_site,
+         x = "Year",
+         y = "Total dry mass",
+         color = "Experiment") +
+    facet_wrap(~treatment) +
+    theme_bw()
+  
+}
+
+spp_biomass_ts("PTCA", "NAPL")
+spp_biomass_ts("PTCA", "MOHK")
+spp_biomass_ts("PTCA", "IVEE")
+spp_biomass_ts("CYOS", "NAPL")
+spp_biomass_ts("AB", "NAPL")
+spp_biomass_ts("ANSP", "NAPL")
+```
+
+```{r algae-loop}
+for(j in 1:length(LTE_sites)) {
+  # choose a site
+  this_site <- LTE_sites[j]
+  
+  # list name
+  list_name <- paste(this_site, "_algae_plot_list", sep = "")
+  
+  # create an empty list to hold plot names
+  loop_plot_list <- rep(NaN, length(algae_spp))
+
+  for(i in 1:length(algae_spp)) {
+    # choose a species from the list
+    this_sp <- algae_spp[i]
+    
+    # plot the species biomass timeseries
+    plot <- spp_biomass_ts(this_sp, this_site)
+    
+    # plot name list in the loop
+    loop_plot_list[[i]] <- paste(this_site, this_sp, sep = "_")
+    
+    # make a separate object for the plot
+    assign(paste(this_site, this_sp, sep = "_"), plot)
+  }
+  
+  # put that plot list into list_name
+  assign(list_name, loop_plot_list)
+  
+}
+```
+
+```{r fish-loop}
+for(j in 1:length(LTE_sites)) {
+  # choose a site
+  this_site <- LTE_sites[j]
+  
+  # list name
+  list_name <- paste(this_site, "_fish_plot_list", sep = "")
+  
+  # create an empty list to hold plot names
+  loop_plot_list <- rep(NaN, length(fish_spp))
+
+  for(i in 1:length(fish_spp)) {
+    # choose a species from the list
+    this_sp <- fish_spp[i]
+    
+    # plot the species biomass timeseries
+    plot <- spp_biomass_ts(this_sp, this_site)
+    
+    # plot name list in the loop
+    loop_plot_list[[i]] <- paste(this_site, this_sp, sep = "_")
+    
+    # make a separate object for the plot
+    assign(paste(this_site, this_sp, sep = "_"), plot)
+  }
+  
+  # put that plot list into list_name
+  assign(list_name, loop_plot_list)
+  
+}
+```
+
+```{r invert-loop}
+for(j in 1:length(LTE_sites)) {
+  # choose a site
+  this_site <- LTE_sites[j]
+  
+  # list name
+  list_name <- paste(this_site, "_invert_plot_list", sep = "")
+  
+  # create an empty list to hold plot names
+  loop_plot_list <- rep(NaN, length(invert_spp))
+
+  for(i in 1:length(invert_spp)) {
+    # choose a species from the list
+    this_sp <- invert_spp[i]
+    
+    # plot the species biomass timeseries
+    plot <- spp_biomass_ts(this_sp, this_site)
+    
+    # plot name list in the loop
+    loop_plot_list[[i]] <- paste(this_site, this_sp, sep = "_")
+    
+    # make a separate object for the plot
+    assign(paste(this_site, this_sp, sep = "_"), plot)
+  }
+  
+  # put that plot list into list_name
+  assign(list_name, loop_plot_list)
+  
+}
+```
+
+## b. group-specific plots
+
+```{r}
+group_biomass <- function(this_group, this_site){
+  start_dates <- if(this_site == "NAPL") {
+    napl_start_dates
+  } else if(this_site == "MOHK") {
+    mohk_start_dates
+  } else if(this_site == "AQUE") {
+    aque_start_dates
+  } else if(this_site == "CARP") {
+    carp_start_dates
+  } else if(this_site == "IVEE") {
+    ivee_start_dates
+  }
+  
+  end_dates <- if(this_site == "NAPL") {
+    napl_after_date
+  } else if (this_site == "MOHK") {
+    mohk_after_date
+  } else if(this_site == "AQUE") {
+    aque_after_date
+  } else if(this_site == "CARP") {
+    carp_after_date
+  } else if(this_site == "IVEE") {
+    ivee_after_date
+  }
+  
+  group_title <- if(this_group == "INVERT") {
+    "Invertebrates"
+  } else if(this_group == "ALGAE") {
+    "Algae"
+  } else if(this_group == "FISH") {
+    "Fish"
+  }
+  
+  biomass %>% 
+    filter(group == this_group & site == this_site) %>% 
+    mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
+    # calculate total dry mass by each survey
+    group_by(year, month, treatment, date, sample_ID) %>% 
+    summarize(total_biomass = sum(dry_gm2)) %>% 
+    ungroup() %>% 
+    # make a new column designating "start", "during" and "after" removal
+    mutate(exp = case_when(sample_ID %in% start_dates ~ "start",
+                           date > end_dates ~ "after",
+                           TRUE ~ "during"),
+           exp = factor(exp, levels = c("start", "during", "after"))) %>%
+    
+    ggplot(., aes(x = date, y = total_biomass)) +
+    geom_line(alpha = 0.5) +
+    geom_point(aes(color = exp)) +
+    labs(title = group_title,
+         subtitle = this_site,
+         x = "Year",
+         y = "Total dry mass",
+         color = "Experiment") +
+    facet_wrap(~treatment) +
+    theme_bw()
+
+}
+
+group_biomass("INVERT", "NAPL")
+group_biomass("ALGAE", "NAPL")
+group_biomass("FISH", "NAPL")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

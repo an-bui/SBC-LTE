@@ -1,0 +1,64 @@
+---
+title: "figure_outputs"
+author: "An Bui"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r source-code}
+source(here::here("code", "01-figure_functions.Rmd"))
+```
+
+# 1. biomass timeseries 
+
+## a. species plots
+```{r plot-list-outputs}
+# algae
+NAPL_algae_plot_list
+MOHK_algae_plot_list
+AQUE_algae_plot_list
+CARP_algae_plot_list
+IVEE_algae_plot_list
+
+# fish
+NAPL_fish_plot_list
+MOHK_fish_plot_list
+AQUE_fish_plot_list
+CARP_fish_plot_list
+IVEE_fish_plot_list
+
+# inverts
+NAPL_invert_plot_list
+MOHK_invert_plot_list
+AQUE_invert_plot_list
+CARP_invert_plot_list
+IVEE_invert_plot_list
+```
+
+## b. group plots
+```{r}
+# whole groups
+group_biomass("INVERT", "NAPL")
+group_biomass("ALGAE", "NAPL")
+group_biomass("FISH", "NAPL")
+
+group_biomass("INVERT", "MOHK")
+group_biomass("ALGAE", "MOHK")
+group_biomass("FISH", "MOHK")
+
+group_biomass("INVERT", "CARP")
+group_biomass("ALGAE", "CARP")
+group_biomass("FISH", "CARP")
+
+group_biomass("INVERT", "IVEE")
+group_biomass("ALGAE", "IVEE")
+group_biomass("FISH", "IVEE")
+
+group_biomass("INVERT", "AQUE")
+group_biomass("ALGAE", "AQUE")
+group_biomass("FISH", "AQUE")
+```
+
