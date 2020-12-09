@@ -1,0 +1,46 @@
+---
+title: "change in biomass"
+author: "An Bui"
+date: "12/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source(here::here("data", "00-set_up.Rmd"))
+
+library(nlme)
+```
+
+```{r}
+delta_bio <- biomass %>% 
+  unite("group_mobility", group, mobility, sep = "_", remove = FALSE) %>% 
+  # filter(site == "MOHK" & group == "INVERT") %>% 
+  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
+  # calculate total dry mass by each survey
+  group_by(site, group_mobility, year, month, treatment, date) %>% 
+  summarize(total_biomass = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = total_biomass) %>% 
+  mutate(delta_biomass = CONTROL - ANNUAL)
+
+ggplot(delta_bio %>% filter(group == "ALGAE"), aes(x = date, y = delta_biomass)) +
+  geom_line(alpha = 0.5) +
+  geom_point(size = 2) +
+  facet_wrap(~site)
+
+ggplot(delta_bio %>% filter(group_mobility == "INVERT_MOBILE"), aes(x = date, y = delta_biomass)) +
+  geom_line(alpha = 0.5) +
+  geom_point(size = 2) +
+  facet_wrap(~site)
+
+ggplot(delta_bio %>% filter(group_mobility == "INVERT_SESSILE"), aes(x = date, y = delta_biomass)) +
+  geom_line(alpha = 0.5) +
+  geom_point(size = 2) +
+  facet_wrap(~site)
+
+```
+
