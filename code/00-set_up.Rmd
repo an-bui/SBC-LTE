@@ -69,11 +69,26 @@ ivee_after_date <- as_date("2016-02-18")
 # 5. species codes --> scientific name
 ```{r}
 spp_names <- biomass %>% 
-  select(sp_code, scientific_name) %>% 
-  unique()
+  select(group, sp_code, scientific_name) %>% 
+  unique() 
 
 spp_codes <- biomass %>% 
   pull(sp_code) %>% 
   unique()
+```
+
+```{r}
+# algae
+algae_spp <- spp_names %>% 
+  filter(group == "ALGAE") %>% 
+  pull(sp_code)
+
+fish_spp <- spp_names %>% 
+  filter(group == "FISH") %>% 
+  pull(sp_code)
+
+invert_spp <- spp_names %>% 
+  filter(group == "INVERT") %>% 
+  pull(sp_code)
 ```
 
