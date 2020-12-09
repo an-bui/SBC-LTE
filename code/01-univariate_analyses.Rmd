@@ -22,12 +22,24 @@ spp_biomass_ts <- function(spp_code, this_site) {
     napl_start_dates
   } else if(this_site == "MOHK") {
     mohk_start_dates
+  } else if(this_site == "AQUE") {
+    aque_start_dates
+  } else if(this_site == "CARP") {
+    carp_start_dates
+  } else if(this_site == "IVEE") {
+    ivee_start_dates
   }
   
   end_dates <- if(this_site == "NAPL") {
     napl_after_date
   } else if (this_site == "MOHK") {
     mohk_after_date
+  } else if(this_site == "AQUE") {
+    aque_after_date
+  } else if(this_site == "CARP") {
+    carp_after_date
+  } else if(this_site == "IVEE") {
+    ivee_after_date
   }
   
   full_sci_name <- spp_names %>% filter(sp_code == spp_code) %>% pull(scientific_name)
@@ -62,6 +74,7 @@ spp_biomass_ts <- function(spp_code, this_site) {
 
 spp_biomass_ts("PTCA", "NAPL")
 spp_biomass_ts("PTCA", "MOHK")
+spp_biomass_ts("PTCA", "IVEE")
 spp_biomass_ts("CYOS", "NAPL")
 spp_biomass_ts("AB", "NAPL")
 spp_biomass_ts("ANSP", "NAPL")
@@ -69,14 +82,6 @@ spp_biomass_ts("ANSP", "NAPL")
 ```
 
 ```{r}
-site_pc_dom_over_time_plot_list <- list()
-
-for(i in 1:length(LTE_sites)) {
-  this_site <- LTE_sites[i]
-  
-  site_pc_dom_over_time_plot_list[[i]] <- site_pc_dom_over_time_plot(this_site)
-}
-
 plot_list <- list()
 
 for(i in 1:length(spp_codes)) {
@@ -85,11 +90,8 @@ for(i in 1:length(spp_codes)) {
   plot_list[[i]] <- spp_biomass_ts(this_sp, "NAPL")
 }
 
-i <- spp_codes[168]
-i
-
-plot_vec[[1]]
-plot_vec[[168]]
+plot_list[[1]]
+plot_list[[168]]
 ```
 
 
