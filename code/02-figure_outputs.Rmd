@@ -8,30 +8,127 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r source-code}
 source(here::here("code", "01-figure_functions.Rmd"))
 ```
 
-# 1. Naples (NAPL)
+# 1. biomass timeseries 
 
-## a. algae biomass timeseries
-```{r}
-napl_algae_plot_list <- rep(NaN, length(algae_spp))
+## a. plot loops
+```{r algae-loop}
+for(j in 1:length(LTE_sites)) {
+  # choose a site
+  this_site <- LTE_sites[j]
+  
+  # list name
+  list_name <- paste(this_site, "_algae_plot_list", sep = "")
+  
+  # create an empty list to hold plot names
+  loop_plot_list <- rep(NaN, length(algae_spp))
 
-for(i in 1:length(algae_spp)) {
-  # choose a species from the list
-  this_sp <- algae_spp[i]
+  for(i in 1:length(algae_spp)) {
+    # choose a species from the list
+    this_sp <- algae_spp[i]
+    
+    # plot the species biomass timeseries
+    plot <- spp_biomass_ts(this_sp, this_site)
+    
+    # plot name list in the loop
+    loop_plot_list[[i]] <- paste(this_site, this_sp, sep = "_")
+    
+    # make a separate object for the plot
+    assign(paste(this_site, this_sp, sep = "_"), plot)
+  }
   
-  # plot the species biomass timeseries
-  plot <- spp_biomass_ts(this_sp, "NAPL")
+  # put that plot list into list_name
+  assign(list_name, loop_plot_list)
   
-  # plot name list
-  napl_algae_plot_list[[i]] <- paste("napl", this_sp, sep = "_")
-  
-  # make a separate object for the plot
-  assign(paste("napl", this_sp, sep = "_"), plot)
 }
-
-napl_ANPA
-
 ```
+
+```{r fish-loop}
+for(j in 1:length(LTE_sites)) {
+  # choose a site
+  this_site <- LTE_sites[j]
+  
+  # list name
+  list_name <- paste(this_site, "_fish_plot_list", sep = "")
+  
+  # create an empty list to hold plot names
+  loop_plot_list <- rep(NaN, length(fish_spp))
+
+  for(i in 1:length(fish_spp)) {
+    # choose a species from the list
+    this_sp <- fish_spp[i]
+    
+    # plot the species biomass timeseries
+    plot <- spp_biomass_ts(this_sp, this_site)
+    
+    # plot name list in the loop
+    loop_plot_list[[i]] <- paste(this_site, this_sp, sep = "_")
+    
+    # make a separate object for the plot
+    assign(paste(this_site, this_sp, sep = "_"), plot)
+  }
+  
+  # put that plot list into list_name
+  assign(list_name, loop_plot_list)
+  
+}
+```
+
+```{r invert-loop}
+for(j in 1:length(LTE_sites)) {
+  # choose a site
+  this_site <- LTE_sites[j]
+  
+  # list name
+  list_name <- paste(this_site, "_invert_plot_list", sep = "")
+  
+  # create an empty list to hold plot names
+  loop_plot_list <- rep(NaN, length(invert_spp))
+
+  for(i in 1:length(invert_spp)) {
+    # choose a species from the list
+    this_sp <- invert_spp[i]
+    
+    # plot the species biomass timeseries
+    plot <- spp_biomass_ts(this_sp, this_site)
+    
+    # plot name list in the loop
+    loop_plot_list[[i]] <- paste(this_site, this_sp, sep = "_")
+    
+    # make a separate object for the plot
+    assign(paste(this_site, this_sp, sep = "_"), plot)
+  }
+  
+  # put that plot list into list_name
+  assign(list_name, loop_plot_list)
+  
+}
+```
+
+## b. plot outputs
+```{r plot-list-outputs}
+# algae
+NAPL_algae_plot_list
+MOHK_algae_plot_list
+AQUE_algae_plot_list
+CARP_algae_plot_list
+IVEE_algae_plot_list
+
+# fish
+NAPL_fish_plot_list
+MOHK_fish_plot_list
+AQUE_fish_plot_list
+CARP_fish_plot_list
+IVEE_fish_plot_list
+
+# inverts
+NAPL_invert_plot_list
+MOHK_invert_plot_list
+AQUE_invert_plot_list
+CARP_invert_plot_list
+IVEE_invert_plot_list
+```
+
