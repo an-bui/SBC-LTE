@@ -65,11 +65,11 @@ ivee_start_dates <- c("IVEE_CONTROL_2011-10-26", "IVEE_ANNUAL_2011-10-26")
 ivee_after_date <- as_date("2016-02-18")
 ```
 
-
-# 5. species codes --> scientific name
+# 5. useful vectors
+## a. species codes --> scientific name
 ```{r}
 spp_names <- biomass %>% 
-  select(group, sp_code, scientific_name) %>% 
+  select(group, sp_code, scientific_name, common_name) %>% 
   unique() 
 
 spp_codes <- biomass %>% 
@@ -90,5 +90,12 @@ fish_spp <- spp_names %>%
 invert_spp <- spp_names %>% 
   filter(group == "INVERT") %>% 
   pull(sp_code)
+```
+
+## b. sites
+```{r}
+LTE_sites <- biomass %>% 
+  pull(site) %>% 
+  unique()
 ```
 
