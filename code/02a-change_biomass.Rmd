@@ -24,22 +24,42 @@ delta_bio <- biomass %>%
   group_by(site, group_mobility, year, month, treatment, date) %>% 
   summarize(total_biomass = sum(dry_gm2)) %>% 
   ungroup() %>% 
+  # add new column with start/during/after
+  mutate(exp_dates = case_when(
+    site == "NAPL" & date == napl_start_date ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & date == mohk_start_date ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & date == aque_start_date ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & date == carp_start_date ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & date == ivee_start_date ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
   pivot_wider(names_from = treatment, values_from = total_biomass) %>% 
   mutate(delta_biomass = CONTROL - ANNUAL)
 
-ggplot(delta_bio %>% filter(group == "ALGAE"), aes(x = date, y = delta_biomass)) +
+ggplot(delta_bio %>% filter(group_mobility == "ALGAE_SESSILE"), aes(x = date, y = delta_biomass)) +
   geom_line(alpha = 0.5) +
-  geom_point(size = 2) +
+  geom_point(aes(color = exp_dates), size = 2) +
   facet_wrap(~site)
 
 ggplot(delta_bio %>% filter(group_mobility == "INVERT_MOBILE"), aes(x = date, y = delta_biomass)) +
   geom_line(alpha = 0.5) +
-  geom_point(size = 2) +
+  geom_point(aes(color = exp_dates), size = 2) +
   facet_wrap(~site)
 
 ggplot(delta_bio %>% filter(group_mobility == "INVERT_SESSILE"), aes(x = date, y = delta_biomass)) +
   geom_line(alpha = 0.5) +
-  geom_point(size = 2) +
+  geom_point(aes(color = exp_dates), size = 2) +
+  facet_wrap(~site)
+
+ggplot(delta_bio %>% filter(group_mobility == "FISH_MOBILE"), aes(x = date, y = delta_biomass)) +
+  geom_line(alpha = 0.5) +
+  geom_point(aes(color = exp_dates), size = 2) +
   facet_wrap(~site)
 
 ```
