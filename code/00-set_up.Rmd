@@ -44,6 +44,27 @@ mohk_start_dates <- c("MOHK_ANNUAL_2008-01-17", "MOHK_CONTROL_2008-01-17", "MOHK
 mohk_after_date <- as_date("2017-02-13")
 ```
 
+## c. Arroyo Quemado (AQUE)
+```{r}
+aque_start_dates <- c("AQUE_CONTROL_2008-01-30", "AQUE_ANNUAL_2008-01-30", "AQUE_CONTINUAL_2010-04-26")
+
+aque_after_date <- as_date("2017-03-02")
+```
+
+## d. Carpinteria (CARP)
+```{r}
+carp_start_dates <- c("CARP_CONTROL_2008-02-12", "CARP_ANNUAL_2008-02-12", "CARP_CONTINUAL_2010-04-23")
+
+carp_after_date <- as_date("2017-02-15")
+```
+
+## e. Isla Vista (IVEE)
+```{r}
+ivee_start_dates <- c("IVEE_CONTROL_2011-10-26", "IVEE_ANNUAL_2011-10-26")
+
+ivee_after_date <- as_date("2016-02-18")
+```
+
 
 # 5. species codes --> scientific name
 ```{r}
