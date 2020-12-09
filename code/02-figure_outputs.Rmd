@@ -1,7 +1,6 @@
 ---
 title: "figure_outputs"
 author: "An Bui"
-date: "12/9/2020"
 output: html_document
 ---
 
@@ -17,16 +16,22 @@ source(here::here("code", "01-figure_functions.Rmd"))
 
 ## a. algae biomass timeseries
 ```{r}
-napl_algae_plot_list <- list()
+napl_algae_plot_list <- rep(NaN, length(algae_spp))
 
 for(i in 1:length(algae_spp)) {
+  # choose a species from the list
   this_sp <- algae_spp[i]
   
-  napl_algae_plot_list[[i]] <- spp_biomass_ts(this_sp, "NAPL")
+  # plot the species biomass timeseries
+  plot <- spp_biomass_ts(this_sp, "NAPL")
+  
+  # plot name list
+  napl_algae_plot_list[[i]] <- paste("napl", this_sp, sep = "_")
+  
+  # make a separate object for the plot
+  assign(paste("napl", this_sp, sep = "_"), plot)
 }
 
-# Anisocladella pacifica
-napl_algae_plot_list[[1]]
-# Acrosorium ciliolatum
-napl_algae_plot_list[[2]]
+napl_ANPA
+
 ```
