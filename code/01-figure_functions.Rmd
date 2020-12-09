@@ -44,8 +44,9 @@ spp_biomass_ts <- function(spp_code, this_site) {
   
   full_sci_name <- spp_names %>% filter(sp_code == spp_code) %>% pull(scientific_name)
   
-  plot_label <- paste(full_sci_name, " (", spp_code, ")",
-                      " - ", this_site, sep = "")
+  full_common_name <- spp_names %>% filter(sp_code == spp_code) %>% pull(common_name)
+  
+  plot_label <- paste(full_sci_name, " (", full_common_name, ")", sep = "")
   
   biomass %>% 
     filter(sp_code == spp_code & site == this_site) %>% 
@@ -65,6 +66,7 @@ spp_biomass_ts <- function(spp_code, this_site) {
     geom_line(alpha = 0.5) +
     geom_point(aes(color = exp)) +
     labs(title = plot_label,
+         subtitle = this_site,
          x = "Year",
          y = "Total dry mass",
          color = "Experiment") +
