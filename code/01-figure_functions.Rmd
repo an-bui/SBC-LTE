@@ -1,5 +1,5 @@
 ---
-title: "univariate stuff"
+title: "figure functions"
 author: "An Bui"
 output: html_document
 ---
@@ -12,9 +12,9 @@ knitr::opts_chunk$set(echo = TRUE)
 source(here::here("code", "00-set_up.Rmd"))
 ```
 
-# 1. algae
-## a. Naples (NAPL)
+# 1. biomass timeseries
 
+# a. function
 ```{r}
 spp_biomass_ts <- function(spp_code, this_site) {
   
@@ -81,18 +81,7 @@ spp_biomass_ts("ANSP", "NAPL")
 
 ```
 
-```{r}
-plot_list <- list()
 
-for(i in 1:length(spp_codes)) {
-  this_sp <- spp_codes[i]
-  
-  plot_list[[i]] <- spp_biomass_ts(this_sp, "NAPL")
-}
-
-plot_list[[1]]
-plot_list[[168]]
-```
 
 
 
