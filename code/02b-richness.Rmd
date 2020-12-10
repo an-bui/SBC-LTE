@@ -1,0 +1,74 @@
+---
+title: "richness"
+author: "An Bui"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source(here::here("code", "00-set_up.R"))
+```
+
+```{r}
+richness <- biomass %>% 
+  # only include species that are actually present (i.e. dry mass > 0)
+  filter(dry_gm2 > 0) %>% 
+  # calculate total species richness by group
+  group_by(site, year, month, treatment, date, group) %>% 
+  summarize(total_spp = length(group)) %>% 
+  ungroup() %>% 
+  # add new column with start/during/after
+  mutate(exp_dates = case_when(
+    site == "NAPL" & date == napl_start_date ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & date == mohk_start_date ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & date == aque_start_date ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & date == carp_start_date ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & date == ivee_start_date ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after")))
+
+delta_richness <- richness %>% 
+  pivot_wider(names_from = treatment, values_from = total_spp) %>% 
+  mutate(delta_richness = CONTROL - ANNUAL)
+```
+
+```{r}
+group_richness_plot_list <- rep(NaN, length(all_groups))
+
+for(i in 1:length(all_groups)) {
+  # choose a group
+  this_group <- all_groups[i]
+  
+  # run the function
+  plot <- ggplot(delta_richness %>% filter(group == this_group), aes(x = date, y = delta_richness)) +
+    geom_line(alpha = 0.5) +
+    geom_hline(yintercept = 0) +
+    geom_point(aes(color = exp_dates), size = 2) +
+    facet_wrap(~site) +
+    labs(x = "Date",
+         y = "Delta richness (Control - Annual)")
+  
+  # put the plot name into a list
+  group_richness_plot_list[i] <- paste(this_group, "_richness_plot", sep = "")
+  
+  # make a separate object for the plot
+  assign(paste(this_group, "_richness_plot", sep = ""), plot)
+  
+}
+
+group_richness_plot_list
+
+invert_richness_plot
+fish_richness_plot
+algae_richness_plot
+```
+
