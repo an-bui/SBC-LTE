@@ -17,7 +17,6 @@ library(nlme)
 
 ```{r}
 delta_bio <- biomass %>% 
-  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
   # calculate total dry mass by each survey
   group_by(site, group_mobility, year, month, treatment, date) %>% 
   summarize(total_biomass = sum(dry_gm2)) %>% 
