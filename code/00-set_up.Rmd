@@ -21,7 +21,14 @@ library(lubridate)
 ```{r}
 biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20200605.csv")) %>% 
   clean_names() %>% 
-  unite("sample_ID", site, treatment, date, remove = FALSE)
+  # ANOB is incorrectly coded as having "SESSILE" mobility
+  mutate(mobility = ifelse(sp_code == "ANOB", "MOBILE", mobility)) %>% 
+  # create a sample_ID for each sampling date at each treatment at each site
+  unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
+  # create "functional groups" of group and mobility
+  unite("group_mobility", group, mobility, remove = FALSE, sep = "_") %>% 
+  # change to lower case
+  mutate_at(c("group", "mobility", "group_mobility", "growth_morph"), str_to_lower)
 ```
 
 # 3. operators
