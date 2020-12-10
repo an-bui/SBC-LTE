@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-source(here::here("data", "00-set_up.Rmd"))
+source(here::here("code", "00-set_up.R"))
 
 library(nlme)
 ```
@@ -40,26 +40,6 @@ delta_bio <- biomass %>%
   pivot_wider(names_from = treatment, values_from = total_biomass) %>% 
   mutate(delta_biomass = CONTROL - ANNUAL)
 
-group_mobility <- biomass %>% 
-  pull(group_mobility) %>% 
-  unique()
-
-invert_mobile <- biomass %>% 
-  filter(group_mobility == "INVERT_MOBILE") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
-
-invert_sessile <- biomass %>% 
-  filter(group_mobility == "INVERT_SESSILE") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
-
-# this is a mistake
-fish_sessile <- biomass %>% 
-  filter(group_mobility == "FISH_SESSILE") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
-
 ```
 
 ```{r}
@@ -76,19 +56,18 @@ for(i in 1:length(group_mobility)) {
     facet_wrap(~site)
   
   # put the plot name into a list
-  group_mobility_biomass_plot_list[i] <- paste(this_group)
+  group_mobility_biomass_plot_list[i] <- paste(this_group, "_biomass_plot", sep = "")
   
   # make a separate object for the plot
-  assign(paste(this_group), plot)
+  assign(paste(this_group, "_biomass_plot", sep = ""), plot)
   
 }
 
 group_mobility_biomass_plot_list
 
-INVERT_SESSILE
-FISH_MOBILE
-INVERT_MOBILE
-FISH_SESSILE # again, this is a mistake
-ALGAE_SESSILE
+invert_sessile_biomass_plot
+fish_mobile_biomass_plot
+invert_mobile_biomass_plot
+algae_sessile_biomass_plot
 ```
 
