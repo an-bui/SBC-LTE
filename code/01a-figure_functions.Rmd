@@ -20,8 +20,8 @@ biomass_summary <- biomass %>%
   # replace all -99999 values with NA
   mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
   # calculate total dry mass by each survey
-  group_by(site, year, month, treatment, date, sample_ID, sp_code, common_name) %>% 
-  summarize(total_biomass = sum(dry_gm2)) %>% 
+  group_by(site, year, month, treatment, date, sp_code) %>%
+  mutate(total_biomass = sum(dry_gm2)) %>% 
   ungroup() %>% 
   # make a new column designating "start", "during" and "after" removal
   mutate(exp_dates = case_when(
@@ -228,8 +228,8 @@ group_biomass <- function(this_group, this_site){
     filter(group == this_group & site == this_site) %>% 
     mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
     # calculate total dry mass by each survey
-    group_by(year, month, treatment, date, sample_ID) %>% 
-    summarize(total_biomass = sum(dry_gm2)) %>% 
+    group_by(year, month, treatment, date) %>% 
+    mutate(total_biomass = sum(dry_gm2)) %>% 
     ungroup() %>% 
     # make a new column designating "start", "during" and "after" removal
     mutate(exp = case_when(sample_ID %in% start_dates ~ "start",
