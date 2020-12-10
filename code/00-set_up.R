@@ -15,7 +15,7 @@ library(lubridate)
 biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20200605.csv")) %>% 
   clean_names() %>% 
   # ANOB is incorrectly coded as having "SESSILE" mobility
-  mutate(mobility = ifelse(sp_code == "ANOB", "MOBILE", mobility)) %>% 
+  mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
   # replace all -99999 values with NA
   mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
   # create a sample_ID for each sampling date at each treatment at each site
@@ -115,6 +115,11 @@ fish_spp <- spp_names %>%
 invert_spp <- spp_names %>% 
   filter(group == "invert") %>% 
   pull(sp_code)
+
+# vector of groups
+all_groups <- biomass %>% 
+  pull(group) %>% 
+  unique()
 
 # vector of group_mobility
 group_mobility <- biomass %>% 
