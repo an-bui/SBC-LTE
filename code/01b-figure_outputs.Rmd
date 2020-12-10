@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r source-code}
-source(here::here("code", "01-figure_functions.Rmd"))
+source(here::here("code", "01a-figure_functions.R"))
 ```
 
 # 1. biomass timeseries 
@@ -41,24 +41,24 @@ IVEE_invert_plot_list
 ## b. group plots
 ```{r}
 # whole groups
-group_biomass("INVERT", "NAPL")
-group_biomass("ALGAE", "NAPL")
-group_biomass("FISH", "NAPL")
+group_biomass("invert", "NAPL")
+group_biomass("algae", "NAPL")
+group_biomass("fish", "NAPL")
 
-group_biomass("INVERT", "MOHK")
-group_biomass("ALGAE", "MOHK")
-group_biomass("FISH", "MOHK")
+group_biomass("invert", "MOHK")
+group_biomass("algae", "MOHK")
+group_biomass("fish", "MOHK")
 
-group_biomass("INVERT", "CARP")
-group_biomass("ALGAE", "CARP")
-group_biomass("FISH", "CARP")
+group_biomass("invert", "CARP")
+group_biomass("algae", "CARP")
+group_biomass("fish", "CARP")
 
-group_biomass("INVERT", "IVEE")
-group_biomass("ALGAE", "IVEE")
-group_biomass("FISH", "IVEE")
+group_biomass("invert", "IVEE")
+group_biomass("algae", "IVEE")
+group_biomass("fish", "IVEE")
 
-group_biomass("INVERT", "AQUE")
-group_biomass("ALGAE", "AQUE")
-group_biomass("FISH", "AQUE")
+group_biomass("invert", "AQUE")
+group_biomass("algae", "AQUE")
+group_biomass("fish", "AQUE")
 ```
 
