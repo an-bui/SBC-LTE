@@ -16,7 +16,7 @@ source(here::here("code", "00-set_up.Rmd"))
 
 # a. species-specific function
 ```{r}
-biomass_summary <- biomass %>% 
+biomass_spp_summary <- biomass %>% 
   # replace all -99999 values with NA
   mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
   # calculate total dry mass by each survey
@@ -71,7 +71,7 @@ spp_biomass_ts <- function(spp_code, this_site) {
   
   plot_label <- paste(full_sci_name, " (", full_common_name, ")", sep = "")
   
-  biomass_summary %>% 
+  biomass_spp_summary %>% 
     filter(sp_code == spp_code & site == this_site) %>% 
     
     ggplot(., aes(x = date, y = total_biomass)) +
@@ -191,6 +191,27 @@ for(j in 1:length(LTE_sites)) {
 ## b. group-specific plots
 
 ```{r}
+biomass_group_summary <- biomass %>% 
+  # calculate total dry mass by each survey
+  group_by(site, year, month, treatment, date, group) %>%
+  mutate(total_biomass = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  # make a new column designating "start", "during" and "after" removal
+  mutate(exp_dates = case_when(
+    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
+
 group_biomass <- function(this_group, this_site){
   start_dates <- if(this_site == "NAPL") {
     napl_start_dates
@@ -216,30 +237,20 @@ group_biomass <- function(this_group, this_site){
     ivee_after_date
   }
   
-  group_title <- if(this_group == "INVERT") {
+  group_title <- if(this_group == "invert") {
     "Invertebrates"
-  } else if(this_group == "ALGAE") {
+  } else if(this_group == "algae") {
     "Algae"
-  } else if(this_group == "FISH") {
+  } else if(this_group == "fish") {
     "Fish"
   }
   
-  biomass %>% 
-    filter(group == this_group & site == this_site) %>% 
-    mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
-    # calculate total dry mass by each survey
-    group_by(year, month, treatment, date) %>% 
-    mutate(total_biomass = sum(dry_gm2)) %>% 
-    ungroup() %>% 
-    # make a new column designating "start", "during" and "after" removal
-    mutate(exp = case_when(sample_ID %in% start_dates ~ "start",
-                           date > end_dates ~ "after",
-                           TRUE ~ "during"),
-           exp = factor(exp, levels = c("start", "during", "after"))) %>%
+  biomass_group_summary %>% 
+    filter(group == this_group & site == this_site) %>%
     
     ggplot(., aes(x = date, y = total_biomass)) +
     geom_line(alpha = 0.5) +
-    geom_point(aes(color = exp)) +
+    geom_point(aes(color = exp_dates)) +
     labs(title = group_title,
          subtitle = this_site,
          x = "Year",
@@ -250,9 +261,9 @@ group_biomass <- function(this_group, this_site){
 
 }
 
-group_biomass("INVERT", "NAPL")
-group_biomass("ALGAE", "NAPL")
-group_biomass("FISH", "NAPL")
+group_biomass("invert", "NAPL")
+group_biomass("algae", "NAPL")
+group_biomass("fish", "NAPL")
 ```
 
 
