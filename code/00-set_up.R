@@ -103,17 +103,17 @@ spp_codes <- biomass %>%
 
 # vector of algae species
 algae_spp <- spp_names %>% 
-  filter(group == "ALGAE") %>% 
+  filter(group == "algae") %>% 
   pull(sp_code)
 
 # vector of fish species
 fish_spp <- spp_names %>% 
-  filter(group == "FISH") %>% 
+  filter(group == "fish") %>% 
   pull(sp_code)
 
 # vector of invert species
 invert_spp <- spp_names %>% 
-  filter(group == "INVERT") %>% 
+  filter(group == "invert") %>% 
   pull(sp_code)
 
 # vector of group_mobility
