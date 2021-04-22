@@ -68,12 +68,12 @@ spp_biomass_ts <- function(spp_code, this_site) {
 # b. tests
 ############################################
 
-spp_biomass_ts("PTCA", "NAPL")
-spp_biomass_ts("PTCA", "MOHK")
-spp_biomass_ts("PTCA", "IVEE")
-spp_biomass_ts("CYOS", "NAPL")
-spp_biomass_ts("AB", "NAPL")
-spp_biomass_ts("ANSP", "NAPL")
+# spp_biomass_ts("PTCA", "NAPL")
+# spp_biomass_ts("PTCA", "MOHK")
+# spp_biomass_ts("PTCA", "IVEE")
+# spp_biomass_ts("CYOS", "NAPL")
+# spp_biomass_ts("AB", "NAPL")
+# spp_biomass_ts("ANSP", "NAPL")
 
 ############################################
 # c. loops
@@ -235,6 +235,6 @@ group_biomass <- function(this_group, this_site){
 # e. tests
 ############################################
 
-group_biomass("invert", "NAPL")
-group_biomass("algae", "NAPL")
-group_biomass("fish", "NAPL")
+# group_biomass("invert", "NAPL")
+# group_biomass("algae", "NAPL")
+# group_biomass("fish", "NAPL")
