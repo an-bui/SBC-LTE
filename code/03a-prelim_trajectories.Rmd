@@ -1,0 +1,394 @@
+---
+title: "prelim trajectories"
+author: "An Bui"
+date: "4/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source(here::here("code", "00-set_up.R"))
+
+library(vegan)
+library(patchwork)
+```
+
+# Tuesday 20 April 2021
+
+## First pass
+
+Going to try out the trajectories at Naples as a test first. The `percov` data frame is from `00-set_up.R` with some cleaning done over there.  
+
+In this chunk, we're filtering out observations, calculating the mean percent cover per transect, and making things wider for putting into `metaMDS`. Each row in the data frame is a transect for one sampling date. Because it's a subset of the data, some species never show up at Naples; therefore, there's a bit of extra stuff to take out any species with 0 observations at the site. This probably isn't going to be an issue with the whole dataset.  
+
+We're also making a metadata data frame, for plotting later. It has the sample ID, date, site, treatment, and the start/during/after categories.
+```{r}
+napl_traj_df <- percov %>% 
+  # filter for Naples observations, algae only
+  filter(site == "NAPL" & group == "algae") %>% 
+  # calculate mean and sum percent cover across 4 quads (i.e. per transect)
+  group_by(sample_ID, scientific_name) %>% 
+  summarize(mean_pc = mean(percent_cover),
+            sum_pc = sum(percent_cover)) %>% 
+  ungroup() %>% 
+  # filter out species with 0 observations
+  filter(sum_pc > 0) %>% 
+  select(-sum_pc) %>% 
+  # get into wide form
+  pivot_wider(names_from = "scientific_name", values_from = "mean_pc") %>% 
+  # make the sample_ID column row names
+  column_to_rownames("sample_ID") %>% 
+  # replace NA with 0
+  replace(is.na(.), 0)
+  
+napl_traj_meta <- percov %>% 
+  # filter for Naples observations, algae only
+  filter(site == "NAPL" & group == "algae") %>% 
+  select(sample_ID, date, site, treatment, exp_dates) %>% 
+  # only keep unique descriptors
+  unique()
+```
+
+Going to try a few ordinations - presence/absence (Raup-Crick, appropriate for disentangling variation in composition from variation in alpha diversity) and abundance (Bray-Curtis, though I'm not sure this is the right metric because it's not raw count data. Blah!).
+
+```{r}
+napl_rc_dist <- vegdist(napl_traj_df, "raup")
+napl_rc_MDS <- metaMDS(napl_rc_dist, "raup")
+
+napl_bray_dist <- vegdist(napl_traj_df, "bray")
+napl_bray <- metaMDS(napl_bray_dist)
+```
+
+Now, going to put the outputs into data frames to plot.
+
+```{r}
+napl_rc_plotdf <- scores(napl_rc_MDS, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(napl_traj_meta, .)
+
+napl_bray_plotdf <- scores(napl_bray, display = "sites") %>% 
+  as_tibble() %>% 
+  bind_cols(napl_traj_meta, .)
+
+napl_rc_plot_contin <- ggplot(napl_rc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "CONTINUAL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.4, "cm"), type = "closed"),
+                 size = 0.5, color = "grey") +
+  geom_point(aes(color = exp_dates), size = 5) +
+  scale_x_continuous(limits = c(-0.3, 0.37)) +
+  scale_y_continuous(limits = c(-0.3, 0.4)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white"),
+        legend.position = "none") +
+  labs(title = "Continual removal")
+napl_rc_plot_contin
+
+napl_rc_plot_annu <- ggplot(napl_rc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "ANNUAL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.4, "cm"), type = "closed"),
+                 size = 0.5, color = "grey") +
+  geom_point(aes(color = exp_dates), size = 5) +
+  scale_x_continuous(limits = c(-0.3, 0.37)) +
+  scale_y_continuous(limits = c(-0.3, 0.4)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white"),
+        legend.position = "bottom") +
+  labs(title = "Annual removal")
+napl_rc_plot_annu
+
+napl_rc_plot_control <- ggplot(napl_rc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "CONTROL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.4, "cm"), type = "closed"),
+                 size = 0.5, color = "grey") +
+  geom_point(aes(color = exp_dates), size = 5) +
+  scale_x_continuous(limits = c(-0.3, 0.37)) +
+  scale_y_continuous(limits = c(-0.3, 0.4)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white"),
+        legend.position = "none") +
+  labs(title = "Control")
+napl_rc_plot_control
+
+napl_rc_plot_grid <- napl_rc_plot_contin + napl_rc_plot_annu + napl_rc_plot_control
+
+ggsave(here::here("figures/trajectories/prelim-trajectories", "NAPL-traj-2021-04-20.jpg"), napl_rc_plot_grid, dpi = 200, height = 7, width = 15)
+```
+
+They are the same!!!!!! lolllll!!!  
+
+Some permanova/betadisper stuff here. Had to filter out "after" observations, so there's a bunch of that.
+
+```{r}
+napl_after_df <- napl_traj_df %>% 
+  rownames_to_column("sample_ID") %>% 
+  filter(sample_ID %in% napl_after_sampleIDs) %>% 
+  column_to_rownames("sample_ID")
+
+napl_after_meta <- napl_traj_meta %>% 
+  filter(sample_ID %in% napl_after_sampleIDs)
+
+napl_traj_permanova_rc <- adonis(napl_after_df ~ treatment, napl_after_meta, method = "raup")
+
+napl_traj_permanova_rc_df <- napl_traj_permanova_rc$aov.tab$Df[1]
+napl_traj_permanova_rc_ss <- round(napl_traj_permanova_rc$aov.tab$SumsOfSqs[1], 2)
+napl_traj_permanova_rc_fstat <- round(napl_traj_permanova_rc$aov.tab$F.Model[1], 2)
+napl_traj_permanova_rc_p <- round(napl_traj_permanova_rc$aov.tab$'Pr(>F)'[1], 4)
+
+napl_traj_permanova_caption <- paste("PerMANOVA, F(",
+                                    napl_traj_permanova_rc_df, ", ",
+                                    napl_traj_permanova_rc_ss, ") = ",
+                                    napl_traj_permanova_rc_fstat, ", p = ",
+                                    napl_traj_permanova_rc_p,
+                                    sep = "")
+
+# no significant difference in centroids between experiment dates
+
+exp_dates_group <- napl_traj_meta %>% 
+  select(sample_ID, exp_dates) %>% 
+  deframe()
+
+treatment_group <- napl_traj_meta %>% 
+  select(sample_ID, treatment) %>% 
+  deframe()
+
+napl_rc_bd <- betadisper(napl_rc_dist, exp_dates_group)
+anova(napl_rc_bd)
+# significant difference in dispersion between experiment dates
+```
+
+# Wednesday 21 April 2021
+
+Ok, well, yesterday was kind of a bummer. Still not 100% sure if I should be using Raup-Crick or Jaccard, so just gonna do the same thing except with Jaccard for Naples.
+
+```{r}
+# calculating jaccard distance matrix
+napl_jacc_dist <- vegdist(napl_traj_df, "jaccard")
+
+# doing NMDS
+napl_jacc_MDS <- metaMDS(napl_rc_dist, "jaccard")
+
+# extracting coordinates from jaccard MDS
+napl_jacc_plotdf <- scores(napl_jacc_MDS, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(napl_traj_meta, .)
+
+# plotting
+napl_jacc_plot_contin <- ggplot(napl_jacc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "CONTINUAL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.4, "cm"), type = "closed"),
+                 size = 0.5, color = "grey") +
+  geom_point(aes(color = exp_dates), size = 5) +
+  scale_x_continuous(limits = c(-0.3, 0.37)) +
+  scale_y_continuous(limits = c(-0.3, 0.4)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white"),
+        legend.position = "none") +
+  labs(title = "Continual removal")
+napl_jacc_plot_contin
+
+napl_jacc_plot_annu <- ggplot(napl_jacc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "ANNUAL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.4, "cm"), type = "closed"),
+                 size = 0.5, color = "grey") +
+  geom_point(aes(color = exp_dates), size = 5) +
+  scale_x_continuous(limits = c(-0.3, 0.37)) +
+  scale_y_continuous(limits = c(-0.3, 0.4)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white")) +
+  labs(title = "Annual removal")
+napl_jacc_plot_annu
+
+napl_jacc_plot_contr <- ggplot(napl_jacc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "CONTROL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.4, "cm"), type = "closed"),
+                 size = 0.5, color = "grey") +
+  geom_point(aes(color = exp_dates), size = 5) +
+  scale_x_continuous(limits = c(-0.3, 0.37)) +
+  scale_y_continuous(limits = c(-0.3, 0.4)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white"),
+        legend.position = "none") +
+  labs(title = "Control")
+napl_jacc_plot_contr
+
+jacc_plot_grid <- napl_jacc_plot_contin + napl_jacc_plot_annu + napl_jacc_plot_contr
+
+ggsave(here::here("figures/trajectories/prelim-trajectories", "NAPL-traj-jacc-2021-04-21.jpg"), jacc_plot_grid, dpi = 200, height = 7, width = 15)
+
+```
+
+Welp, they're the same.  
+
+I know in my heart I should start looking at the biomass stuff but man I don't want to. So... I guess I'm going to look at all the sites instead lol. Sorry not sorry.
+
+```{r}
+traj_df <- percov %>% 
+  # filter for algae only
+  filter(group == "algae") %>% 
+  # calculate mean and sum percent cover across 4 quads (i.e. per transect)
+  group_by(sample_ID, scientific_name) %>% 
+  summarize(mean_pc = mean(percent_cover),
+            sum_pc = sum(percent_cover)) %>% 
+  ungroup() %>% 
+  # filter out species with 0 observations
+  filter(sum_pc > 0) %>% 
+  select(-sum_pc) %>% 
+  # get into wide form
+  pivot_wider(names_from = "scientific_name", values_from = "mean_pc") %>% 
+  # make the sample_ID column row names
+  column_to_rownames("sample_ID") %>% 
+  # replace NA with 0
+  replace(is.na(.), 0)
+
+traj_meta <- percov %>% 
+  # filter for algae only
+  filter(group == "algae") %>% 
+  select(sample_ID, date, site, treatment, exp_dates) %>% 
+  unite("date_site", date, site, remove = FALSE) %>% 
+  # only keep unique descriptors
+  unique()
+```
+
+Now to try the ordinations again.
+
+```{r}
+rc_dist <- vegdist(traj_df, "raup")
+rc_mds <- metaMDS(all_rc_dist, "raup")
+```
+
+And then prep to plot, and plotting.
+
+```{r}
+rc_plotdf <- scores(rc_mds, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(traj_meta, .)
+
+rc_plot_contin <- ggplot(rc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "CONTINUAL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA),
+                   color = site),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               size = 0.5) +
+  scale_x_continuous(limits = c(-0.4, 0.5)) +
+  scale_y_continuous(limits = c(-0.35, 0.23)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white")) +
+  labs(title = "Continual removal")
+rc_plot_contin
+
+rc_plot_annu <- ggplot(rc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "ANNUAL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA),
+                   color = site),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               size = 0.5) +
+  scale_x_continuous(limits = c(-0.5, 0.5)) +
+  scale_y_continuous(limits = c(-0.35, 0.3)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white")) +
+  labs(title = "Annual removal")
+rc_plot_annu
+
+rc_plot_contr <- ggplot(rc_plotdf %>% filter(exp_dates %in% c("start", "after") & treatment == "CONTROL"), aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed() + 
+  geom_segment(aes(xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA),
+                   color = site),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               size = 0.5) +
+  scale_x_continuous(limits = c(-0.5, 0.5)) +
+  scale_y_continuous(limits = c(-0.35, 0.3)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white")) +
+  labs(title = "Control")
+rc_plot_contr
+```
+
+Ok, I messed around with this but idk what I'm actually doing lol. Part of the issue is that I'm not sure if I need to change the `exp_date` thing around so that "start" isn't in its own group. Going to think more on this tomorrow...
+
+```{r}
+rc_traj_permanova <- adonis(traj_df ~ treatment*date_site, traj_meta, method = "raup")
+
+rc_traj_permanova_df <- rc_traj_permanova$aov.tab$Df[1]
+rc_traj_permanova_ss <- round(rc_traj_permanova$aov.tab$SumsOfSqs[1], 2)
+rc_traj_permanova_fstat <- round(rc_traj_permanova$aov.tab$F.Model[1], 2)
+rc_traj_permanova_p <- round(rc_traj_permanova$aov.tab$'Pr(>F)'[1], 4)
+
+rc_traj_permanova_caption <- paste("PerMANOVA, F(",
+                                    rc_traj_permanova_df, ", ",
+                                    rc_traj_permanova_ss, ") = ",
+                                    rc_traj_permanova_fstat, ", p = ",
+                                    rc_traj_permanova_p,
+                                    sep = "")
+
+exp_dates_all <- traj_meta %>% 
+  select(sample_ID, date_site) %>% 
+  deframe()
+
+rc_traj_bd <- betadisper(rc_dist, exp_dates_all)
+anova(rc_traj_bd)
+```
+Output of `adonis` function:  
+
+Call:  
+adonis(formula = traj_df ~ treatment * exp_dates, data = traj_meta,      method = "raup")   
+
+Permutation: free  
+Number of permutations: 999  
+
+Terms added sequentially (first to last)  
+
+                     Df SumsOfSqs   MeanSqs F.Model       R2 Pr(>F)    
+treatment             2    0.0579  0.028942  0.8859  0.00215  0.501  
+exp_dates             2    0.4422  0.221088  6.7679  0.01642  0.028 *
+treatment:exp_dates   4   -0.0044 -0.001103 -0.0338 -0.00016  0.698  
+Residuals           809   26.4278  0.032667          0.98159         
+Total               817   26.9234                    1.00000         
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Results from ANOVA of dispersion:
+Analysis of Variance Table  
+
+Response: Distances  
+           Df  Sum Sq Mean Sq F value    Pr(>F)     
+Groups      2  1.2899 0.64497  35.491 1.664e-15 ***
+Residuals 815 14.8109 0.01817                      
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Not sure this is right because the "start" category only has one community. 
+
+
+
+
+
+
+
+
