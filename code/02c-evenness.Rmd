@@ -1,0 +1,31 @@
+---
+title: "02c-evenness"
+author: "An Bui"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(vegan)
+
+source(here::here("code", "00-set_up.R"))
+```
+
+```{r}
+# site by species matrix of biomass
+biomass_matrix <- biomass %>% 
+  # only include species that are actually present (i.e. density > 0)
+  filter(density > 0) %>% 
+  select(sample_ID, sp_code, density) %>% 
+  pivot_wider(names_from = sp_code, values_from = density) %>% 
+  column_to_rownames("sample_ID") %>% 
+  replace(is.na(.), 0)
+
+evenness_algae <- diversity(biomass_matrix[, algae_spp])
+evenness_invert <- diversity(biomass_matrix[, invert_spp])
+evenness_fish <- diversity(biomass_matrix[, fish_spp])
+
+```

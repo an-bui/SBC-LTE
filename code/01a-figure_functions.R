@@ -14,22 +14,7 @@ biomass_summary <- biomass %>%
   # calculate total dry mass by each survey
   group_by(site, year, month, treatment, date, sp_code) %>%
   mutate(total_biomass = sum(dry_gm2)) %>% 
-  ungroup() %>% 
-  # make a new column designating "start", "during" and "after" removal
-  mutate(exp_dates = case_when(
-    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
-    site == "NAPL" & date > napl_after_date ~ "after",
-    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
-    site == "MOHK" & date > mohk_after_date ~ "after",
-    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
-    site == "AQUE" & date > aque_after_date ~ "after",
-    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
-    site == "CARP" & date > carp_after_date ~ "after",
-    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
-    site == "IVEE" & date > ivee_after_date ~ "after",
-    TRUE ~ "during"
-  ),
-  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
+  ungroup() 
 
 spp_biomass_ts <- function(spp_code, this_site) {
   
@@ -195,22 +180,7 @@ biomass_group_summary <- biomass %>%
   # calculate total dry mass by each survey
   group_by(site, year, month, treatment, date, group) %>%
   mutate(total_biomass = sum(dry_gm2)) %>% 
-  ungroup() %>% 
-  # make a new column designating "start", "during" and "after" removal
-  mutate(exp_dates = case_when(
-    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
-    site == "NAPL" & date > napl_after_date ~ "after",
-    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
-    site == "MOHK" & date > mohk_after_date ~ "after",
-    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
-    site == "AQUE" & date > aque_after_date ~ "after",
-    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
-    site == "CARP" & date > carp_after_date ~ "after",
-    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
-    site == "IVEE" & date > ivee_after_date ~ "after",
-    TRUE ~ "during"
-  ),
-  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
+  ungroup() 
 
 group_biomass <- function(this_group, this_site){
   start_dates <- if(this_site == "NAPL") {

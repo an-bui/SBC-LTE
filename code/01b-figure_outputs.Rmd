@@ -41,24 +41,55 @@ IVEE_invert_plot_list
 ## b. group plots
 ```{r}
 # whole groups
-group_biomass("invert", "NAPL")
-group_biomass("algae", "NAPL")
-group_biomass("fish", "NAPL")
+NAPL_invert <- group_biomass("invert", "NAPL")
+NAPL_algae <- group_biomass("algae", "NAPL")
+NAPL_fish <- group_biomass("fish", "NAPL")
 
-group_biomass("invert", "MOHK")
-group_biomass("algae", "MOHK")
-group_biomass("fish", "MOHK")
+MOHK_invert <- group_biomass("invert", "MOHK")
+MOHK_algae <- group_biomass("algae", "MOHK")
+MOHK_fish <- group_biomass("fish", "MOHK")
 
-group_biomass("invert", "CARP")
-group_biomass("algae", "CARP")
-group_biomass("fish", "CARP")
+CARP_invert <- group_biomass("invert", "CARP")
+CARP_algae <- group_biomass("algae", "CARP")
+CARP_fish <- group_biomass("fish", "CARP")
 
-group_biomass("invert", "IVEE")
-group_biomass("algae", "IVEE")
-group_biomass("fish", "IVEE")
+IVEE_invert <- group_biomass("invert", "IVEE")
+IVEE_algae <- group_biomass("algae", "IVEE")
+IVEE_fish <- group_biomass("fish", "IVEE")
 
-group_biomass("invert", "AQUE")
-group_biomass("algae", "AQUE")
-group_biomass("fish", "AQUE")
+AQUE_invert <- group_biomass("invert", "AQUE")
+AQUE_algae <- group_biomass("algae", "AQUE")
+AQUE_fish <- group_biomass("fish", "AQUE")
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-NAPL-invert.jpg"), NAPL_invert, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-NAPL-algae.jpg"), NAPL_algae, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-NAPL-fish.jpg"), NAPL_fish, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-MOHK-invert.jpg"), MOHK_invert, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-MOHK-algae.jpg"), MOHK_algae, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-MOHK-fish.jpg"), MOHK_fish, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-CARP-invert.jpg"), CARP_invert, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-CARP-algae.jpg"), CARP_algae, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-CARP-fish.jpg"), CARP_fish, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-IVEE-invert.jpg"), IVEE_invert, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-IVEE-algae.jpg"), IVEE_algae, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-IVEE-fish.jpg"), IVEE_fish, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-AQUE-invert.jpg"), AQUE_invert, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-AQUE-fish.jpg"), AQUE_fish, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-AQUE-algae.jpg"), AQUE_algae, width = 7, height = 3, dpi = 150)
 ```
+
 

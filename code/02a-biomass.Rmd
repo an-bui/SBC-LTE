@@ -69,5 +69,13 @@ invert_sessile_biomass_plot
 fish_mobile_biomass_plot
 invert_mobile_biomass_plot
 algae_sessile_biomass_plot
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-delta-invert_sessile.jpg"), invert_sessile_biomass_plot, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-delta-fish.jpg"), fish_mobile_biomass_plot, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-delta-invert_mobile.jpg"), invert_mobile_biomass_plot, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "biomass_timeseries-delta-algae.jpg"), algae_sessile_biomass_plot, width = 7, height = 3, dpi = 150)
 ```
 

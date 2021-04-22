@@ -6,33 +6,7 @@ library(here)
 library(janitor)
 library(lubridate)
 
-# 2. data -----------------------------------------------------------------
-
-############################################
-# a. biomass
-############################################
-
-biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20200605.csv")) %>% 
-  clean_names() %>% 
-  # ANOB is incorrectly coded as having "SESSILE" mobility
-  mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
-  # replace all -99999 values with NA
-  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
-  # create a sample_ID for each sampling date at each treatment at each site
-  unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
-  # create "functional groups" of group and mobility
-  unite("group_mobility", group, mobility, remove = FALSE, sep = "_") %>% 
-  # change to lower case
-  mutate_at(c("group", "mobility", "group_mobility", "growth_morph"), str_to_lower)
-
-
-# 3. operators ------------------------------------------------------------
-
-# not in operator
-'%!in%' <- function(x,y)!('%in%'(x,y))
-
-
-# 4. start and end dates --------------------------------------------------
+# 2. start and end dates --------------------------------------------------
 
 ############################################
 # a. Naples (NAPL)
@@ -83,6 +57,72 @@ ivee_start_dates <- c("IVEE_CONTROL_2011-10-26", "IVEE_ANNUAL_2011-10-26")
 ivee_start_date <- as_date("2011-10-26")
 
 ivee_after_date <- as_date("2016-02-18")
+
+# 3. data -----------------------------------------------------------------
+
+############################################
+# a. biomass
+############################################
+
+biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20200605.csv")) %>% 
+  clean_names() %>% 
+  # ANOB is incorrectly coded as having "SESSILE" mobility
+  mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
+  # replace all -99999 values with NA
+  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
+  # create a sample_ID for each sampling date at each treatment at each site
+  unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
+  # create "functional groups" of group and mobility
+  unite("group_mobility", group, mobility, remove = FALSE, sep = "_") %>% 
+  # change to lower case
+  mutate_at(c("group", "mobility", "group_mobility", "growth_morph"), str_to_lower) %>% 
+  # make a new column designating "start", "during" and "after" removal
+  mutate(exp_dates = case_when(
+    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
+
+############################################
+# b. percent cover
+############################################
+
+percov <- read_csv(here::here("data", "LTE_Cover_All_Years_20200605.csv")) %>% 
+  clean_names() %>% 
+  # create a sample_ID for each sampling date at each treatment at each site
+  unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
+  # change to lower case
+  mutate_at(c("group", "mobility", "growth_morph"), str_to_lower) %>% 
+  # make a new column designating "start", "during" and "after" removal
+  mutate(exp_dates = case_when(
+    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
+  
+
+# 4. operators ------------------------------------------------------------
+
+# not in operator
+'%!in%' <- function(x,y)!('%in%'(x,y))
 
 
 # 5. useful vectors and data frames ---------------------------------------
@@ -175,4 +215,19 @@ fish_mobile <- biomass %>%
 LTE_sites <- biomass %>% 
   pull(site) %>% 
   unique()
+
+############################################
+# c. sample IDs
+############################################
+
+# NAPL after
+napl_after_sampleIDs <- percov %>% 
+  filter(site == "NAPL" & exp_dates == "after") %>% 
+  pull(sample_ID)
+
+
+
+
+
+
 

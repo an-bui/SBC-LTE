@@ -70,5 +70,13 @@ group_richness_plot_list
 invert_richness_plot
 fish_richness_plot
 algae_richness_plot
+
+ggsave(here::here("figures/trajectories/biomass", "richness_timeseries-delta-invert.jpg"), invert_richness_plot, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "richness_timeseries-delta-fish.jpg"), fish_richness_plot, width = 7, height = 3, dpi = 150)
+
+ggsave(here::here("figures/trajectories/biomass", "richness_timeseries-delta-algae.jpg"), algae_richness_plot, width = 7, height = 3, dpi = 150)
 ```
+
+
 
