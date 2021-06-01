@@ -37,7 +37,8 @@ delta_bio <- biomass %>%
   ),
   exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
   pivot_wider(names_from = treatment, values_from = total_biomass) %>% 
-  mutate(delta_biomass = CONTROL - ANNUAL)
+  mutate(delta_annual = CONTROL - ANNUAL,
+         delta_continual = CONTROL - CONTINUAL)
 
 ```
 
