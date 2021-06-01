@@ -123,7 +123,7 @@ napl_rc_plot_control
 
 napl_rc_plot_grid <- napl_rc_plot_contin + napl_rc_plot_annu + napl_rc_plot_control
 
-ggsave(here::here("figures/trajectories/prelim-trajectories", "NAPL-traj-2021-04-20.jpg"), napl_rc_plot_grid, dpi = 200, height = 7, width = 15)
+# ggsave(here::here("figures/trajectories/prelim-trajectories", "NAPL-traj-2021-04-20.jpg"), napl_rc_plot_grid, dpi = 200, height = 7, width = 15)
 ```
 
 They are the same!!!!!! lolllll!!!  
@@ -234,7 +234,7 @@ napl_jacc_plot_contr
 
 jacc_plot_grid <- napl_jacc_plot_contin + napl_jacc_plot_annu + napl_jacc_plot_contr
 
-ggsave(here::here("figures/trajectories/prelim-trajectories", "NAPL-traj-jacc-2021-04-21.jpg"), jacc_plot_grid, dpi = 200, height = 7, width = 15)
+# ggsave(here::here("figures/trajectories/prelim-trajectories", "NAPL-traj-jacc-2021-04-21.jpg"), jacc_plot_grid, dpi = 200, height = 7, width = 15)
 
 ```
 
@@ -385,8 +385,302 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 
 Not sure this is right because the "start" category only has one community. 
 
+# Monday 31 May 2021
 
+Hello darkness my old friend. Ok, so trying to make those trajectory plots, but now with:  
+  1) continual and annual removal plotted on top of each other,  
+  2) control plots without trajectory but just grey circles (???) 
+  
+So this is the attempt for that, for Naples with Jaccard. Doing the NMDS again because I just want the after dates.
+  
+```{r}
+napl_jacc_after <- metaMDS(napl_after_df, "jacc")
 
+# extracting coordinates from jaccard MDS
+napl_jacc_plotdf <- scores(napl_jacc_MDS, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(napl_traj_meta, .)
+
+all_napl_jacc <- scores(napl_jacc_after, display = "sites") %>% 
+  as_tibble() %>% 
+  bind_cols(napl_after_meta, .)
+
+napl_jacc_plot_all <- ggplot() +
+  coord_fixed() + 
+  # continual
+  geom_segment(data = all_napl_jacc %>% filter(treatment == "CONTINUAL"), 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               size = 0.4, color = "grey", alpha = 0.9) +
+  geom_point(data = all_napl_jacc %>% filter(treatment == "CONTINUAL"),
+             aes(x = NMDS1, y = NMDS2, 
+                 color = "Continual removal", shape = "Continual removal"), 
+             size = 4) +
+  
+  # annual
+  geom_segment(data = all_napl_jacc %>% filter(treatment == "ANNUAL"), 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               size = 0.4, color = "grey", alpha = 0.9) +
+  geom_point(data = all_napl_jacc %>% filter(treatment == "ANNUAL"),
+             aes(x = NMDS1, y = NMDS2, 
+                 color = "Annual removal", shape = "Annual removal"), size = 4) +
+  
+  # control
+  geom_point(data = all_napl_jacc %>% filter(treatment == "CONTROL"),
+             aes(x = NMDS1, y = NMDS2, 
+                 color = "Control", shape = "Control"), size = 3, alpha = 0.5) +
+  
+  # legend
+  scale_color_manual(name = NULL,
+                     breaks = c("Annual removal", "Continual removal", "Control"),
+                     values = c("Annual removal" = annual_col,
+                                "Continual removal" = continual_col,
+                                "Control" = "#000000")) +
+  scale_shape_manual(name = NULL,
+                     breaks = c("Annual removal", "Continual removal", "Control"),
+                     values = c("Annual removal" = annual_shape,
+                                "Continual removal" = continual_shape,
+                                "Control" = 21)) +
+  
+  # scale_x_continuous(limits = c(-0.3, 0.37)) +
+  # scale_y_continuous(limits = c(-0.3, 0.4)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        legend.background = element_rect("white")) +
+  labs(title = "NAPL")
+napl_jacc_plot_all
+```
+
+Doing with all sites now.
+```{r}
+all_traj_df <- percov %>% 
+  # filter for algae only
+  filter(group == "algae") %>% 
+  # calculate mean and sum percent cover across 4 quads (i.e. per transect)
+  group_by(sample_ID, scientific_name) %>% 
+  summarize(mean_pc = mean(percent_cover),
+            sum_pc = sum(percent_cover)) %>% 
+  ungroup() %>% 
+  # filter out species with 0 observations
+  filter(sum_pc > 0) %>% 
+  select(-sum_pc) %>% 
+  # get into wide form
+  pivot_wider(names_from = "scientific_name", values_from = "mean_pc") %>% 
+  # make the sample_ID column row names
+  column_to_rownames("sample_ID") %>% 
+  # replace NA with 0
+  replace(is.na(.), 0)
+
+all_traj_meta <- percov %>% 
+  # filter for algae only
+  filter(group == "algae") %>% 
+  select(sample_ID, date, site, treatment, exp_dates) %>% 
+  # only keep unique descriptors
+  unique()
+
+all_after_df <- all_traj_df %>% 
+  rownames_to_column("sample_ID") %>% 
+  filter(sample_ID %in% all_after_sampleIDs) %>% 
+  column_to_rownames("sample_ID")
+
+all_after_meta <- all_traj_meta %>% 
+  filter(sample_ID %in% all_after_sampleIDs)
+
+all_jacc_MDS <- metaMDS(all_after_df, "jacc")
+
+# extracting coordinates from jaccard MDS
+all_jacc_plotdf <- scores(all_jacc_MDS, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(all_after_meta, .)
+
+all_jacc_plot <- ggplot() +
+  coord_fixed() + 
+  # continual
+  geom_segment(data = all_jacc_plotdf %>% filter(treatment == "CONTINUAL"), 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               size = 0.4, color = "grey", alpha = 0.9) +
+  geom_point(data = all_jacc_plotdf %>% filter(treatment == "CONTINUAL"),
+             aes(x = NMDS1, y = NMDS2, 
+                 color = "Continual removal", shape = "Continual removal"), 
+             size = 3) +
+  
+  # annual
+  geom_segment(data = all_jacc_plotdf %>% filter(treatment == "ANNUAL"), 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               size = 0.4, color = "grey", alpha = 0.9) +
+  geom_point(data = all_jacc_plotdf %>% filter(treatment == "ANNUAL"),
+             aes(x = NMDS1, y = NMDS2, 
+                 color = "Annual removal", shape = "Annual removal"), size = 3) +
+  
+  # control
+  geom_point(data = all_jacc_plotdf %>% filter(treatment == "CONTROL"),
+             aes(x = NMDS1, y = NMDS2, 
+                 color = "Control", shape = "Control"), size = 2, alpha = 0.5) +
+  
+  # legend
+  scale_color_manual(name = NULL,
+                     breaks = c("Annual removal", "Continual removal", "Control"),
+                     values = c("Annual removal" = annual_col,
+                                "Continual removal" = continual_col,
+                                "Control" = "#000000")) +
+  scale_shape_manual(name = NULL,
+                     breaks = c("Annual removal", "Continual removal", "Control"),
+                     values = c("Annual removal" = annual_shape,
+                                "Continual removal" = continual_shape,
+                                "Control" = 21)) +
+  
+  scale_x_continuous(limits = c(-1.1, 1.75)) +
+  scale_y_continuous(limits = c(-1.1, 1.2)) +
+  theme(panel.background = element_rect("white"),
+        panel.border = element_rect("grey85", fill = NA),
+        strip.background = element_rect("white"),
+        strip.text = element_text(hjust = 0, size = 13), 
+        legend.background = element_rect("white"),
+        legend.position = "bottom") +
+  facet_wrap(~site, nrow = 2)
+all_jacc_plot
+ggsave(here::here("figures", "traj.jpg"), all_jacc_plot, width = 8, height = 6, dpi = 200)
+
+all_plot_fxn <- function(site_choice) {
+  ggplot() +
+    coord_fixed() + 
+    # continual
+    geom_segment(data = all_jacc_plotdf %>% filter(site == site_choice & treatment == "CONTINUAL"), 
+                 aes(x = NMDS1, y = NMDS2, 
+                     xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.3, "cm")),
+                 size = 0.4, color = "grey", alpha = 0.9) +
+    geom_point(data = all_jacc_plotdf %>% filter(site == site_choice & treatment == "CONTINUAL"),
+               aes(x = NMDS1, y = NMDS2, 
+                   color = "Continual removal", shape = "Continual removal"), 
+               size = 4) +
+    
+    # annual
+    geom_segment(data = all_jacc_plotdf %>% filter(site == site_choice & treatment == "ANNUAL"), 
+                 aes(x = NMDS1, y = NMDS2, 
+                     xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.3, "cm")),
+                 size = 0.4, color = "grey", alpha = 0.9) +
+    geom_point(data = all_jacc_plotdf %>% filter(site == site_choice & treatment == "ANNUAL"),
+               aes(x = NMDS1, y = NMDS2, 
+                   color = "Annual removal", shape = "Annual removal"), size = 4) +
+    
+    # control
+    geom_point(data = all_jacc_plotdf %>% filter(site == site_choice & treatment == "CONTROL"),
+               aes(x = NMDS1, y = NMDS2, 
+                   color = "Control", shape = "Control"), size = 3, alpha = 0.5) +
+    
+    # legend
+    scale_color_manual(name = NULL,
+                       breaks = c("Annual removal", "Continual removal", "Control"),
+                       values = c("Annual removal" = annual_col,
+                                  "Continual removal" = continual_col,
+                                  "Control" = "#000000")) +
+    scale_shape_manual(name = NULL,
+                       breaks = c("Annual removal", "Continual removal", "Control"),
+                       values = c("Annual removal" = annual_shape,
+                                  "Continual removal" = continual_shape,
+                                  "Control" = 21)) +
+    
+    scale_x_continuous(limits = c(-1.1, 1.75)) +
+    scale_y_continuous(limits = c(-1.1, 1.2)) +
+    theme(panel.background = element_rect("white"),
+          panel.border = element_rect("grey85", fill = NA),
+          legend.background = element_rect("white")) +
+    labs(title = site_choice)
+}
+
+aque_plot <- all_plot_fxn("AQUE") + theme(legend.position = "none")
+carp_plot <- all_plot_fxn("CARP") + theme(legend.position = "bottom")
+mohk_plot <- all_plot_fxn("MOHK") + theme(legend.position = "none")
+ivee_plot <-   ggplot() +
+    coord_fixed() + 
+    # annual
+    geom_segment(data = all_jacc_plotdf %>% filter(site == "IVEE" & treatment == "ANNUAL"), 
+                 aes(x = NMDS1, y = NMDS2, 
+                     xend = c(tail(NMDS1, n = -1), NA), 
+                     yend = c(tail(NMDS2, n = -1), NA)),
+                 arrow = arrow(length = unit(0.3, "cm")),
+                 size = 0.4, color = "grey", alpha = 0.9) +
+    geom_point(data = all_jacc_plotdf %>% filter(site == "IVEE" & treatment == "ANNUAL"),
+               aes(x = NMDS1, y = NMDS2, 
+                   color = "Annual removal", shape = "Annual removal"), size = 4) +
+    
+    # control
+    geom_point(data = all_jacc_plotdf %>% filter(site == "IVEE" & treatment == "CONTROL"),
+               aes(x = NMDS1, y = NMDS2, 
+                   color = "Control", shape = "Control"), size = 3, alpha = 0.5) +
+    
+    # legend
+    scale_color_manual(name = NULL,
+                       breaks = c("Annual removal", "Control"),
+                       values = c("Annual removal" = annual_col,
+                                  "Control" = "#000000")) +
+    scale_shape_manual(name = NULL,
+                       breaks = c("Annual removal", "Control"),
+                       values = c("Annual removal" = annual_shape,
+                                  "Control" = 21)) +
+    
+    scale_x_continuous(limits = c(-1.1, 1.75)) +
+    scale_y_continuous(limits = c(-1.1, 1.2)) +
+    theme(panel.background = element_rect("white"),
+          panel.border = element_rect("grey85", fill = NA),
+          legend.position = "none") +
+    labs(title = "IVEE")
+napl_plot <- all_plot_fxn("NAPL") + theme(legend.position = "none")
+
+plots_together <- (aque_plot + mohk_plot + napl_plot) / 
+                  (ivee_plot + carp_plot + plot_spacer()) +
+  plot_layout(nrow = 2, widths = c(1, 1, 1, 1, 1, 1), heights = c(1, 1, 1, 1, 1, 1)) 
+plots_together
+ggsave(here::here("figures", "traj.jpg"), plots_together, width = 8, height = 6, dpi = 200)
+```
+
+```{r}
+all_traj_permanova_jacc <- adonis(all_after_df ~ treatment, all_after_meta, method = "jacc")
+
+all_traj_permanova_jacc_df <- all_traj_permanova_jacc$aov.tab$Df[1]
+all_traj_permanova_jacc_ss <- round(all_traj_permanova_jacc$aov.tab$SumsOfSqs[1], 2)
+all_traj_permanova_jacc_fstat <- round(all_traj_permanova_jacc$aov.tab$F.Model[1], 2)
+all_traj_permanova_jacc_p <- round(all_traj_permanova_jacc$aov.tab$'Pr(>F)'[1], 4)
+
+all_traj_permanova_caption <- paste("PerMANOVA, F(",
+                                    all_traj_permanova_jacc_df, ", ",
+                                    all_traj_permanova_jacc_ss, ") = ",
+                                    all_traj_permanova_jacc_fstat, ", p = ",
+                                    all_traj_permanova_jacc_p,
+                                    sep = "")
+
+# no significant difference in centroids between experiment dates
+
+# pairwise posthoc test for adonis
+library(pairwiseAdonis)
+pair.mod <- pairwise.adonis(all_after_df,
+                            all_after_meta$treatment,
+                            sim.method = "jacc")
+
+treatment_group <- all_traj_meta %>% 
+  select(sample_ID, treatment) %>% 
+  deframe()
+
+all_jacc_dist <- vegdist(all_after_df, "jacc")
+all_jacc_bd <- betadisper(all_jacc_dist, treatment_group)
+anova(jacc_jacc_bd)
+# significant difference in dispersion between experiment dates
+```
 
 
 
