@@ -11,9 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 source(here::here("code", "00-set_up.R"))
-
-library(vegan)
-library(patchwork)
 ```
 
 # Tuesday 20 April 2021
