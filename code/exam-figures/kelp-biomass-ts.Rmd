@@ -16,6 +16,8 @@ library(patchwork)
 ```
 
 # 1. Kelp biomass
+
+## Cleaning
 ```{r}
 kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20200605.csv")) %>% 
   clean_names() %>% 
@@ -63,40 +65,34 @@ delta_fronds <- kelp_fronds %>%
   filter(total_fronds > 0) %>% 
   pivot_wider(names_from = treatment, values_from = total_fronds) %>% 
   mutate(delta_annual = CONTROL - ANNUAL,
-         delta_continual = CONTROL - CONTINUAL) %>% 
-  # create a sample_ID for each sampling date at each site
-  unite("sample_ID", site, date, remove = FALSE)
+         delta_continual = CONTROL - CONTINUAL) 
 
-# get total number of fronds per transect
-kf_summary <- kelp_fronds %>% 
-  group_by(sample_ID, site, treatment, date) %>% 
+# just control
+control_fronds <- kelp_fronds %>% 
+  filter(treatment == "CONTROL") %>% 
+  group_by(site, year, month, date) %>% 
   summarize(total_fronds = sum(fronds)) %>% 
-  filter(total_fronds > 0) 
+  ungroup() %>% 
+  # add new column with start/during/after
+  mutate(exp_dates = case_when(
+    site == "NAPL" & date == napl_start_date ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & date == mohk_start_date ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & date == aque_start_date ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & date == carp_start_date ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & date == ivee_start_date ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
+  filter(total_fronds > 0)
+```
 
-ggplot() +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  geom_point(data = delta_fronds %>% filter(site == "AQUE" & delta_annual != "NA"), 
-             aes(x = date, y = delta_annual, color = "Annual")) +
-  geom_line(data = delta_fronds %>% filter(site == "AQUE" & delta_annual != "NA"),
-            aes(x = date, y = delta_annual, color = "Annual")) +
-  geom_point(data = delta_fronds %>% filter(site == "AQUE" & delta_continual != "NA"), 
-             aes(x = date, y = delta_continual, color = "Continual")) +
-  geom_line(data = delta_fronds %>% filter(site == "AQUE" & delta_continual != "NA"),
-            aes(x = date, y = delta_continual, color = "Continual")) +
-  geom_vline(xintercept = aque_after_date, aes(color = "End"), show.legend = NA) +
-  # geom_segment(aes(x = aque_after_date, xend = aque_after_date, y = 500, yend = -500,
-  #                  color = "End", shape = "End")) +
-  scale_color_manual(name = NULL,
-                     breaks = c("Annual", "Continual", "End"),
-                     values = c("Annual" = "green", "Continual" = "blue", "End" = "red")) +
-  # scale_shape_manual(name = NULL,
-  #                    breaks = c("Annual", "Continual", "End"),
-  #                    values = c("Annual" = 17, "Continual" = 15, "End" = 13)) +
-  theme_bw() + 
-  labs(title = "AQUE kelp biomass", 
-       x = "Sampling date",
-       y = expression(Delta~"kelp fronds"~"(control - removal)"))
-
+## Testing plots
+```{r}
 ggplot() +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   geom_point(data = delta_fronds %>% filter(site == "AQUE" & delta_AC != "NA"), 
@@ -115,7 +111,10 @@ ggplot() +
   labs(title = "AQUE kelp biomass", 
        x = "Sampling date",
        y = expression(Delta~"kelp fronds"~"(removal - control)"))
+```
 
+## Plotting timeseries
+```{r}
 kelp_timeseries_fxn <- function(site_choice) {
   after_date <- if(site_choice == "AQUE") {
     aque_after_date
@@ -183,12 +182,27 @@ plots_together <- yaxislabel + (aque_kelp_timeseries / mohk_kelp_timeseries / na
 
 plots_together
 
-# ggsave(here::here("figures", "kelp_frond_ts.jpg"), height = 7, width = 5, dpi = 200)
-
+# ggsave(here::here("figures", "kelp_frond_ts.jpg"), plots_together, height = 9, width = 5, dpi = 200)
 ```
 
-# 2. Urchin biomass
+## Plotting control only
+```{r}
+control_fronds_plot <- ggplot(control_fronds, aes(x = date, y = total_fronds)) +
+  geom_line(aes(color = site), alpha = 0.8) +
+  geom_point(aes(fill = site, shape = site), size = 3) +
+  scale_shape_manual(values = c(21, 22, 23, 24, 25)) +
+  scale_color_manual(values = c(AQUE_col, CARP_col, IVEE_col, MOHK_col, NAPL_col)) +
+  scale_fill_manual(values = c(AQUE_col, CARP_col, IVEE_col, MOHK_col, NAPL_col)) +
+  theme_bw() +
+  labs(x = "Sampling date",
+       y = "Total fronds",
+       title = "Kelp fronds") 
 
+control_fronds_plot
+```
+
+
+# 2. Urchin biomass
 ```{r}
 urchin_density <- read_csv(here::here("data", "LTE_Quad_Swath_All_Years_20200605.csv")) %>% 
   clean_names() %>% 
@@ -219,45 +233,193 @@ urchin_summary <- urchin_density %>%
   summarize(total_urchins = sum(count)) %>% 
   filter(total_urchins > 0) 
 
-ggplot(urchin_summary %>% filter(site == "AQUE"), aes(x = date, y = total_urchins)) + 
-  geom_point(aes(color = scientific_name)) +
-  geom_line(aes(color = scientific_name)) +
-  scale_color_manual(name = "Urchin species (adults)",
-                     breaks = c("Mesocentrotus franciscanus", "Strongylocentrotus purpuratus"),
-                     values = c("Mesocentrotus franciscanus" = "red", 
-                                "Strongylocentrotus purpuratus" = "purple")) +
+control_urchins_plot <- ggplot(urchin_summary %>% filter(sp_code == "SPL"), aes(x = date, y = total_urchins)) + 
+  geom_line(aes(color = site), alpha = 0.8) +
+  geom_point(aes(fill = site, shape = site), size = 3) +
+  scale_shape_manual(values = c(21, 22, 23, 24, 25)) +
+  scale_color_manual(values = c(AQUE_col, CARP_col, IVEE_col, MOHK_col, NAPL_col)) +
+  scale_fill_manual(values = c(AQUE_col, CARP_col, IVEE_col, MOHK_col, NAPL_col)) +
   theme_bw() +
-  labs(x = "Sampling date",
-       y = "Urchin count per transect")
-
-ggplot(urchin_summary %>% filter(sp_code == "SPL"), aes(x = date, y = total_urchins)) + 
-  geom_point(aes(color = site)) +
-  geom_line(aes(color = site)) +
-  theme_bw() +
-  labs(x = "Sampling date",
-       y = "Urchin count per transect (adults)")
-
-ggplot(urchin_summary %>% filter(sp_code == "SPS"), aes(x = date, y = total_urchins)) + 
-  geom_point(aes(color = site)) +
-  geom_line(aes(color = site)) +
-  theme_bw() +
-  labs(x = "Sampling date",
-       y = "Urchin count per transect")
-
-ggplot(urchin_summary %>% filter(sp_code == "SFL"), aes(x = date, y = total_urchins)) + 
-  geom_point(aes(color = site)) +
-  geom_line(aes(color = site)) +
-  theme_bw() +
-  labs(x = "Sampling date",
-       y = "Urchin count per transect")
-
-ggplot(urchin_summary %>% filter(sp_code == "SFS"), aes(x = date, y = total_urchins)) + 
-  geom_point(aes(color = site)) +
-  geom_line(aes(color = site)) +
-  theme_bw() +
-  labs(x = "Sampling date",
-       y = "Urchin count per transect")
-  
-
+  labs(title = "Purple urchin density",
+       x = "Sampling date",
+       y = "Urchin count per transect") +
+  theme(legend.position = "none")
 ```
+
+# 3. Detrital biomass
+```{r}
+detritus <- read_csv(here::here("data", "LTE_Detritus_Biomass_All_Years_20200605.csv")) %>% 
+  clean_names() %>% 
+  # create a sample_ID for each sampling date at each treatment at each site
+  unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
+  # change to lower case
+  mutate_at(c("group", "mobility", "growth_morph"), str_to_lower) %>% 
+  # make a new column designating "start", "during" and "after" removal
+  mutate(exp_dates = case_when(
+    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
+  select(1:14) %>% 
+  filter(treatment == "CONTROL")
+
+detritus_summary <- detritus %>% 
+  group_by(sample_ID, site, date, sp_code) %>% 
+  summarize(total_detritus = sum(wet_wt)) %>% 
+  filter(total_detritus > 0) 
+
+control_detritus_plot <- ggplot(detritus_summary, aes(x = date, y = total_detritus)) + 
+  geom_line(aes(color = site), alpha = 0.8) +
+  geom_point(aes(fill = site, shape = site), size = 3) +
+  scale_shape_manual(values = c(21, 22, 23, 24, 25)) +
+  scale_color_manual(values = c(AQUE_col, CARP_col, IVEE_col, MOHK_col, NAPL_col)) +
+  scale_fill_manual(values = c(AQUE_col, CARP_col, IVEE_col, MOHK_col, NAPL_col)) +
+  theme_bw() +
+  labs(title = "Detritus wet weight",
+       x = "Sampling date",
+       y = "Total detritus (g)") +
+  theme(legend.position = "none")
+
+control_detritus_plot
+
+kelp_urchins_detritus <- (control_fronds_plot / control_urchins_plot / control_detritus_plot) +
+  plot_layout(guides = "collect")
+
+kelp_urchins_detritus
+ggsave(here::here("figures", "kelp_urchins_detritus.jpg"), kelp_urchins_detritus, height = 10, width = 8, dpi = 200)
+```
+
+
+# 4. Understory algal biomass
+
+```{r}
+# get difference in fronds between control and removal plots
+delta_algae <- biomass %>% 
+  filter(group == "algae") %>% 
+  # calculate total dry mass by each survey
+  group_by(site, group_mobility, year, month, treatment, date) %>% 
+  summarize(total_biomass = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  # add new column with start/during/after
+  mutate(exp_dates = case_when(
+    site == "NAPL" & date == napl_start_date ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & date == mohk_start_date ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & date == aque_start_date ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & date == carp_start_date ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & date == ivee_start_date ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
+  pivot_wider(names_from = treatment, values_from = total_biomass) %>% 
+  mutate(delta_annual = CONTROL - ANNUAL,
+         delta_continual = CONTROL - CONTINUAL) %>% 
+  # create a sample_ID for each sampling date at each site
+  unite("sample_ID", site, date, remove = FALSE)
+
+ggplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  geom_point(data = delta_algae %>% filter(site == "AQUE" & delta_annual != "NA"), 
+             aes(x = date, y = delta_annual, color = "Annual")) +
+  geom_line(data = delta_algae %>% filter(site == "AQUE" & delta_annual != "NA"),
+            aes(x = date, y = delta_annual, color = "Annual")) +
+  geom_point(data = delta_algae %>% filter(site == "AQUE" & delta_continual != "NA"), 
+             aes(x = date, y = delta_continual, color = "Continual")) +
+  geom_line(data = delta_algae %>% filter(site == "AQUE" & delta_continual != "NA"),
+            aes(x = date, y = delta_continual, color = "Continual")) +
+  geom_vline(xintercept = aque_after_date, aes(color = "End"), show.legend = NA) +
+  scale_color_manual(name = NULL,
+                     breaks = c("Annual", "Continual", "End"),
+                     values = c("Annual" = "green", "Continual" = "blue", "End" = "red")) +
+  theme_bw() + 
+  labs(title = "AQUE algal biomass", 
+       x = "Sampling date",
+       y = expression(Delta~"algal biomass"~"(control - removal)"))
+
+algae_timeseries_fxn <- function(site_choice) {
+  after_date <- if(site_choice == "AQUE") {
+    aque_after_date
+  } else if(site_choice == "NAPL") {
+    napl_after_date
+  } else if(site_choice == "CARP") {
+    carp_after_date
+  } else if(site_choice == "IVEE") {
+    ivee_after_date
+  } else if(site_choice == "MOHK") {
+    mohk_after_date
+  }
+  
+  ggplot() +
+    scale_x_date(limits = c(aque_start_date, as.Date("2020-06-01"))) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+    # annual
+    geom_point(data = delta_algae %>% filter(site == site_choice & delta_annual != "NA"), 
+               aes(x = date, y = delta_annual, 
+                   color = "Annual removal", shape = "Annual removal"), size = 3) +
+    geom_line(data = delta_algae %>% filter(site == site_choice & delta_annual != "NA"),
+              aes(x = date, y = delta_annual, color = "Annual removal")) +
+    # continual
+    geom_point(data = delta_algae %>% filter(site == site_choice & delta_continual != "NA"), 
+               aes(x = date, y = delta_continual, 
+                   color = "Continual removal", shape = "Continual removal"), size = 3) +
+    geom_line(data = delta_algae %>% filter(site == site_choice & delta_continual != "NA"),
+              aes(x = date, y = delta_continual, color = "Continual removal")) +
+    geom_vline(xintercept = after_date, show.legend = NA) +
+    scale_color_manual(name = NULL,
+                       breaks = c("Annual removal", "Continual removal"),
+                       values = c("Annual removal" = annual_col, "Continual removal" = continual_col)) +
+    scale_shape_manual(name = NULL,
+                       breaks = c("Annual removal", "Continual removal"),
+                       values = c("Annual removal" = 19, "Continual removal" = 17)) +
+    theme_bw() + 
+    labs(title = site_choice,
+         x = " ",
+         y = " ")
+}
+
+aque_algae_timeseries <- algae_timeseries_fxn("AQUE")
+mohk_algae_timeseries <- algae_timeseries_fxn("MOHK")
+ivee_algae_timeseries <- ggplot() +
+  scale_x_date(limits = c(aque_start_date, as.Date("2020-06-01"))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  geom_point(data = delta_fronds %>% filter(site == "IVEE" & delta_annual != "NA"), 
+             aes(x = date, y = delta_annual), color = annual_col, shape = 19, size = 3) +
+  geom_line(data = delta_fronds %>% filter(site == "IVEE" & delta_annual != "NA"),
+            aes(x = date, y = delta_annual), color = annual_col) +
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  theme_bw() + 
+  labs(title = "IVEE",
+       x = "Sampling date",
+       y = " ")
+napl_algae_timeseries <- algae_timeseries_fxn("NAPL")
+carp_algae_timeseries <- algae_timeseries_fxn("CARP")
+
+# y-axis label for patchwork side eye emoji
+yaxislabel <- ggplot(data.frame(l = "algal biomass (control - removal)", x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 90) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+
+plots_together <- yaxislabel + (aque_algae_timeseries / mohk_algae_timeseries / napl_algae_timeseries / carp_algae_timeseries / ivee_algae_timeseries) +
+  plot_layout(guides = "collect", widths = c(1, 25)) &
+  theme(legend.position = "bottom")
+
+plots_together
+
+# ggsave(here::here("figures", "algae_biomass_ts.jpg"), plots_together, height = 9, width = 8, dpi = 200)
+```
+
 
