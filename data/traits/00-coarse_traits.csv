@@ -1,5 +1,5 @@
-taxon_phylum,taxon_class,taxon_order,taxon_family,taxon_genus,scientific_name,growth_form,gf_code,pigment_type,notes
-Rhodophyta,Florideophyceae,Corallinales,Corallinaceae,Amphiroa,Amphiroa_beauvoisii,articulated_calcareous,AC,red,
+taxon_phylum,taxon_class,taxon_order,taxon_family,taxon_genus,scientific_name,growth_form,gf_code,pigment_type,height_class
+Rhodophyta,Florideophyceae,Corallinales,Corallinaceae,Amphiroa,Amphiroa_beauvoisii,articulated_calcareous,AC,red,turf
 Rhodophyta,Florideophyceae,Ceramiales,Delesseriaceae,Acrosorium,Acrosorium_ciliolatum,corticated_foliose,CF,red,
 Rhodophyta,Florideophyceae,Ceramiales,Delesseriaceae,Cryptopleura,Cryptopleura_ruprechtiana,corticated_macrophytes,CM,red,
 Ochrophyta,Phaeophyceae,Laminariales,Lessoniaceae,-99999,Lessoniaceae,leathery_macrophyte,LM,brown,
