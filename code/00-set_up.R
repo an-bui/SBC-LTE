@@ -1,10 +1,18 @@
 
 # 1. libraries ------------------------------------------------------------
 
+# general cleaning, visualization, etc.
 library(tidyverse)
 library(here)
 library(janitor)
 library(lubridate)
+library(patchwork)
+
+# analysis
+library(vegan)
+library(vegclust)
+library(FD)
+
 
 # 2. start and end dates --------------------------------------------------
 
@@ -225,8 +233,30 @@ napl_after_sampleIDs <- percov %>%
   filter(site == "NAPL" & exp_dates == "after") %>% 
   pull(sample_ID)
 
+# MOHK after
+mohk_after_sampleIDs <- percov %>% 
+  filter(site == "MOHK" & exp_dates == "after") %>% 
+  pull(sample_ID)
+
+# all after
+all_after_sampleIDs <- percov %>% 
+  filter(exp_dates == "after") %>% 
+  pull(sample_ID)
 
 
+# 6.  plot aesthetics -----------------------------------------------------
+
+AQUE_col <- "#FDD989"
+CARP_col <- "#516238"
+IVEE_col <- "#4CA2B0"
+MOHK_col <- "#985E5C"
+NAPL_col <- "#D98A63"
+
+annual_col <- "#54662C"
+continual_col <- "#009BB0"
+
+annual_shape <- 19
+continual_shape <- 17
 
 
 
