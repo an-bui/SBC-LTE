@@ -304,7 +304,7 @@ ggsave(here::here("figures", "kelp_urchins_detritus.jpg"), kelp_urchins_detritus
 ```{r}
 # get difference in fronds between control and removal plots
 delta_algae <- biomass %>% 
-  filter(group == "algae") %>% 
+  filter(group == "algae" & sp_code == "CYOS") %>% 
   # calculate total dry mass by each survey
   group_by(site, group_mobility, year, month, treatment, date) %>% 
   summarize(total_biomass = sum(dry_gm2)) %>% 
@@ -328,26 +328,8 @@ delta_algae <- biomass %>%
   mutate(delta_annual = CONTROL - ANNUAL,
          delta_continual = CONTROL - CONTINUAL) %>% 
   # create a sample_ID for each sampling date at each site
-  unite("sample_ID", site, date, remove = FALSE)
-
-ggplot() +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  geom_point(data = delta_algae %>% filter(site == "AQUE" & delta_annual != "NA"), 
-             aes(x = date, y = delta_annual, color = "Annual")) +
-  geom_line(data = delta_algae %>% filter(site == "AQUE" & delta_annual != "NA"),
-            aes(x = date, y = delta_annual, color = "Annual")) +
-  geom_point(data = delta_algae %>% filter(site == "AQUE" & delta_continual != "NA"), 
-             aes(x = date, y = delta_continual, color = "Continual")) +
-  geom_line(data = delta_algae %>% filter(site == "AQUE" & delta_continual != "NA"),
-            aes(x = date, y = delta_continual, color = "Continual")) +
-  geom_vline(xintercept = aque_after_date, aes(color = "End"), show.legend = NA) +
-  scale_color_manual(name = NULL,
-                     breaks = c("Annual", "Continual", "End"),
-                     values = c("Annual" = "green", "Continual" = "blue", "End" = "red")) +
-  theme_bw() + 
-  labs(title = "AQUE algal biomass", 
-       x = "Sampling date",
-       y = expression(Delta~"algal biomass"~"(control - removal)"))
+  unite("sample_ID", site, date, remove = FALSE) %>% 
+  filter(exp_dates == "after")
 
 algae_timeseries_fxn <- function(site_choice) {
   after_date <- if(site_choice == "AQUE") {
@@ -363,7 +345,7 @@ algae_timeseries_fxn <- function(site_choice) {
   }
   
   ggplot() +
-    scale_x_date(limits = c(aque_start_date, as.Date("2020-06-01"))) +
+    scale_x_date(limits = c(after_date, as.Date("2020-06-01"))) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
     # annual
     geom_point(data = delta_algae %>% filter(site == site_choice & delta_annual != "NA"), 
@@ -392,13 +374,11 @@ algae_timeseries_fxn <- function(site_choice) {
 
 aque_algae_timeseries <- algae_timeseries_fxn("AQUE")
 mohk_algae_timeseries <- algae_timeseries_fxn("MOHK")
-ivee_algae_timeseries <- ggplot() +
-  scale_x_date(limits = c(aque_start_date, as.Date("2020-06-01"))) +
+ivee_algae_timeseries <- ggplot(delta_algae %>% filter(site == "IVEE" & delta_annual != "NA"), aes(x = date, y = delta_annual)) +
+  scale_x_date(limits = c(ivee_after_date, as.Date("2020-06-01"))) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  geom_point(data = delta_fronds %>% filter(site == "IVEE" & delta_annual != "NA"), 
-             aes(x = date, y = delta_annual), color = annual_col, shape = 19, size = 3) +
-  geom_line(data = delta_fronds %>% filter(site == "IVEE" & delta_annual != "NA"),
-            aes(x = date, y = delta_annual), color = annual_col) +
+  geom_point(shape = annual_shape, size = 3, color = annual_col) +
+  geom_line(color = annual_col) +
   geom_vline(xintercept = ivee_after_date, show.legend = NA) +
   theme_bw() + 
   labs(title = "IVEE",
@@ -419,7 +399,44 @@ plots_together <- yaxislabel + (aque_algae_timeseries / mohk_algae_timeseries / 
 
 plots_together
 
-# ggsave(here::here("figures", "algae_biomass_ts.jpg"), plots_together, height = 9, width = 8, dpi = 200)
+ggsave(here::here("figures", "algae_biomass_ts-CYOS-after.jpg"), plots_together, height = 9, width = 8, dpi = 200)
+
+delta_annual_timeseries <- ggplot(delta_algae %>% filter(delta_annual != "NA"), 
+                                  aes(x = date, y = delta_annual)) +
+  scale_x_date(limits = c(ivee_after_date, as.Date("2020-06-01"))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  
+  geom_point(shape = annual_shape, size = 2) +
+  # geom_line() +
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  geom_smooth(method = "lm", color = annual_col, size = 3) +
+  theme_bw() + 
+  theme(legend.position = "bottom") +
+  labs(title = "Annual",
+       x = "Sampling date",
+       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - annual)"))
+
+delta_continual_timeseries <- ggplot(delta_algae %>% filter(delta_continual != "NA"), 
+                                  aes(x = date, y = delta_continual)) +
+  scale_x_date(limits = c(ivee_after_date, as.Date("2020-06-01"))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  
+  geom_point(shape = continual_shape, size = 2) +
+  # geom_line() +
+  geom_smooth(method = "lm", size = 3, color = continual_col) +
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  # scale_color_manual(values = c(AQUE_col, CARP_col, MOHK_col, NAPL_col)) +
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(title = "Continual",
+       x = "Sampling date",
+       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - annual)"))
+
+plots_together <- (delta_annual_timeseries + delta_continual_timeseries)
+plots_together
+
+# ggsave(here::here("figures", "delta_biomass.jpg"), plots_together, width = 8, height = 4, dpi = 150)
+  
 ```
 
 
