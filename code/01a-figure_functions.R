@@ -238,3 +238,4 @@ group_biomass <- function(this_group, this_site){
 # group_biomass("invert", "NAPL")
 # group_biomass("algae", "NAPL")
 # group_biomass("fish", "NAPL")
+
