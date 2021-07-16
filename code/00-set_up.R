@@ -7,11 +7,16 @@ library(here)
 library(janitor)
 library(lubridate)
 library(patchwork)
+library(calecopal)
+library(ggrepel)
+library(plotly)
 
 # analysis
 library(vegan)
 library(vegclust)
+library(ecotraj)
 library(FD)
+library(BiodiversityR)
 
 
 # 2. start and end dates --------------------------------------------------
@@ -125,7 +130,13 @@ percov <- read_csv(here::here("data", "LTE_Cover_All_Years_20200605.csv")) %>%
     TRUE ~ "during"
   ),
   exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
-  
+
+############################################
+# c. traits
+############################################
+
+traits <- read_csv(here::here("data/traits", "00-coarse_traits.csv"))
+
 
 # 4. operators ------------------------------------------------------------
 
@@ -215,6 +226,38 @@ fish_mobile <- biomass %>%
   select(sp_code, scientific_name, common_name) %>% 
   unique()
 
+# data frame of algae species
+algae_spp <- biomass %>% 
+  filter(group == "algae") %>% 
+  select(sp_code, scientific_name, common_name) %>% 
+  unique()
+
+# most abundant algae
+common_algae <- c("PH", "PTCA", # Pterygophora californica 
+                  "DL", # Desmarestia ligulata
+                  "R", # Rhodymenia californica 
+                  "CC", # Chondracanthus corymbiferus 
+                  "POLA", # Polyneura latissima 
+                  "CYOS", # Stephanocystis osmundacea 
+                  "FTHR", # Pterosiphonia dendroidea 
+                  "CO", # Corallina officinalis var. chilensis 
+                  "LX", # Osmundea spectabilis
+                  "GS", # Gracilaria spp. 
+                  "BR", # Halymenia spp.
+                  "BO", # Bossiella orbigniana 
+                  "FB", # Ectocarpaceae spp. 
+                  "BF", # Cryptopleura ruprechtiana 
+                  "LAFA", # Laminaria farlowii 
+                  "CF", # Callophyllis rhynchocarpa 
+                  "DP" # Dictyota spp. 
+)
+
+common_algae_df <- algae_spp %>% 
+  filter(sp_code %in% common_algae)
+# not found: 
+# Pseudolithophyllum neofarlowii 
+# Polysiphonia spp. 
+
 ############################################
 # b. sites
 ############################################
@@ -254,9 +297,11 @@ NAPL_col <- "#D98A63"
 
 annual_col <- "#54662C"
 continual_col <- "#009BB0"
+control_col <- "#000000"
 
 annual_shape <- 19
 continual_shape <- 17
+control_shape <- 21
 
 
 
