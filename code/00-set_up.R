@@ -10,6 +10,8 @@ library(patchwork)
 library(calecopal)
 library(ggrepel)
 library(plotly)
+library(fuzzyjoin)
+library(gt)
 
 # analysis
 library(vegan)
@@ -137,6 +139,18 @@ percov <- read_csv(here::here("data", "LTE_Cover_All_Years_20200605.csv")) %>%
 
 traits <- read_csv(here::here("data/traits", "00-coarse_traits.csv"))
 
+############################################
+# d. LTER annual monitoring
+############################################
+
+percov_annual <- read_csv(here::here("data/benthics", "Annual_Cover_All_Years_20210108.csv"))
+
+biomass_annual <- read_csv(here::here("data/benthics", "Annual_All_Species_Biomass_at_transect_20210108.csv")) %>% 
+  clean_names() %>% 
+  # create a sample_ID for each sampling date at each treatment at each site
+  unite("sample_ID", site, date, remove = FALSE) %>% 
+  # change to lower case
+  mutate_at(c("group", "mobility", "growth_morph"), str_to_lower)
 
 # 4. operators ------------------------------------------------------------
 
@@ -266,6 +280,22 @@ common_algae_df <- algae_spp %>%
 LTE_sites <- biomass %>% 
   pull(site) %>% 
   unique()
+
+LTER_sites <- biomass_annual %>% 
+  select(site) %>% 
+  mutate(site = fct_relevel(site, c("BULL", "AQUE", "AHND", "NAPL", "IVEE", "GOLB", "ABUR", "MOHK", "CARP", "SCDI", "SCTW"))) %>% 
+  unique() %>% 
+  pull(site)
+
+site_quality <- tribble(
+  ~site, ~quality,
+  "MOHK", "high",
+  "IVEE", "high",
+  "AQUE", "medium",
+  "NAPL", "medium",
+  "CARP", "low"
+) %>% 
+  mutate(quality = fct_relevel(quality, c("low", "medium", "high")))
 
 ############################################
 # c. sample IDs
