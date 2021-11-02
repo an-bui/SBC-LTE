@@ -19,7 +19,7 @@ library(patchwork)
 
 ## Cleaning
 ```{r}
-kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20200605.csv")) %>% 
+kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20210209.csv")) %>% 
   clean_names() %>% 
   # create a sample_ID for each sampling date at each treatment at each site
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
@@ -40,11 +40,19 @@ kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20200605.csv")) %
     TRUE ~ "during"
   ),
   exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
-  select(1:14)
+  select(1:14) %>% 
+  filter(fronds > -1) %>% 
+  mutate(season = case_when(
+    month %in% c(12, 1, 2) ~ "winter",
+    month %in% c(3, 4, 5) ~ "spring",
+    month %in% c (6, 7, 8) ~ "summer",
+    month %in% c(9, 10, 11) ~ "fall"
+    ),
+    season = fct_relevel(season, "winter", "spring", "summer", "fall"))
 
 # get difference in fronds between control and removal plots
 delta_fronds <- kelp_fronds %>% 
-  group_by(site, year, month, treatment, date) %>% 
+  group_by(site, year, month, season, treatment, date) %>% 
   summarize(total_fronds = sum(fronds)) %>% 
   ungroup() %>% 
   # add new column with start/during/after
@@ -62,7 +70,7 @@ delta_fronds <- kelp_fronds %>%
     TRUE ~ "during"
   ),
   exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
-  filter(total_fronds > 0) %>% 
+  filter(total_fronds > -1) %>% 
   pivot_wider(names_from = treatment, values_from = total_fronds) %>% 
   mutate(delta_annual = CONTROL - ANNUAL,
          delta_continual = CONTROL - CONTINUAL) 
@@ -70,7 +78,7 @@ delta_fronds <- kelp_fronds %>%
 # just control
 control_fronds <- kelp_fronds %>% 
   filter(treatment == "CONTROL") %>% 
-  group_by(site, year, month, date) %>% 
+  group_by(site, year, month, season, date) %>% 
   summarize(total_fronds = sum(fronds)) %>% 
   ungroup() %>% 
   # add new column with start/during/after
@@ -88,32 +96,151 @@ control_fronds <- kelp_fronds %>%
     TRUE ~ "during"
   ),
   exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
-  filter(total_fronds > 0)
+  filter(total_fronds > -1)
+
+# total fronds
+total_fronds <- kelp_fronds %>% 
+  group_by(site, year, month, treatment, season, date) %>% 
+  summarize(total_fronds = sum(fronds)) %>% 
+  ungroup() %>% 
+  # add new column with start/during/after
+  mutate(exp_dates = case_when(
+    site == "NAPL" & date == napl_start_date ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & date == mohk_start_date ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & date == aque_start_date ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & date == carp_start_date ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & date == ivee_start_date ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
+  filter(total_fronds > -1) 
+  
 ```
 
 ## Testing plots
 ```{r}
 ggplot() +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  geom_point(data = delta_fronds %>% filter(site == "AQUE" & delta_AC != "NA"), 
-             aes(x = date, y = delta_AC, color = "Annual")) +
-  geom_line(data = delta_fronds %>% filter(site == "AQUE" & delta_AC != "NA"),
-            aes(x = date, y = delta_AC, color = "Annual")) +
-  geom_point(data = delta_fronds %>% filter(site == "AQUE" & delta_CC != "NA"), 
-             aes(x = date, y = delta_CC, color = "Continual")) +
-  geom_line(data = delta_fronds %>% filter(site == "AQUE" & delta_CC != "NA"),
-            aes(x = date, y = delta_CC, color = "Continual")) +
+  geom_point(data = delta_fronds %>% filter(site == "CARP" & delta_annual != "NA"), 
+             aes(x = date, y = delta_annual, color = "Annual")) +
+  geom_line(data = delta_fronds %>% filter(site == "CARP" & delta_annual != "NA"),
+            aes(x = date, y = delta_annual, color = "Annual")) +
+  geom_point(data = delta_fronds %>% filter(site == "CARP" & delta_continual != "NA"), 
+             aes(x = date, y = delta_continual, color = "Continual")) +
+  geom_line(data = delta_fronds %>% filter(site == "CARP" & delta_continual != "NA"),
+            aes(x = date, y = delta_continual, color = "Continual")) +
   geom_vline(xintercept = aque_after_date, aes(color = "End"), show.legend = NA) +
   scale_color_manual(name = NULL,
                      breaks = c("Annual", "Continual", "End"),
                      values = c("Annual" = "green", "Continual" = "blue", "End" = "red")) +
   theme_bw() + 
-  labs(title = "AQUE kelp biomass", 
+  labs(title = "CARP kelp biomass", 
        x = "Sampling date",
        y = expression(Delta~"kelp fronds"~"(removal - control)"))
+
+ggplot(data = total_fronds %>% filter(site == "AQUE"),
+             aes(x = date, y = total_fronds, color = treatment, shape = treatment)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  geom_point(size = 2) +
+  geom_line() +
+  geom_vline(xintercept = aque_after_date, aes(color = "#FFFFFF"), show.legend = NA) +
+  scale_color_manual(name = NULL,
+                     breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
+                     values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
+    scale_shape_manual(name = NULL,
+                     breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
+                     values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = 21)) +
+  theme_bw() + 
+  labs(title = "AQUE kelp biomass", 
+       x = "Sampling date",
+       y = "Frond density")
 ```
 
 ## Plotting timeseries
+
+This is delta biomass
+```{r}
+total_frond_timeseries_fxn <- function(site_choice) {
+  after_date <- if(site_choice == "AQUE") {
+    aque_after_date
+  } else if(site_choice == "NAPL") {
+    napl_after_date
+  } else if(site_choice == "CARP") {
+    carp_after_date
+  } else if(site_choice == "IVEE") {
+    ivee_after_date
+  } else if(site_choice == "MOHK") {
+    mohk_after_date
+  }
+  
+  ggplot(data = total_fronds %>% filter(site == site_choice),
+         aes(x = date, y = total_fronds, color = treatment, shape = treatment)) +
+    scale_x_date(limits = c(aque_start_date, as.Date("2021-10-02"))) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+    geom_point(size = 2) +
+    geom_line() +
+    geom_vline(xintercept = after_date, show.legend = NA) +
+    scale_color_manual(name = NULL,
+                       breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
+                       values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
+    scale_shape_manual(name = NULL,
+                       breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
+                       values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = 21))  +
+    theme_bw() + 
+    labs(title = site_choice,
+         x = " ",
+         y = " ")
+}
+
+aque_total_frond_timeseries <- total_frond_timeseries_fxn("AQUE")
+mohk_total_frond_timeseries <- total_frond_timeseries_fxn("MOHK")
+carp_total_frond_timeseries <- total_frond_timeseries_fxn("CARP")
+ivee_total_frond_timeseries <- ggplot(data = total_fronds %>% filter(site == "IVEE"),
+         aes(x = date, y = total_fronds, color = treatment, shape = treatment)) +
+  scale_x_date(limits = c(aque_start_date, as.Date("2021-10-02"))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  geom_point(size = 2) +
+  geom_line() +
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  scale_color_manual(name = NULL,
+                       breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
+                       values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
+    scale_shape_manual(name = NULL,
+                       breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
+                       values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = 21)) +
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(title = "IVEE",
+       x = "Sampling date",
+       y = " ")
+napl_total_frond_timeseries <- total_frond_timeseries_fxn("NAPL")
+
+aque_total_frond_timeseries
+mohk_total_frond_timeseries
+ivee_total_frond_timeseries
+napl_total_frond_timeseries
+carp_total_frond_timeseries
+
+# y-axis label for patchwork side eye emoji
+yaxislabel <- ggplot(data.frame(l = "kelp frond density", x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 90) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+
+plots_together <- yaxislabel + (aque_total_frond_timeseries / mohk_total_frond_timeseries / napl_total_frond_timeseries / ivee_total_frond_timeseries / carp_total_frond_timeseries) +
+  plot_layout(guides = "collect", widths = c(1, 25)) &
+  theme(legend.position = "bottom")
+
+plots_together
+
+# ggsave(here::here("figures", "kelp_total_frond_ts-20211012.jpg"), plots_together, height = 9, width = 5, dpi = 200)
+```
+
 ```{r}
 kelp_timeseries_fxn <- function(site_choice) {
   after_date <- if(site_choice == "AQUE") {
@@ -128,8 +255,10 @@ kelp_timeseries_fxn <- function(site_choice) {
     mohk_after_date
   }
   
+  
+  
   ggplot() +
-    scale_x_date(limits = c(aque_start_date, as.Date("2020-06-01"))) +
+    scale_x_date(limits = c(aque_start_date, as.Date("2021-10-02"))) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
     geom_point(data = delta_fronds %>% filter(site == site_choice & delta_annual != "NA"), 
                aes(x = date, y = delta_annual, color = "Annual")) +
@@ -151,6 +280,7 @@ kelp_timeseries_fxn <- function(site_choice) {
 
 aque_kelp_timeseries <- kelp_timeseries_fxn("AQUE")
 mohk_kelp_timeseries <- kelp_timeseries_fxn("MOHK")
+carp_kelp_timeseries <- kelp_timeseries_fxn("CARP")
 ivee_kelp_timeseries <- ggplot() +
   scale_x_date(limits = c(aque_start_date, as.Date("2020-06-01"))) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
@@ -169,6 +299,7 @@ aque_kelp_timeseries
 mohk_kelp_timeseries
 ivee_kelp_timeseries
 napl_kelp_timeseries
+carp_kelp_timeseries
 
 # y-axis label for patchwork side eye emoji
 yaxislabel <- ggplot(data.frame(l = "kelp fronds (control - removal)", x = 1, y = 1)) +
@@ -176,13 +307,13 @@ yaxislabel <- ggplot(data.frame(l = "kelp fronds (control - removal)", x = 1, y 
       theme_void() +
       coord_cartesian(clip = "off")
 
-plots_together <- yaxislabel + (aque_kelp_timeseries / mohk_kelp_timeseries / napl_kelp_timeseries / ivee_kelp_timeseries) +
+plots_together <- yaxislabel + (aque_kelp_timeseries / mohk_kelp_timeseries / napl_kelp_timeseries / ivee_kelp_timeseries / carp_kelp_timeseries) +
   plot_layout(guides = "collect", widths = c(1, 25)) &
   theme(legend.position = "bottom")
 
 plots_together
 
-# ggsave(here::here("figures", "kelp_frond_ts.jpg"), plots_together, height = 9, width = 5, dpi = 200)
+# ggsave(here::here("figures", "kelp_frond_ts-20211012.jpg"), plots_together, height = 9, width = 5, dpi = 200)
 ```
 
 ## Plotting control only
@@ -199,6 +330,26 @@ control_fronds_plot <- ggplot(control_fronds, aes(x = date, y = total_fronds)) +
        title = "Kelp fronds") 
 
 control_fronds_plot
+```
+
+## plotting annual and continual in panels
+```{r}
+ggplot(data = total_fronds %>% filter(treatment %in% c("ANNUAL", "CONTINUAL")), 
+       aes(x = date, y = total_fronds)) +
+  geom_point(aes(fill = site, shape = site), size = 2, alpha = 0.7) +
+  geom_smooth(aes(color = site), fill = 0.8) +
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) + 
+  scale_shape_manual(values = c(21, 22, 23, 24, 25)) +
+  scale_y_continuous(limits = c(-100, 2700)) +
+  # scale_color_manual(values = c(AQUE_col, CARP_col, IVEE_col, MOHK_col, NAPL_col)) +
+  # scale_fill_manual(values = c(AQUE_col, CARP_col, IVEE_col, MOHK_col, NAPL_col)) +
+  theme_bw() +
+  labs(x = "Sampling date",
+       y = "Total fronds",
+       title = "Kelp fronds") +
+  facet_wrap(~treatment + season, nrow = 2)
+
+ggsave(here::here("figures", "kelp_frond_by_site_smooth_ts-20211012.jpg"), height = 8, width = 10, dpi = 200)
 ```
 
 
@@ -295,18 +446,18 @@ kelp_urchins_detritus <- (control_fronds_plot / control_urchins_plot / control_d
   plot_layout(guides = "collect")
 
 kelp_urchins_detritus
-ggsave(here::here("figures", "kelp_urchins_detritus.jpg"), kelp_urchins_detritus, height = 10, width = 8, dpi = 200)
+# ggsave(here::here("figures", "kelp_urchins_detritus.jpg"), kelp_urchins_detritus, height = 10, width = 8, dpi = 200)
 ```
 
 
 # 4. Understory algal biomass
 
 ```{r}
-# get difference in fronds between control and removal plots
+# get difference in biomass between control and removal plots for each algal species
 delta_algae <- biomass %>% 
   filter(group == "algae" & sp_code == "CYOS") %>% 
   # calculate total dry mass by each survey
-  group_by(site, group_mobility, year, month, treatment, date) %>% 
+  group_by(site, group_mobility, year, month, treatment, date, sp_code) %>% 
   summarize(total_biomass = sum(dry_gm2)) %>% 
   ungroup() %>% 
   # add new column with start/during/after
@@ -399,7 +550,7 @@ plots_together <- yaxislabel + (aque_algae_timeseries / mohk_algae_timeseries / 
 
 plots_together
 
-ggsave(here::here("figures", "algae_biomass_ts-CYOS-after.jpg"), plots_together, height = 9, width = 8, dpi = 200)
+# ggsave(here::here("figures", "algae_biomass_ts-CYOS-after.jpg"), plots_together, height = 9, width = 8, dpi = 200)
 
 delta_annual_timeseries <- ggplot(delta_algae %>% filter(delta_annual != "NA"), 
                                   aes(x = date, y = delta_annual)) +
@@ -414,7 +565,7 @@ delta_annual_timeseries <- ggplot(delta_algae %>% filter(delta_annual != "NA"),
   theme(legend.position = "bottom") +
   labs(title = "Annual",
        x = "Sampling date",
-       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - annual)"))
+       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - removal)"))
 
 delta_continual_timeseries <- ggplot(delta_algae %>% filter(delta_continual != "NA"), 
                                   aes(x = date, y = delta_continual)) +
@@ -430,13 +581,161 @@ delta_continual_timeseries <- ggplot(delta_algae %>% filter(delta_continual != "
   theme(legend.position = "none") +
   labs(title = "Continual",
        x = "Sampling date",
-       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - annual)"))
+       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - removal)"))
 
 plots_together <- (delta_annual_timeseries + delta_continual_timeseries)
 plots_together
 
 # ggsave(here::here("figures", "delta_biomass.jpg"), plots_together, width = 8, height = 4, dpi = 150)
   
+```
+
+```{r}
+delta_algae_all <- biomass %>% 
+  filter(sp_code %in% common_algae) %>% 
+  # calculate total dry mass by each survey
+  group_by(site, group_mobility, year, month, treatment, date) %>% 
+  summarize(total_biomass = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  # add new column with start/during/after
+  mutate(exp_dates = case_when(
+    site == "NAPL" & date == napl_start_date ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & date == mohk_start_date ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & date == aque_start_date ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & date == carp_start_date ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & date == ivee_start_date ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
+  pivot_wider(names_from = treatment, values_from = total_biomass) %>% 
+  mutate(delta_annual = CONTROL - ANNUAL,
+         delta_continual = CONTROL - CONTINUAL) %>% 
+  # create a sample_ID for each sampling date at each site
+  unite("sample_ID", site, date, remove = FALSE) %>% 
+  full_join(., site_quality, by = "site")
+
+delta_algae_spp <- biomass %>% 
+  filter(sp_code %in% common_algae) %>% 
+  # calculate total dry mass by each survey
+  group_by(site, group_mobility, year, month, treatment, date, scientific_name) %>% 
+  summarize(total_biomass = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  # add new column with start/during/after
+  mutate(exp_dates = case_when(
+    site == "NAPL" & date == napl_start_date ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & date == mohk_start_date ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & date == aque_start_date ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & date == carp_start_date ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & date == ivee_start_date ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
+  pivot_wider(names_from = treatment, values_from = total_biomass) %>% 
+  mutate(delta_annual = CONTROL - ANNUAL,
+         delta_continual = CONTROL - CONTINUAL) %>% 
+  # create a sample_ID for each sampling date at each site
+  unite("sample_ID", site, date, remove = FALSE) %>% 
+  # filter(exp_dates == "after") %>% 
+  arrange(scientific_name) %>% 
+  # replace space in scientific name with underscore
+  mutate(scientific_name = str_replace(scientific_name, " ", "_")) %>% 
+  fuzzy_full_join(., traits, by = "scientific_name", match_fun = str_detect) %>% 
+  drop_na(sample_ID, taxon_phylum) %>% 
+  full_join(., site_quality, by = "site")
+
+delta_annual_timeseries_all <- ggplot(delta_algae_all %>% filter(delta_annual != "NA" & exp_dates == "after"), 
+                                  aes(x = date, y = delta_annual)) +
+  # scale_x_date(limits = c(ivee_after_date, as.Date("2020-06-01"))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  geom_point(shape = annual_shape) +
+  # geom_line() +
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  geom_smooth(method = "lm", color = annual_col, size = 2) +
+  theme_bw() + 
+  theme(legend.position = "none", 
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Annual",
+       x = "Sampling date",
+       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - removal)")) +
+  facet_wrap(~quality)
+
+delta_continual_timeseries_all <- ggplot(delta_algae_all %>% filter(delta_continual != "NA" & exp_dates == "after"), 
+                                  aes(x = date, y = delta_continual)) +
+  scale_x_date(limits = c(ivee_after_date, as.Date("2020-06-01"))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  
+  geom_point(shape = continual_shape) +
+  geom_smooth(method = "lm", size = 2, color = continual_col) +
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  # scale_color_manual(values = c(AQUE_col, CARP_col, MOHK_col, NAPL_col)) +
+  theme_bw() + 
+  theme(legend.position = "none", 
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Continual",
+       x = "Sampling date",
+       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - removal)")) +
+  facet_wrap(~quality)
+
+plots_together <- delta_annual_timeseries_all + delta_continual_timeseries_all
+
+# ggsave(here::here("figures", "delta_biomass_all-2021-09-06.jpg"), plots_together, width = 10, height = 4, dpi = 150)
+
+delta_continual_timeseries_bygroup <- ggplot(delta_algae_spp %>% filter(delta_continual != "NA" & exp_dates == "after"), aes(x = date, y = delta_continual)) +
+  # horizontal line at 0
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  # vertical line when experiment ends
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  # points
+  geom_point(shape = continual_shape) +
+  geom_smooth(aes(color = growth_form), method = "lm", size = 2, alpha = 0.7) +
+  scale_color_manual(values = cal_palette("kelp1")) +
+  theme_bw() +
+  labs(title = "Continual",
+       x = "Sampling date",
+       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - removal)")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom") +
+  guides(color = guide_legend(ncol = 3)) +
+  facet_grid(~ quality)
+
+# ggsave(here::here("figures", "delta_biomass_bygroup_continual-2021-09-06.jpg"), delta_continual_timeseries_bygroup, width = 9, height = 10, dpi = 150)
+
+delta_annual_timeseries_bygroup <- ggplot(delta_algae_spp %>% filter(delta_annual != "NA" & exp_dates == "after"), aes(x = date, y = delta_annual)) +
+  # horizontal line at 0
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  # vertical line when experiment ends
+  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  # points
+  geom_point(shape = annual_shape) +
+  geom_smooth(aes(color = growth_form), method = "lm", size = 2, alpha = 0.7) +
+  scale_color_manual(values = cal_palette("kelp1")) +
+  theme_bw() +
+  labs(title = "Annual",
+       x = "Sampling date",
+       y = expression(Delta~"Biomass (dry g/"~m^2~") (control - removal)")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom") +
+  guides(color = guide_legend(ncol = 3)) +
+  facet_grid(~ quality)
+
+# ggsave(here::here("figures", "delta_biomass_bygroup_annual-2021-09-06.jpg"), delta_annual_timeseries_bygroup, width = 9, height = 10, dpi = 150)
+
+plots_together <- (delta_annual_timeseries_bygroup + delta_continual_timeseries_bygroup) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+# ggsave(here::here("figures", "delta_biomass_bygroup-2021-09-06.jpg"), plots_together, width = 10, height = 4, dpi = 150)
+
 ```
 
 
