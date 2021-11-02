@@ -271,7 +271,7 @@ Now to try the ordinations again.
 
 ```{r}
 rc_dist <- vegdist(traj_df, "raup")
-rc_mds <- metaMDS(all_rc_dist, "raup")
+rc_mds <- metaMDS(rc_dist, "raup")
 ```
 
 And then prep to plot, and plotting.
@@ -589,7 +589,7 @@ plots_together <- (aque_plot + mohk_plot + napl_plot) /
                   (ivee_plot + carp_plot + plot_spacer()) +
   plot_layout(nrow = 2, widths = c(1, 1, 1, 1, 1, 1), heights = c(1, 1, 1, 1, 1, 1)) 
 plots_together
-ggsave(here::here("figures", "traj-raup.jpg"), plots_together, width = 8, height = 6, dpi = 200)
+# ggsave(here::here("figures", "traj-raup.jpg"), plots_together, width = 8, height = 6, dpi = 200)
 ```
 
 ```{r}
@@ -941,7 +941,7 @@ ggplot(data = all_traj_lengths_df, aes(x = treatment, y = segment_length)) +
        y = "Segment length",
        title = "Segment lengths")
 
-ggsave(here::here("figures", "sl_spp-euc.jpg"), width = 6, height = 4, dpi = 200)
+# ggsave(here::here("figures", "sl_spp-euc.jpg"), width = 6, height = 4, dpi = 200)
 
 
 sl_spp_aov <- aov(segment_length ~ treatment, data = all_traj_lengths_df)
@@ -967,7 +967,7 @@ ggplot(data = all_traj_angles_df, aes(x = treatment, y = angles)) +
        y = "Angles between segments",
        title = "Angles between segments")
 
-ggsave(here::here("figures", "angles_spp-euc.jpg"), width = 6, height = 4, dpi = 200)
+# ggsave(here::here("figures", "angles_spp-euc.jpg"), width = 6, height = 4, dpi = 200)
 ```
 
 ## Biomass of single species
@@ -1304,20 +1304,21 @@ spp_rich <- specnumber(traj_biomass_df) %>%
          delta_continual = CONTROL - CONTINUAL) %>% 
   pivot_longer(ANNUAL:delta_continual, names_to = "treatments", values_to = "spp_rich") %>% 
   filter(treatments %in% c("delta_annual", "delta_continual") &
-           spp_rich != "NA" &
-           exp_dates == "after")
+           spp_rich != "NA") %>% 
+  full_join(., site_quality, by = "site")
 
-delta_annual_spp_rich <- ggplot(data = spp_rich %>% filter(treatments == "delta_annual"), 
+delta_annual_spp_rich <- ggplot(data = spp_rich %>% filter(treatments == "delta_annual" & exp_dates == "after"), 
              aes(x = date, y = spp_rich)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   geom_point(shape = annual_shape) +
-  geom_smooth(color = "#54662C", method = "lm") +
+  geom_smooth(color = annual_col, method = "lm") +
   labs(x = "Sampling date",
        y = expression(Delta~"species richness (control - removal)"),
        title = "Annual") +
   theme_bw() +
-  # theme(legend.position = "none") +
-  guides(col = guide_legend(nrow = 8, byrow = TRUE))
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~quality)
 
 delta_continual_spp_rich <- ggplot(data = spp_rich %>% filter(treatments == "delta_continual"), 
              aes(x = date, y = spp_rich)) +
@@ -1329,13 +1330,16 @@ delta_continual_spp_rich <- ggplot(data = spp_rich %>% filter(treatments == "del
        y = expression(Delta~"species richness (control - removal)"),
        title = "Continual") +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none", 
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~quality)
 
 plots_together <- delta_annual_spp_rich + delta_continual_spp_rich
 
-# ggsave(here::here("figures", "spp_rich.jpg"), plots_together, width = 8, height = 4, dpi = 150)
+# ggsave(here::here("figures", "spp_rich-hq-2021-09-06.jpg"), plots_together, width = 10, height = 4, dpi = 150)
 ```
 
+Some edits made on Monday 6 Sep 2021. Hello again! You are not going to die.
 
 
 
