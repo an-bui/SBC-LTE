@@ -79,7 +79,7 @@ ivee_after_date <- as_date("2016-02-18")
 # a. biomass
 ############################################
 
-biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20200605.csv")) %>% 
+biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20210209.csv")) %>% 
   clean_names() %>% 
   # ANOB is incorrectly coded as having "SESSILE" mobility
   mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
@@ -328,6 +328,8 @@ NAPL_col <- "#D98A63"
 annual_col <- "#54662C"
 continual_col <- "#009BB0"
 control_col <- "#000000"
+kelp_col <- "#6D5A18"
+under_col <- "#CC7540"
 
 annual_shape <- 19
 continual_shape <- 17
