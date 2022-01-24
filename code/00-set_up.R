@@ -152,6 +152,41 @@ biomass_annual <- read_csv(here::here("data/benthics", "Annual_All_Species_Bioma
   # change to lower case
   mutate_at(c("group", "mobility", "growth_morph"), str_to_lower)
 
+############################################
+# e. LTE kelp biomass
+############################################
+
+kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20210209.csv")) %>% 
+  clean_names() %>% 
+  # create a sample_ID for each sampling date at each treatment at each site
+  unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
+  # change to lower case
+  mutate_at(c("group", "mobility", "growth_morph"), str_to_lower) %>% 
+  # make a new column designating "start", "during" and "after" removal
+  mutate(exp_dates = case_when(
+    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
+    site == "NAPL" & date > napl_after_date ~ "after",
+    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
+    site == "MOHK" & date > mohk_after_date ~ "after",
+    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
+    site == "AQUE" & date > aque_after_date ~ "after",
+    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
+    site == "CARP" & date > carp_after_date ~ "after",
+    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
+    site == "IVEE" & date > ivee_after_date ~ "after",
+    TRUE ~ "during"
+  ),
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
+  select(1:14) %>% 
+  filter(fronds > -1) %>% 
+  mutate(season = case_when(
+    month %in% c(12, 1, 2) ~ "winter",
+    month %in% c(3, 4, 5) ~ "spring",
+    month %in% c (6, 7, 8) ~ "summer",
+    month %in% c(9, 10, 11) ~ "fall"
+  ),
+  season = fct_relevel(season, "winter", "spring", "summer", "fall"))
+
 # 4. operators ------------------------------------------------------------
 
 # not in operator
