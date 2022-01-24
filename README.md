@@ -30,9 +30,23 @@ Upload later.
 ## Project 2: Recovery trajectories
 
 ### Files
+
+#### 00: Set up
 - 00-set_up.Rmd: libraries, data, operators, start and end dates
+
+#### 01: Figure set up
 - 01a-figure_functions.Rmd: functions for figures
 - 01b-figure_outputs.Rmd: figure outputs in for() loops 
+
+#### 02: Basic info?
+- 02a-biomass  
+- 02b-richness  
+- 02c-evenness  
+
+#### 03: Trajectories
+- 03a-prelim_trajectories  
+- 03b-rank_abundance_curves  
+- 03c-timeseries: reorganized timeseries plots
 
 
 
