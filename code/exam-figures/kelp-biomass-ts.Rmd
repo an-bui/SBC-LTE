@@ -778,7 +778,7 @@ df_fig <- rbind(total_fronds_fig, algae_all_biomass) %>%
   filter(treatment %in% c("ANNUAL", "CONTROL"))
 
 
-ggplot(algae_all_biomass, aes(x = date, y = total_biomass, color = site)) +
+ggplot(algae_all_biomass, aes(x = date, y = value, color = site)) +
   geom_point() +
   geom_line() +
   theme_bw() +
@@ -812,7 +812,7 @@ test_fig_under <- ggplot(data = df_fig, # CHANGE
 test_fig_under
 
 # CHANGE
-ggsave(here::here("figures/timeseries", "timeseries-all_panels-annual.jpg"), width = 25, height = 10, dpi = 150)
+# ggsave(here::here("figures/timeseries", "timeseries-all_panels-annual.jpg"), width = 25, height = 10, dpi = 150)
 ```
 
 ```{r}
@@ -875,7 +875,7 @@ test_fig_under <- ggplot(data = understory_fig_df,
 test_fig_under
 
 # CHANGE
-ggsave(here::here("figures/timeseries", "timeseries-aque-dl.jpg"), width = 9, height = 10, dpi = 150)
+# ggsave(here::here("figures/timeseries", "timeseries-aque-dl.jpg"), width = 9, height = 10, dpi = 150)
 ```
 
 ```{r}
@@ -886,16 +886,19 @@ other_df_fig <- rbind(total_fronds_fig, algae_all_biomass) %>%
   group_by(year, treatment, season, measurement) %>% 
  # summarize(mean = mean(value))
   mutate(mean_value = mean(value),
-         sd_value = sd(value)) %>% 
-  select(treatment, date, measurement, mean_value, sd_value) %>% 
-  filter(treatment %in% c("CONTINUAL", "CONTROL"))
+         sd_value = sd(value),
+         cv_value = sd(value)/mean(value)) %>% 
+  select(treatment, date, measurement, mean_value, sd_value, cv_value) 
+# %>% 
+#   filter(treatment %in% c("CONTINUAL", "CONTROL"))
 
-ggplot(data = other_df_fig %>% filter(treatment == "CONTROL"), aes(x = date, y = mean_value, 
+ggplot(data = other_df_fig, aes(x = date, y = mean_value, 
                                 color = measurement, alpha = treatment, shape = measurement)) +
-  geom_point(size = 2) +
+  geom_point(size = 5) +
   geom_line(size = 1) +
+  # geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value, color = measurement, alpha = treatment, shape = measurement)) +
   geom_vline(aes(xintercept = as_date("2016-01-01"))) +
-  scale_alpha_manual(values = c("CONTINUAL" = 1, "CONTROL" = 0.3)) +
+  scale_alpha_manual(values = c("CONTINUAL" = 1, "CONTROL" = 0.2)) +
   scale_color_manual(values = c(total_fronds = kelp_col, total_biomass = under_col)) +
   scale_shape_manual(values = c("total_fronds" = 19, "total_biomass" = 17)) +
   theme_minimal() +
@@ -904,11 +907,109 @@ ggplot(data = other_df_fig %>% filter(treatment == "CONTROL"), aes(x = date, y =
              labeller = labeller(measurement = c(total_fronds = "Mean fronds", total_biomass = "Mean understory biomass"))) +
   labs(x = "Date",
         y = "", 
-        title = "Mean kelp fronds/understory biomass across sites - CONTROL")
+        title = "Mean kelp fronds/understory biomass across sites - CONTINUAL")
+
+ggplot(data = other_df_fig, aes(x = date, y = cv_value, 
+                                color = measurement, alpha = treatment, shape = measurement)) +
+  geom_point(size = 5) +
+  geom_line(size = 1) +
+  geom_vline(aes(xintercept = as_date("2016-01-01"))) +
+  scale_alpha_manual(values = c("CONTINUAL" = 1, "CONTROL" = 0.2)) +
+  scale_color_manual(values = c(total_fronds = kelp_col, total_biomass = under_col)) +
+  scale_shape_manual(values = c("total_fronds" = 19, "total_biomass" = 17)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  facet_wrap(~measurement, nrow = 2, scales = "free_y", strip.position = "left",
+             labeller = labeller(measurement = c(total_fronds = "CV fronds", total_biomass = "CV understory biomass"))) +
+    labs(x = "Date",
+        y = "", 
+        title = "Kelp fronds/understory biomass coefficient of variation across sites - CONTINUAL")
 
 # CHANGE
-ggsave(here::here("figures/timeseries", "timeseries-all_averaged-control.jpg"), width = 9, height = 10, dpi = 150)
+# ggsave(here::here("figures/timeseries", "timeseries-all_averaged-continual-2022-01-10.jpg"), width = 11, height = 10, dpi = 150)
+# 
+# ggsave(here::here("figures/timeseries", "timeseries-all_CV-continual-2022-01-10.jpg"),
+#        width = 11, height = 10, dpi = 150)
 ```
 
+```{r}
+ggplot(data = other_df_fig %>% filter(measurement == "total_fronds" & treatment %in% c("CONTROL")), 
+       aes(x = date, y = mean_value, 
+           alpha = treatment, shape = treatment, color = treatment)) +
+  geom_point(size = 5) +
+  geom_line(size = 1) +
+  geom_vline(aes(xintercept = as_date("2016-01-01"))) +
+  scale_alpha_manual(values = c("CONTROL" = 0.2)) +
+  scale_color_manual(values = c("CONTROL" = control_col)) +
+  scale_shape_manual(values = c("CONTROL" = control_shape)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "Sampling date",
+       y = "Mean kelp fronds")
+
+# ggsave(here::here("figures/timeseries", "timeseries_control_mean-fronds_2022-01-10.jpg"), width = 24, height = 8, dpi = 150)
+
+ggplot(data = other_df_fig %>% filter(measurement == "total_fronds" & treatment %in% c("CONTROL", "ANNUAL")), 
+       aes(x = date, y = mean_value, 
+           alpha = treatment, shape = treatment, color = treatment)) +
+  geom_point(size = 5) +
+  geom_line(size = 1) +
+  geom_vline(aes(xintercept = as_date("2016-01-01"))) +
+  scale_alpha_manual(values = c("ANNUAL" = 1, "CONTROL" = 0.2)) +
+  scale_color_manual(values = c("ANNUAL" = annual_col, "CONTROL" = control_col)) +
+  scale_shape_manual(values = c("ANNUAL" = annual_shape, "CONTROL" = control_shape)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "Sampling date",
+       y = "Mean kelp fronds")
+
+# ggsave(here::here("figures/timeseries", "timeseries_annual_mean-fronds_2022-01-10.jpg"), width = 24, height = 8, dpi = 150)
+
+ggplot(data = other_df_fig %>% filter(measurement == "total_fronds" & treatment %in% c("CONTROL", "CONTINUAL")), 
+       aes(x = date, y = mean_value, 
+           alpha = treatment, shape = treatment, color = treatment)) +
+  geom_point(size = 5) +
+  geom_line(size = 1) +
+  geom_vline(aes(xintercept = as_date("2016-01-01"))) +
+  scale_alpha_manual(values = c("CONTINUAL" = 1, "CONTROL" = 0.2)) +
+  scale_color_manual(values = c("CONTINUAL" = continual_col, "CONTROL" = control_col)) +
+  scale_shape_manual(values = c("CONTINUAL" = continual_shape, "CONTROL" = control_shape)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "Sampling date",
+       y = "Mean kelp fronds")
+
+# ggsave(here::here("figures/timeseries", "timeseries_continual_mean-fronds_2022-01-10.jpg"), width = 24, height = 8, dpi = 150)
+
+ggplot(data = other_df_fig %>% filter(measurement == "total_fronds" & treatment %in% c("CONTROL", "ANNUAL")), 
+       aes(x = date, y = cv_value, alpha = treatment, shape = treatment, color = treatment)) +
+  geom_point(size = 5) +
+  geom_line(size = 1) +
+  geom_vline(aes(xintercept = as_date("2016-01-01"))) +
+  scale_alpha_manual(values = c("ANNUAL" = 1, "CONTROL" = 0.2)) +
+  scale_color_manual(values = c("ANNUAL" = annual_col, "CONTROL" = control_col)) +
+  scale_shape_manual(values = c("ANNUAL" = annual_shape, "CONTROL" = control_shape)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "Sampling date",
+       y = "Coefficient of variation")
+
+# ggsave(here::here("figures/timeseries", "timeseries_annual_CV-fronds_2022-01-10.jpg"), width = 24, height = 8, dpi = 150)
+
+ggplot(data = other_df_fig %>% filter(measurement == "total_fronds" & treatment %in% c("CONTROL", "CONTINUAL")), 
+       aes(x = date, y = cv_value, alpha = treatment, shape = treatment, color = treatment)) +
+  geom_point(size = 5) +
+  geom_line(size = 1) +
+  geom_vline(aes(xintercept = as_date("2016-01-01"))) +
+  scale_alpha_manual(values = c("CONTINUAL" = 1, "CONTROL" = 0.2)) +
+  scale_color_manual(values = c("CONTINUAL" = continual_col, "CONTROL" = control_col)) +
+  scale_shape_manual(values = c("CONTINUAL" = continual_shape, "CONTROL" = control_shape)) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(x = "Sampling date",
+       y = "Coefficient of variation")
+
+# ggsave(here::here("figures/timeseries", "timeseries_continual_CV-fronds_2022-01-10.jpg"), width = 24, height = 8, dpi = 150)
+```
 
 
