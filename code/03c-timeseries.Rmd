@@ -185,7 +185,7 @@ plots_together
 
 ### Delta kelp frond timeseries
 
-This creates a plot where delta kelp frond density (difference between control and removal density )timeseries are plotted for each LTE site with annual in green circles and continual in blue circles. This was supposed to be a recreation of the plots that Adrian sent a long time ago. There is a `ggsave()` command at the end - **remember to change the date in the file name before saving**.
+This creates a plot where delta kelp frond density (difference between control and removal density) timeseries are plotted for each LTE site with annual in green circles and continual in blue circles. This was supposed to be a recreation of the plots that Adrian sent a long time ago. There is a `ggsave()` command at the end - **remember to change the date in the file name before saving**.
 
 ```{r}
 kelp_timeseries_fxn <- function(site_choice) {
@@ -261,4 +261,259 @@ plots_together
 
 # ggsave(here::here("figures", "kelp_frond_ts-20211012.jpg"), plots_together, height = 9, width = 5, dpi = 200)
 ```
+
+## Model selection for delta frond density
+
+Using function from the Thibault script below. Made edits to not print out results in the quartz viewer.
+
+```{r}
+ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model) 
+{
+	### STEP 2 - Calculate the delta at each sampling date
+	delta <- impact - control
+	
+	# Plot delta against time.true
+	# dev.new(width=10, height=5)
+	# par(mfrow=c(1,2))
+	# plot(delta~time.true, type="n")
+	time.model.of.impact=max(which(time.model==0))
+	# rect(time.model.of.impact, min(delta)-100, max(time.model)+10, max(delta)+100, col = "grey")
+	# points(delta~time.true, pch=24, bg="white", cex=2)
+	
+	### STEP 3 - Fit and compete models
+	## Create a 'period' variable
+	period <- ifelse(time.model==0, "Before","After")
+	
+	## Fit a step model
+	step.Model<-aov(delta ~ period)
+
+	## Fit a linear model
+	linear.Model<-lm(delta ~ time.model)
+	
+	## Fit an asymptotic model
+	# Create an asymptotic function
+	myASYfun<-function(delta, time.model)
+	{
+		funAsy<-function(parS, time.model)	(parS$M * time.model) / (parS$L + time.model) + parS$B
+		residFun<-function(p, observed, time.model) observed + funAsy(p,time.model)
+		parStart <- list(M=mean(delta[time.model.of.impact:length(time.true)]), B=mean(delta[1:time.model.of.impact]), L=1)
+		nls_ASY_out <- nls.lm(par=parStart, fn= residFun, observed=delta, time.model=time.model, control = nls.lm.control(maxfev = integer(), maxiter = 1000))
+		foAsy<-delta~(M * time.model) / (L + time.model) + B
+		startPar<-c(-coef(nls_ASY_out)[1], coef(nls_ASY_out)[2], coef(nls_ASY_out)[3])
+		asyFit<-nls2(foAsy, start=startPar, algorithm="brute-force") # nls2 enables to calculate AICc
+		asyFit
+	}
+	# Fit the asymptotic model
+	asymptotic.Model<-myASYfun(delta=delta,time.model=time.model)
+	
+	
+	## Fit a sigmoid model
+	## Create a sigmoid function
+	mySIGfun<-function(delta, time.model)
+	{
+		funSIG<-function(parS, time.model)	(parS$M * (time.model/parS$L)^parS$K) / (1 + (time.model/parS$L) ^ parS$K) + parS$B
+		residFun<-function(p, observed, time.model) observed + funSIG(p,time.model)
+		parStart <- list(M=mean(delta[time.model.of.impact:length(time.true)]), B=mean(delta[1:time.model.of.impact]), L=mean(time.model), K=5)
+		nls_SIG_out <- nls.lm(par=parStart, fn= residFun, observed=delta, time.model=time.model, control = nls.lm.control(maxfev = integer(), maxiter = 1000))
+		foSIG<-delta~(M * (time.model/L) ^ K) / (1 + (time.model/L) ^ K) + B
+		startPar<-c(-coef(nls_SIG_out)[1],-coef(nls_SIG_out)[2],coef(nls_SIG_out)[3],coef(nls_SIG_out)[4])
+		sigFit<-nls2(foSIG, start=startPar, algorithm="brute-force") # nls2 enables to calculate AICc
+		sigFit
+	}
+	# Fit the sigmoid model
+	sigmoid.Model<-mySIGfun(delta=delta,time.model=time.model)
+
+
+	## Compete models
+	# Perform AIC tests
+	AIC.test<-AIC(step.Model, linear.Model, asymptotic.Model, sigmoid.Model)
+	AICc.test<-as.data.frame(cbind(AIC.test[,1], c(AICc(step.Model), AICc(linear.Model), AICc(asymptotic.Model), AICc(sigmoid.Model))))
+	rownames(AICc.test)<-rownames(AIC.test)
+	names(AICc.test)<-names(AIC.test)
+	
+	# Calculate AICc weight and selected the best model
+	for(i in 1:dim(AICc.test)[1])
+	{
+		AICc.test$diff[i]<-AICc.test$AIC[i]-min(AICc.test$AIC)
+	}
+	AICc.test$RL<-exp(-0.5* AICc.test$diff)
+	RL_sum<-sum(AICc.test$RL)
+	AICc.test$aicWeights<-(AICc.test$RL/RL_sum)*100
+	w<-AICc.test$aicWeights
+	names(w)<-rownames(AICc.test)
+
+	# Display AICc weights
+	print(w)
+	# barplot(w, col="white", ylab="Relative likelihood (%)", cex.names = 0.9, names.arg =c("Step","Linear","Asymptotic","Sigmoid"))
+	best.Model<-which(w==max(w))
+
+	### STEP 4 - Derive inference based on the best model (i.e., with the higher AICc weight)
+	if(best.Model==1) {writeLines(paste("\n\nSTEP MODEL SELECTED - Likelihood = ", round(w[1],1), "%\n\n", sep=""))
+		print(summary(step.Model))}
+	if(best.Model==2) {writeLines(paste("\n\nLINEAR MODEL SELECTED - Likelihood = ", round(w[2],1), "%\n\n", sep=""))
+		print(summary(linear.Model))}
+	if(best.Model==3) {writeLines(paste("\n\nASYMPTOTIC MODEL SELECTED - Likelihood = ", round(w[3],1), "%\n\n", sep=""))
+		print(asymptotic.Model)}
+	if(best.Model==4) {writeLines(paste("\n\nSIGMOID MODEL SELECTED - Likelihood = ", round(w[4],1), "%\n\n", sep=""))
+		print(sigmoid.Model)}
+}
+
+```
+
+Function to add a column in the frond data frame for each site called `time.model` that has the timesteps labelled the way the function wants them.
+
+```{r}
+library(rlang)
+
+time.model.fxn <- function(site) {
+  delta_fronds %>% 
+    filter(site == {{ site }}) %>% 
+    select(exp_dates, date, ANNUAL, CONTINUAL, CONTROL) %>% 
+    # rearrange the data frame so that the "after" dates come first
+    mutate(exp_dates = fct_relevel(exp_dates, c("after", "start", "during"))) %>% 
+    arrange(exp_dates) %>% 
+    # assign everything a "time step number" using the row numbers...
+    rownames_to_column("time.model") %>% 
+    # only keep the time step numbers for the "after dates"
+    # make everything else 0 (i.e. everything else is before the "after")
+    mutate(time.model = case_when(
+      exp_dates == "start" ~ 0,
+      exp_dates == "during" ~ 0,
+      TRUE ~ as.numeric(as.numeric(time.model))
+    )) %>% 
+    # rearrage the sampling dates to be in logical order
+    mutate(exp_dates = fct_relevel(exp_dates, c("start", "during", "after"))) %>% 
+    arrange(exp_dates) 
+}
+
+treatment_select <- function(df, treatment_selection) {
+  df %>% 
+    select(date, {{ treatment_selection }}, CONTROL, time.model) %>% 
+    na.omit()
+}
+```
+
+### Mohawk
+
+```{r}
+mohk_fronds <- time.model.fxn("MOHK")
+
+mohk_annual <- treatment_select(mohk_fronds, ANNUAL)
+
+mohk_continual <- treatment_select(mohk_fronds, CONTINUAL)
+
+ProgressiveChangeBACIPS(control = pull(mohk_annual, CONTROL),
+                        impact = pull(mohk_annual, ANNUAL),
+                        time.true = pull(mohk_annual, date),
+                        time.model = pull(mohk_annual, time.model))
+
+# STEP MODEL SELECTED - Likelihood = 52.3%
+
+ProgressiveChangeBACIPS(control = pull(mohk_continual, CONTROL),
+                        impact = pull(mohk_continual, CONTINUAL),
+                        time.true = pull(mohk_continual, date),
+                        time.model = pull(mohk_continual, time.model))
+
+# LINEAR MODEL SELECTED - Likelihood = 91.7%
+
+mohk_kelp_timeseries
+```
+
+### Arroyo Quemado
+
+```{r}
+aque_fronds <- time.model.fxn("AQUE")
+
+aque_annual <- treatment_select(aque_fronds, ANNUAL)
+
+aque_continual <- treatment_select(aque_fronds, CONTINUAL)
+
+ProgressiveChangeBACIPS(control = pull(aque_annual, CONTROL),
+                        impact = pull(aque_annual, ANNUAL),
+                        time.true = pull(aque_annual, date),
+                        time.model = pull(aque_annual, time.model))
+
+# LINEAR MODEL SELECTED - Likelihood = 47.9%
+
+ProgressiveChangeBACIPS(control = pull(aque_continual, CONTROL),
+                        impact = pull(aque_continual, CONTINUAL),
+                        time.true = pull(aque_continual, date),
+                        time.model = pull(aque_continual, time.model))
+
+# STEP MODEL SELECTED - Likelihood = 49.3%
+
+aque_kelp_timeseries
+```
+
+### Isla Vista
+
+```{r}
+ivee_fronds <- time.model.fxn("IVEE")
+
+ivee_annual <- treatment_select(ivee_fronds, ANNUAL)
+  
+ProgressiveChangeBACIPS(control = pull(ivee_annual, CONTROL),
+                        impact = pull(ivee_annual, ANNUAL),
+                        time.true = pull(ivee_annual, date),
+                        time.model = pull(ivee_annual, time.model))
+
+# LINEAR MODEL SELECTED - Likelihood = 52.4%
+
+ivee_kelp_timeseries
+```
+
+### Carpinteria
+
+```{r}
+carp_fronds <- time.model.fxn("CARP")
+
+carp_annual <- treatment_select(carp_fronds, ANNUAL)
+
+carp_continual <- treatment_select(carp_fronds, CONTINUAL)
+  
+ProgressiveChangeBACIPS(control = pull(carp_annual, CONTROL),
+                        impact = pull(carp_annual, ANNUAL),
+                        time.true = pull(carp_annual, date),
+                        time.model = pull(carp_annual, time.model))
+
+# STEP MODEL SELECTED - Likelihood = 92.5%
+
+ProgressiveChangeBACIPS(control = pull(carp_continual, CONTROL),
+                        impact = pull(carp_continual, CONTINUAL),
+                        time.true = pull(carp_continual, date),
+                        time.model = pull(carp_continual, time.model))
+
+# STEP MODEL SELECTED - Likelihood = 92.6%
+
+carp_kelp_timeseries
+```
+
+### Naples
+
+```{r}
+napl_fronds <- time.model.fxn("NAPL")
+
+napl_annual <- treatment_select(napl_fronds, ANNUAL)
+
+napl_continual <- treatment_select(napl_fronds, CONTINUAL)
+  
+ProgressiveChangeBACIPS(control = pull(napl_annual, CONTROL),
+                        impact = pull(napl_annual, ANNUAL),
+                        time.true = pull(napl_annual, date),
+                        time.model = pull(napl_annual, time.model))
+
+# STEP MODEL SELECTED - Likelihood = 78.8%
+
+ProgressiveChangeBACIPS(control = pull(napl_continual, CONTROL),
+                        impact = pull(napl_continual, CONTINUAL),
+                        time.true = pull(napl_continual, date),
+                        time.model = pull(napl_continual, time.model))
+
+# SIGMOID MODEL SELECTED - Likelihood = 67.7%
+
+napl_kelp_timeseries
+```
+
+
+
 
