@@ -12,6 +12,7 @@ library(ggrepel)
 library(plotly)
 library(fuzzyjoin)
 library(gt)
+library(rlang)
 
 # analysis
 library(vegan)
