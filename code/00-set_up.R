@@ -80,7 +80,7 @@ ivee_after_date <- as_date("2016-02-18")
 # a. biomass
 ############################################
 
-biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20210209.csv")) %>% 
+biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20220202.csv")) %>% 
   clean_names() %>% 
   # ANOB is incorrectly coded as having "SESSILE" mobility
   mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
@@ -157,7 +157,7 @@ biomass_annual <- read_csv(here::here("data/benthics", "Annual_All_Species_Bioma
 # e. LTE kelp biomass
 ############################################
 
-kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20210209.csv")) %>% 
+kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %>% 
   clean_names() %>% 
   # create a sample_ID for each sampling date at each treatment at each site
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
