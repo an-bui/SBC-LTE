@@ -51,8 +51,8 @@ delta_fronds <- kelp_fronds %>%
   exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
   filter(total_fronds > -1) %>% 
   pivot_wider(names_from = treatment, values_from = total_fronds) %>% 
-  mutate(delta_annual = CONTROL - ANNUAL,
-         delta_continual = CONTROL - CONTINUAL) 
+  mutate(delta_annual = ANNUAL - CONTROL,
+         delta_continual = CONTINUAL - CONTROL) 
 
 # just control
 control_fronds <- kelp_fronds %>% 
@@ -248,7 +248,7 @@ napl_kelp_timeseries
 carp_kelp_timeseries
 
 # y-axis label for patchwork side eye emoji
-yaxislabel <- ggplot(data.frame(l = "kelp fronds (control - removal)", x = 1, y = 1)) +
+yaxislabel <- ggplot(data.frame(l = "kelp fronds (removal - control)", x = 1, y = 1)) +
       geom_text(aes(x, y, label = l), angle = 90) + 
       theme_void() +
       coord_cartesian(clip = "off")
@@ -259,7 +259,7 @@ plots_together <- yaxislabel + (aque_kelp_timeseries / mohk_kelp_timeseries / na
 
 plots_together
 
-# ggsave(here::here("figures", "kelp_frond_ts-20211012.jpg"), plots_together, height = 9, width = 5, dpi = 200)
+# ggsave(here::here("figures", "kelp_frond_ts-20220201.jpg"), plots_together, height = 9, width = 5, dpi = 200)
 ```
 
 ## Model selection for delta frond density
@@ -393,6 +393,24 @@ treatment_select <- function(df, treatment_selection) {
 }
 ```
 
+### Action items
+- build delta AIC for each test  
+- didn't do model averaging (if you have two models with similar AIC values, how do you choose between the two?) - for each model test, want to know 1) is there a difference between before and after, and 2) what is the shape?  
+- estimate rate of kelp increase per sampling period - take change in kelp biomass per time step and compare across different sites based on urchin density or sand cover?  
+    - could be good to ask if some sites got kelp back at different rates - look at the quarters after, fit a shaped model (that is not just linear) - looking for rate and did it level off?  
+- was there a change in eklp? can ask on average what was before or after? or somethinig fancier like progressive BACIPS?  
+  - could be nice to have stat_summary: on average, how much kelp was there before and after  period (two dots with a confidence interval) - that's not going to include environmental variability that is worth including in analysis because could cloud capacity to detect effect (for example, kelp goes up and down seasonally) - before/after for two different removals average plot + timeseries of kelp with annual removal/continual removal/control + stats for BACI analysis + shape of fit that was the best fit would offer clear interpretation of what's going on at each site  
+  
+- could have 3 plots:
+    - a. x: before/after, y: kelp biomass (3 dots with error bars and lines)  
+    - b. x: time , y: absolute biomass (3 linetypes)  
+    - c. x: time, y: delta  
+    
+- can PCBACIPS deal with random effects or multiple timeseries = would want to say, across all sites in general what happened? and say at any given site, what happened?  
+  - look into any other BACI analyses that allow for site as predictor  
+- label above/below line for delta plots  
+- environmental variability and seasonality? 
+
 ### Mohawk
 
 ```{r}
@@ -514,6 +532,38 @@ ProgressiveChangeBACIPS(control = pull(napl_continual, CONTROL),
 napl_kelp_timeseries
 ```
 
+### All sites
+
+#### test
+
+Testing out code to get total fronds for each sampling date across sites starting with 2 sites: AQUE and NAPL. Each observation in the output should have a sampling year, total fronds in the annual, total fronds in the continual, and total fronds in the control.
+
+```{r}
+test_annual <- delta_fronds %>% 
+  filter(site == "AQUE" | site == "NAPL") %>% 
+  arrange(year, site) %>% 
+  group_by(year, season) %>% 
+  mutate(total_annual_all = sum(ANNUAL, na.rm = TRUE),
+         total_continual_all = sum(CONTINUAL, na.rm = TRUE),
+         total_control_all = sum(CONTROL, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  select(year, month, exp_dates, total_annual_all:total_control_all) %>% 
+  unique() %>% 
+  mutate(delta_annual_all = total_annual_all - total_control_all,
+         delta_continual_all = total_continual_all - total_control_all)
+
+ggplot(test_annual, aes(x = year)) +
+  geom_line(aes(y = delta_annual_all), col = annual_col) +
+  geom_point(aes(y = delta_annual_all), col = annual_col, shape = annual_shape) +
+  geom_line(aes(y = delta_continual_all), col = continual_col) +
+  geom_point(aes(y = delta_continual_all), col = continual_col, shape = continual_shape) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  theme_classic() +
+  labs(x = "Year", y = "delta kelp fronds (removal - control)")
+
+  
+
+```
 
 
 
