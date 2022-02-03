@@ -12,8 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 # 0. set up
 ```{r}
 source(here::here("code", "00-set_up.R"))
-
-library(patchwork)
 ```
 
 # 1. Kelp biomass
@@ -102,6 +100,65 @@ total_fronds <- kelp_fronds %>%
 
 ## Plotting
 
+### Before/after comparison
+
+This creates plots where the mean kelp frond density is plotted for the "before" and "after" time points ("before" = during the experiment, and "after" = after the experiment ended). 
+
+```{r}
+comparison_frond_fxn <- function(site_choice) {
+  total_fronds %>% 
+    filter(site == site_choice) %>% 
+    mutate(bef_aft = case_when(
+      exp_dates == "start" ~ "before",
+      exp_dates == "during" ~ "before",
+      exp_dates == "after" ~ "after"
+    )) %>%
+    mutate(bef_aft = fct_relevel(bef_aft, "before", "after")) %>% 
+    ggplot(aes(x = bef_aft, y = total_fronds, col = treatment, shape = treatment)) +
+    stat_summary(aes(group = treatment), fun = mean, geom = "line", size = 1, alpha = 0.8) +
+    stat_summary(fun = mean, geom = "point", size = 4) +
+    
+    stat_summary(fun.data = mean_se, geom = "errorbar", alpha = 0.8, width = 0.2) +
+    scale_color_manual(values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
+    scale_shape_manual(values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = control_shape)) +
+    theme_bw() +
+    labs(x = " ",
+         y = "Mean frond density",
+         title = site_choice)
+}
+
+aque_comparison_frond <- comparison_frond_fxn("AQUE")
+mohk_comparison_frond <- comparison_frond_fxn("MOHK")
+carp_comparison_frond <- comparison_frond_fxn("CARP")
+ivee_comparison_frond <- total_fronds %>% 
+    filter(site == "IVEE") %>% 
+    mutate(bef_aft = case_when(
+      exp_dates == "start" ~ "before",
+      exp_dates == "during" ~ "before",
+      exp_dates == "after" ~ "after"
+    )) %>%
+    mutate(bef_aft = fct_relevel(bef_aft, "before", "after")) %>% 
+    ggplot(aes(x = bef_aft, y = total_fronds, col = treatment, shape = treatment)) +
+    stat_summary(aes(group = treatment), fun = mean, geom = "line", size = 1, alpha = 0.8) +
+    stat_summary(fun = mean, geom = "point", size = 4) +
+    
+    stat_summary(fun.data = mean_se, geom = "errorbar", alpha = 0.8, width = 0.2) +
+    scale_color_manual(values = c("ANNUAL" = annual_col, "CONTROL" = "grey")) +
+    scale_shape_manual(values = c("ANNUAL" = annual_shape, "CONTROL" = control_shape)) +
+    theme_bw() +
+    labs(x = " ",
+         y = "Mean frond density",
+         title = "IVEE")
+napl_comparison_frond <- comparison_frond_fxn("NAPL")
+
+aque_comparison_frond
+mohk_comparison_frond
+carp_comparison_frond
+ivee_comparison_frond
+napl_comparison_frond
+```
+
+
 ### Total kelp frond timeseries
 
 This creates a plot where kelp frond density timeseries are plotted for each LTE site with control in open circles, annual in green circles, and continual in blue triangles. There is a `ggsave()` command at the end - **remember to change the date in the file name before saving**.
@@ -120,13 +177,17 @@ total_frond_timeseries_fxn <- function(site_choice) {
     mohk_after_date
   }
   
+  rect_ymax <- total_fronds %>% filter(site == site_choice) %>% pull(total_fronds) %>% max()
+  
   ggplot(data = total_fronds %>% filter(site == site_choice),
          aes(x = date, y = total_fronds, color = treatment, shape = treatment)) +
-    scale_x_date(limits = c(aque_start_date, as.Date("2021-10-02"))) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-    geom_point(size = 2) +
-    geom_line() +
-    geom_vline(xintercept = after_date, show.legend = NA) +
+    scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
+    geom_hline(yintercept = 0, color = "grey") +
+    annotate("rect", xmin = after_date, xmax = as.Date("2022-02-02"),
+           ymin = -1, ymax = rect_ymax*1.05,
+           alpha = 0.2) +
+    geom_point(size = 3) +
+    geom_line(size = 1) +
     scale_color_manual(name = NULL,
                        breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
                        values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
@@ -144,11 +205,13 @@ mohk_total_frond_timeseries <- total_frond_timeseries_fxn("MOHK")
 carp_total_frond_timeseries <- total_frond_timeseries_fxn("CARP")
 ivee_total_frond_timeseries <- ggplot(data = total_fronds %>% filter(site == "IVEE"),
          aes(x = date, y = total_fronds, color = treatment, shape = treatment)) +
-  scale_x_date(limits = c(aque_start_date, as.Date("2021-10-02"))) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  geom_point(size = 2) +
-  geom_line() +
-  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+  scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
+           ymin = -1, ymax = (total_fronds %>% filter(site == "IVEE") %>% pull(total_fronds) %>% max())*1.05,
+           alpha = 0.2) +
+  geom_point(size = 3) +
+  geom_line(size = 1) +
   scale_color_manual(name = NULL,
                        breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
                        values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
@@ -183,12 +246,32 @@ plots_together
 # ggsave(here::here("figures", "kelp_total_frond_ts-20211012.jpg"), plots_together, height = 9, width = 5, dpi = 200)
 ```
 
+#### Total frond timeseries for report
+
+```{r}
+aque_total_frond_timeseries_labs <- aque_total_frond_timeseries + 
+  labs(x = "Sampling date", 
+       y = "Total kelp fronds")
+mohk_total_frond_timeseries_labs <- mohk_total_frond_timeseries + 
+  labs(x = "Sampling date", 
+       y = "Total kelp fronds")
+ivee_total_frond_timeseries_labs <- ivee_total_frond_timeseries + 
+  labs(x = "Sampling date", 
+       y = "Total kelp fronds")
+napl_total_frond_timeseries_labs <- napl_total_frond_timeseries + 
+  labs(x = "Sampling date", 
+       y = "Total kelp fronds")
+carp_total_frond_timeseries_labs <- carp_total_frond_timeseries + 
+  labs(x = "Sampling date", 
+       y = "Total kelp fronds")
+```
+
 ### Delta kelp frond timeseries
 
 This creates a plot where delta kelp frond density (difference between control and removal density) timeseries are plotted for each LTE site with annual in green circles and continual in blue circles. This was supposed to be a recreation of the plots that Adrian sent a long time ago. There is a `ggsave()` command at the end - **remember to change the date in the file name before saving**.
 
 ```{r}
-kelp_timeseries_fxn <- function(site_choice) {
+delta_frond_timeseries_fxn <- function(site_choice) {
   after_date <- if(site_choice == "AQUE") {
     aque_after_date
   } else if(site_choice == "NAPL") {
@@ -201,45 +284,58 @@ kelp_timeseries_fxn <- function(site_choice) {
     mohk_after_date
   }
   
+  delta_continual_max <- delta_fronds %>% filter(site == site_choice) %>% pull(delta_continual) %>% max(na.rm = TRUE)
+  delta_continual_min <- delta_fronds %>% filter(site == site_choice) %>% pull(delta_continual) %>% min(na.rm = TRUE)
+  delta_annual_max <- delta_fronds %>% filter(site == site_choice) %>% pull(delta_annual) %>% max(na.rm = TRUE)  
+  delta_annual_min <- delta_fronds %>% filter(site == site_choice) %>% pull(delta_annual) %>% min(na.rm = TRUE)
   
+  rect_ymax <- ifelse(delta_continual_max > delta_annual_max, delta_continual_max, delta_annual_max)
+  rect_ymin <- ifelse(delta_continual_min < delta_annual_max, delta_continual_min, delta_annual_max)
   
   ggplot() +
-    scale_x_date(limits = c(aque_start_date, as.Date("2021-10-02"))) +
+    scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+    annotate("rect", xmin = after_date, xmax = as.Date("2022-02-02"),
+             ymin = rect_ymin*1.1, ymax = rect_ymax*1.1,
+             alpha = 0.2) +
     geom_point(data = delta_fronds %>% filter(site == site_choice & delta_annual != "NA"), 
-               aes(x = date, y = delta_annual, color = "Annual")) +
+               aes(x = date, y = delta_annual, color = "Annual"), 
+               size = 3, shape = annual_shape) +
     geom_line(data = delta_fronds %>% filter(site == site_choice & delta_annual != "NA"),
-              aes(x = date, y = delta_annual, color = "Annual")) +
+              aes(x = date, y = delta_annual, color = "Annual"), size = 1) +
     geom_point(data = delta_fronds %>% filter(site == site_choice & delta_continual != "NA"), 
-               aes(x = date, y = delta_continual, color = "Continual")) +
+               aes(x = date, y = delta_continual, color = "Continual"), 
+               size = 3, shape = continual_shape) +
     geom_line(data = delta_fronds %>% filter(site == site_choice & delta_continual != "NA"),
-              aes(x = date, y = delta_continual, color = "Continual")) +
-    geom_vline(xintercept = after_date, show.legend = NA) +
+              aes(x = date, y = delta_continual, color = "Continual"), size = 1) +
     scale_color_manual(name = NULL,
                        breaks = c("Annual", "Continual"),
-                       values = c("Annual" = "green", "Continual" = "blue")) +
+                       values = c("Annual" = annual_col, "Continual" = continual_col)) +
     theme_bw() + 
     labs(title = site_choice,
          x = " ",
          y = " ")
 }
 
-aque_kelp_timeseries <- kelp_timeseries_fxn("AQUE")
-mohk_kelp_timeseries <- kelp_timeseries_fxn("MOHK")
-carp_kelp_timeseries <- kelp_timeseries_fxn("CARP")
+aque_kelp_timeseries <- delta_frond_timeseries_fxn("AQUE")
+mohk_kelp_timeseries <- delta_frond_timeseries_fxn("MOHK")
+carp_kelp_timeseries <- delta_frond_timeseries_fxn("CARP")
 ivee_kelp_timeseries <- ggplot() +
-  scale_x_date(limits = c(aque_start_date, as.Date("2020-06-01"))) +
+  scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+      annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
+             ymin = delta_fronds %>% filter(site == "IVEE") %>% pull(delta_annual) %>% min()*1.1, 
+             ymax = delta_fronds %>% filter(site == "IVEE") %>% pull(delta_annual) %>% max()*1.1,
+             alpha = 0.2) +
   geom_point(data = delta_fronds %>% filter(site == "IVEE" & delta_annual != "NA"), 
-             aes(x = date, y = delta_annual), color = "green") +
+             aes(x = date, y = delta_annual), color = annual_col, size = 3) +
   geom_line(data = delta_fronds %>% filter(site == "IVEE" & delta_annual != "NA"),
-            aes(x = date, y = delta_annual), color = "green") +
-  geom_vline(xintercept = ivee_after_date, show.legend = NA) +
+            aes(x = date, y = delta_annual), color = annual_col, size = 1) +
   theme_bw() + 
   labs(title = "IVEE",
        x = "Sampling date",
        y = " ")
-napl_kelp_timeseries <- kelp_timeseries_fxn("NAPL")
+napl_kelp_timeseries <- delta_frond_timeseries_fxn("NAPL")
 
 aque_kelp_timeseries
 mohk_kelp_timeseries
@@ -262,9 +358,24 @@ plots_together
 # ggsave(here::here("figures", "kelp_frond_ts-20220201.jpg"), plots_together, height = 9, width = 5, dpi = 200)
 ```
 
+#### Delta frond timeseries for report
+
+```{r}
+aque_kelp_timeseries_labs <- aque_kelp_timeseries +
+  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
+mohk_kelp_timeseries_labs <- mohk_kelp_timeseries +
+  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
+ivee_kelp_timeseries_labs <- ivee_kelp_timeseries +
+  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
+napl_kelp_timeseries_labs <- napl_kelp_timeseries +
+  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
+carp_kelp_timeseries_labs <- carp_kelp_timeseries +
+  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
+```
+
 ## Model selection for delta frond density
 
-Using function from the Thibault script below. Made edits to not print out results in the quartz viewer.
+Using function from the Thiault script below. Made edits to not print out results in the quartz viewer.
 
 ```{r}
 ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model) 
@@ -392,24 +503,6 @@ treatment_select <- function(df, treatment_selection) {
     na.omit()
 }
 ```
-
-### Action items
-- build delta AIC for each test  
-- didn't do model averaging (if you have two models with similar AIC values, how do you choose between the two?) - for each model test, want to know 1) is there a difference between before and after, and 2) what is the shape?  
-- estimate rate of kelp increase per sampling period - take change in kelp biomass per time step and compare across different sites based on urchin density or sand cover?  
-    - could be good to ask if some sites got kelp back at different rates - look at the quarters after, fit a shaped model (that is not just linear) - looking for rate and did it level off?  
-- was there a change in eklp? can ask on average what was before or after? or somethinig fancier like progressive BACIPS?  
-  - could be nice to have stat_summary: on average, how much kelp was there before and after  period (two dots with a confidence interval) - that's not going to include environmental variability that is worth including in analysis because could cloud capacity to detect effect (for example, kelp goes up and down seasonally) - before/after for two different removals average plot + timeseries of kelp with annual removal/continual removal/control + stats for BACI analysis + shape of fit that was the best fit would offer clear interpretation of what's going on at each site  
-  
-- could have 3 plots:
-    - a. x: before/after, y: kelp biomass (3 dots with error bars and lines)  
-    - b. x: time , y: absolute biomass (3 linetypes)  
-    - c. x: time, y: delta  
-    
-- can PCBACIPS deal with random effects or multiple timeseries = would want to say, across all sites in general what happened? and say at any given site, what happened?  
-  - look into any other BACI analyses that allow for site as predictor  
-- label above/below line for delta plots  
-- environmental variability and seasonality? 
 
 ### Mohawk
 
@@ -560,9 +653,6 @@ ggplot(test_annual, aes(x = year)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   theme_classic() +
   labs(x = "Year", y = "delta kelp fronds (removal - control)")
-
-  
-
 ```
 
 
