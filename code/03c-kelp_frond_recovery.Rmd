@@ -122,6 +122,7 @@ comparison_frond_fxn <- function(site_choice) {
     scale_color_manual(values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
     scale_shape_manual(values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = control_shape)) +
     theme_bw() +
+    theme(plot.title = element_text(size = 20)) +
     labs(x = " ",
          y = "Mean frond density",
          title = site_choice)
@@ -188,12 +189,8 @@ total_frond_timeseries_fxn <- function(site_choice) {
            alpha = 0.2) +
     geom_point(size = 3) +
     geom_line(size = 1) +
-    scale_color_manual(name = NULL,
-                       breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
-                       values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
-    scale_shape_manual(name = NULL,
-                       breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
-                       values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = 21))  +
+    scale_color_manual(values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
+    scale_shape_manual(values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = 21))  +
     theme_bw() + 
     labs(title = site_choice,
          x = " ",
@@ -250,20 +247,25 @@ plots_together
 
 ```{r}
 aque_total_frond_timeseries_labs <- aque_total_frond_timeseries + 
-  labs(x = "Sampling date", 
-       y = "Total kelp fronds")
+  labs(x = "Sampling date", y = "Total kelp fronds",
+       title = "Total kelp fronds") +
+  theme(legend.position = "none")
 mohk_total_frond_timeseries_labs <- mohk_total_frond_timeseries + 
-  labs(x = "Sampling date", 
-       y = "Total kelp fronds")
+  labs(x = "Sampling date", y = "Total kelp fronds",
+       title = "Total kelp fronds") +
+  theme(legend.position = "none")
 ivee_total_frond_timeseries_labs <- ivee_total_frond_timeseries + 
-  labs(x = "Sampling date", 
-       y = "Total kelp fronds")
+  labs(x = "Sampling date", y = "Total kelp fronds",
+       title = "Total kelp fronds") +
+  theme(legend.position = "none")
 napl_total_frond_timeseries_labs <- napl_total_frond_timeseries + 
-  labs(x = "Sampling date", 
-       y = "Total kelp fronds")
+  labs(x = "Sampling date", y = "Total kelp fronds",
+       title = "Total kelp fronds") +
+  theme(legend.position = "none")
 carp_total_frond_timeseries_labs <- carp_total_frond_timeseries + 
-  labs(x = "Sampling date", 
-       y = "Total kelp fronds")
+  labs(x = "Sampling date", y = "Total kelp fronds",
+       title = "Total kelp fronds") +
+  theme(legend.position = "none")
 ```
 
 ### Delta kelp frond timeseries
@@ -317,10 +319,10 @@ delta_frond_timeseries_fxn <- function(site_choice) {
          y = " ")
 }
 
-aque_kelp_timeseries <- delta_frond_timeseries_fxn("AQUE")
-mohk_kelp_timeseries <- delta_frond_timeseries_fxn("MOHK")
-carp_kelp_timeseries <- delta_frond_timeseries_fxn("CARP")
-ivee_kelp_timeseries <- ggplot() +
+aque_delta_kelp_timeseries <- delta_frond_timeseries_fxn("AQUE")
+mohk_delta_kelp_timeseries <- delta_frond_timeseries_fxn("MOHK")
+carp_delta_kelp_timeseries <- delta_frond_timeseries_fxn("CARP")
+ivee_delta_kelp_timeseries <- ggplot() +
   scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
       annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
@@ -335,13 +337,13 @@ ivee_kelp_timeseries <- ggplot() +
   labs(title = "IVEE",
        x = "Sampling date",
        y = " ")
-napl_kelp_timeseries <- delta_frond_timeseries_fxn("NAPL")
+napl_delta_kelp_timeseries <- delta_frond_timeseries_fxn("NAPL")
 
-aque_kelp_timeseries
-mohk_kelp_timeseries
-ivee_kelp_timeseries
-napl_kelp_timeseries
-carp_kelp_timeseries
+aque_delta_kelp_timeseries
+mohk_delta_kelp_timeseries
+ivee_delta_kelp_timeseries
+napl_delta_kelp_timeseries
+carp_delta_kelp_timeseries
 
 # y-axis label for patchwork side eye emoji
 yaxislabel <- ggplot(data.frame(l = "kelp fronds (removal - control)", x = 1, y = 1)) +
@@ -349,7 +351,7 @@ yaxislabel <- ggplot(data.frame(l = "kelp fronds (removal - control)", x = 1, y 
       theme_void() +
       coord_cartesian(clip = "off")
 
-plots_together <- yaxislabel + (aque_kelp_timeseries / mohk_kelp_timeseries / napl_kelp_timeseries / ivee_kelp_timeseries / carp_kelp_timeseries) +
+plots_together <- yaxislabel + (aque_delta_kelp_timeseries / mohk_delta_kelp_timeseries / napl_delta_kelp_timeseries / ivee_delta_kelp_timeseries / carp_delta_kelp_timeseries) +
   plot_layout(guides = "collect", widths = c(1, 25)) &
   theme(legend.position = "bottom")
 
@@ -361,17 +363,57 @@ plots_together
 #### Delta frond timeseries for report
 
 ```{r}
-aque_kelp_timeseries_labs <- aque_kelp_timeseries +
-  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
-mohk_kelp_timeseries_labs <- mohk_kelp_timeseries +
-  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
-ivee_kelp_timeseries_labs <- ivee_kelp_timeseries +
-  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
-napl_kelp_timeseries_labs <- napl_kelp_timeseries +
-  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
-carp_kelp_timeseries_labs <- carp_kelp_timeseries +
-  labs(x = "Sampling date", y = "Delta fronds (removal - control)")
+aque_delta_kelp_timeseries_labs <- aque_delta_kelp_timeseries +
+  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+       title = "\u0394 fronds (removal - control)")  +
+  theme(legend.position = "none")
+mohk_delta_kelp_timeseries_labs <- mohk_delta_kelp_timeseries +
+  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+       title = "\u0394 fronds (removal - control)")  +
+  theme(legend.position = "none")
+ivee_delta_kelp_timeseries_labs <- ivee_delta_kelp_timeseries +
+  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+       title = "\u0394 fronds (removal - control)")  +
+  theme(legend.position = "none")
+napl_delta_kelp_timeseries_labs <- napl_delta_kelp_timeseries +
+  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+       title = "\u0394 fronds (removal - control)")  +
+  theme(legend.position = "none")
+carp_delta_kelp_timeseries_labs <- carp_delta_kelp_timeseries +
+  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+       title = "\u0394 fronds (removal - control)") +
+  theme(legend.position = "none")
 ```
+
+### 2022-02-04 report figures
+
+```{r}
+aque_panels <- (aque_comparison_frond / aque_total_frond_timeseries_labs / aque_delta_kelp_timeseries_labs) +
+  plot_layout(guides = "collect") 
+
+napl_panels <- (napl_comparison_frond / napl_total_frond_timeseries_labs / napl_delta_kelp_timeseries_labs) +
+  plot_layout(guides = "collect") 
+
+ivee_panels <- (ivee_comparison_frond / ivee_total_frond_timeseries_labs / ivee_delta_kelp_timeseries_labs) +
+  plot_layout(guides = "collect") 
+
+carp_panels <- (carp_comparison_frond / carp_total_frond_timeseries_labs / carp_delta_kelp_timeseries_labs) +
+  plot_layout(guides = "collect") 
+
+mohk_panels <- (mohk_comparison_frond / mohk_total_frond_timeseries_labs / mohk_delta_kelp_timeseries_labs) +
+  plot_layout(guides = "collect") 
+
+# ggsave(here::here("figures", "panels_aque_2022-02-03.jpg"), aque_panels, height = 10, width = 9, dpi = 200)
+# 
+# ggsave(here::here("figures", "panels_napl_2022-02-03.jpg"), napl_panels, height = 10, width = 9, dpi = 200)
+# 
+# ggsave(here::here("figures", "panels_ivee_2022-02-03.jpg"), ivee_panels, height = 10, width = 9, dpi = 200)
+# 
+# ggsave(here::here("figures", "panels_carp_2022-02-03.jpg"), carp_panels, height = 10, width = 9, dpi = 200)
+# 
+# ggsave(here::here("figures", "panels_mohk_2022-02-03.jpg"), mohk_panels, height = 10, width = 9, dpi = 200)
+```
+
 
 ## Model selection for delta frond density
 
