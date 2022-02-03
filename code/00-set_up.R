@@ -363,7 +363,7 @@ NAPL_col <- "#D98A63"
 
 annual_col <- "#54662C"
 continual_col <- "#009BB0"
-control_col <- "#000000"
+control_col <- "grey"
 kelp_col <- "#6D5A18"
 under_col <- "#CC7540"
 
