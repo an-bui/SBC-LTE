@@ -20,6 +20,9 @@ library(vegclust)
 library(ecotraj)
 library(FD)
 library(BiodiversityR)
+library(minpack.lm) # Fitting non-linear models
+library(nls2) # Fitting non-linear models
+library(AICcmodavg) # calculate second order AIC (AICc)
 
 
 # 2. start and end dates --------------------------------------------------
