@@ -160,6 +160,26 @@ ivee_comparison_frond
 napl_comparison_frond
 ```
 
+```{r}
+summary(aov(data = total_fronds,
+    formula = total_fronds ~ site + treatment + site*treatment))
+
+TukeyHSD(aov(data = total_fronds,
+    formula = total_fronds ~ site + treatment + site*treatment))
+
+model.dredge <- dredge(
+  lm(total_fronds ~ site + treatment + site*treatment, data = total_fronds, na.action = na.pass)
+)
+
+model.sel(model.dredge) %>% 
+  gt() %>% 
+  tab_header(title = "all model subsets",
+             subtitle = "total_fronds ~ site + treatment + site*treatment") 
+# %>% 
+#   gtsave("tab_1.png", expand = 10,
+#          path = here::here("tables", "kelp_frond_model.png"))
+```
+
 
 ### Total kelp frond timeseries
 
