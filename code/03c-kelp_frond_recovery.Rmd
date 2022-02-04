@@ -23,7 +23,7 @@ source(here::here("code", "00-set_up.R"))
 ## More wrangling
 
 Data frames:  
-- `delta_fronds`: calculates difference in frond density between control and removal plots (control - annual, and control - continual)  
+- `delta_fronds`: calculates difference in frond density between control and removal plots (removal - control)  
 - `control_fronds`: kelp fronds from control plots only  
 - `total_fronds`: kelp fronds from treatment + control plots
 
@@ -147,6 +147,7 @@ ivee_comparison_frond <- total_fronds %>%
     scale_color_manual(values = c("ANNUAL" = annual_col, "CONTROL" = "grey")) +
     scale_shape_manual(values = c("ANNUAL" = annual_shape, "CONTROL" = control_shape)) +
     theme_bw() +
+    theme(plot.title = element_text(size = 20)) +
     labs(x = " ",
          y = "Mean frond density",
          title = "IVEE")
@@ -189,8 +190,8 @@ total_frond_timeseries_fxn <- function(site_choice) {
            alpha = 0.2) +
     geom_point(size = 3) +
     geom_line(size = 1) +
-    scale_color_manual(values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
-    scale_shape_manual(values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = 21))  +
+    scale_color_manual(values = c("CONTROL" = "grey", "ANNUAL" = annual_col, "CONTINUAL" = continual_col)) +
+    scale_shape_manual(values = c("CONTROL" = control_shape, "ANNUAL" = annual_shape, "CONTINUAL" = continual_shape))  +
     theme_bw() + 
     labs(title = site_choice,
          x = " ",
@@ -202,24 +203,19 @@ mohk_total_frond_timeseries <- total_frond_timeseries_fxn("MOHK")
 carp_total_frond_timeseries <- total_frond_timeseries_fxn("CARP")
 ivee_total_frond_timeseries <- ggplot(data = total_fronds %>% filter(site == "IVEE"),
          aes(x = date, y = total_fronds, color = treatment, shape = treatment)) +
-  scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
-  geom_hline(yintercept = 0, color = "grey") +
-  annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
+    scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
+    geom_hline(yintercept = 0, color = "grey") +
+    annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
            ymin = -1, ymax = (total_fronds %>% filter(site == "IVEE") %>% pull(total_fronds) %>% max())*1.05,
            alpha = 0.2) +
-  geom_point(size = 3) +
-  geom_line(size = 1) +
-  scale_color_manual(name = NULL,
-                       breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
-                       values = c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = "grey")) +
-    scale_shape_manual(name = NULL,
-                       breaks = c("ANNUAL", "CONTINUAL", "CONTROL"),
-                       values = c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = 21)) +
-  theme_bw() + 
-  theme(legend.position = "none") +
-  labs(title = "IVEE",
-       x = "Sampling date",
-       y = " ")
+    geom_point(size = 3) +
+    geom_line(size = 1) +
+    scale_color_manual(values = c("CONTROL" = control_col, "ANNUAL" = annual_col)) +
+    scale_shape_manual(values = c("CONTROL" = control_shape, "ANNUAL" = annual_shape))  +
+    theme_bw() + 
+    labs(title = "IVEE",
+         x = " ",
+         y = " ")
 napl_total_frond_timeseries <- total_frond_timeseries_fxn("NAPL")
 
 aque_total_frond_timeseries
@@ -300,6 +296,8 @@ delta_frond_timeseries_fxn <- function(site_choice) {
     annotate("rect", xmin = after_date, xmax = as.Date("2022-02-02"),
              ymin = rect_ymin*1.1, ymax = rect_ymax*1.1,
              alpha = 0.2) +
+    annotate("text", x = as.Date("2009-04-01"), y = rect_ymax*1.1, label = "removal > control", size = 3) +
+  annotate("text", x = as.Date("2009-04-01"), y = rect_ymin*1.1, label = "control > removal", size = 3) +
     geom_point(data = delta_fronds %>% filter(site == site_choice & delta_annual != "NA"), 
                aes(x = date, y = delta_annual, color = "Annual"), 
                size = 3, shape = annual_shape) +
@@ -329,6 +327,8 @@ ivee_delta_kelp_timeseries <- ggplot() +
              ymin = delta_fronds %>% filter(site == "IVEE") %>% pull(delta_annual) %>% min()*1.1, 
              ymax = delta_fronds %>% filter(site == "IVEE") %>% pull(delta_annual) %>% max()*1.1,
              alpha = 0.2) +
+  annotate("text", x = as.Date("2009-04-01"), y = delta_fronds %>% filter(site == "IVEE") %>% pull(delta_annual) %>% max()*1.1, label = "removal > control", size = 3) +
+  annotate("text", x = as.Date("2009-04-01"), y = delta_fronds %>% filter(site == "IVEE") %>% pull(delta_annual) %>% min()*1.1, label = "control > removal", size = 3) +
   geom_point(data = delta_fronds %>% filter(site == "IVEE" & delta_annual != "NA"), 
              aes(x = date, y = delta_annual), color = annual_col, size = 3) +
   geom_line(data = delta_fronds %>% filter(site == "IVEE" & delta_annual != "NA"),
@@ -364,23 +364,23 @@ plots_together
 
 ```{r}
 aque_delta_kelp_timeseries_labs <- aque_delta_kelp_timeseries +
-  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+  labs(x = "Sampling date", y = "\u0394 fronds \n (removal - control)",
        title = "\u0394 fronds (removal - control)")  +
   theme(legend.position = "none")
 mohk_delta_kelp_timeseries_labs <- mohk_delta_kelp_timeseries +
-  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+  labs(x = "Sampling date", y = "\u0394 fronds \n (removal - control)",
        title = "\u0394 fronds (removal - control)")  +
   theme(legend.position = "none")
 ivee_delta_kelp_timeseries_labs <- ivee_delta_kelp_timeseries +
-  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+  labs(x = "Sampling date", y = "\u0394 fronds \n (removal - control)",
        title = "\u0394 fronds (removal - control)")  +
   theme(legend.position = "none")
 napl_delta_kelp_timeseries_labs <- napl_delta_kelp_timeseries +
-  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+  labs(x = "Sampling date", y = "\u0394 fronds \n (removal - control)",
        title = "\u0394 fronds (removal - control)")  +
   theme(legend.position = "none")
 carp_delta_kelp_timeseries_labs <- carp_delta_kelp_timeseries +
-  labs(x = "Sampling date", y = "\u0394 fronds (removal - control)",
+  labs(x = "Sampling date", y = "\u0394 fronds \n (removal - control)",
        title = "\u0394 fronds (removal - control)") +
   theme(legend.position = "none")
 ```
@@ -389,7 +389,9 @@ carp_delta_kelp_timeseries_labs <- carp_delta_kelp_timeseries +
 
 ```{r}
 aque_panels <- (aque_comparison_frond / aque_total_frond_timeseries_labs / aque_delta_kelp_timeseries_labs) +
-  plot_layout(guides = "collect") 
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 16))
 
 napl_panels <- (napl_comparison_frond / napl_total_frond_timeseries_labs / napl_delta_kelp_timeseries_labs) +
   plot_layout(guides = "collect") 
@@ -403,15 +405,15 @@ carp_panels <- (carp_comparison_frond / carp_total_frond_timeseries_labs / carp_
 mohk_panels <- (mohk_comparison_frond / mohk_total_frond_timeseries_labs / mohk_delta_kelp_timeseries_labs) +
   plot_layout(guides = "collect") 
 
-# ggsave(here::here("figures", "panels_aque_2022-02-03.jpg"), aque_panels, height = 10, width = 9, dpi = 200)
+# ggsave(here::here("figures", "panels_aque_2022-02-03.jpg"), aque_panels, height = 10, width = 9, dpi = 300)
 # 
-# ggsave(here::here("figures", "panels_napl_2022-02-03.jpg"), napl_panels, height = 10, width = 9, dpi = 200)
+# ggsave(here::here("figures", "panels_napl_2022-02-03.jpg"), napl_panels, height = 10, width = 9, dpi = 300)
 # 
-# ggsave(here::here("figures", "panels_ivee_2022-02-03.jpg"), ivee_panels, height = 10, width = 9, dpi = 200)
+# ggsave(here::here("figures", "panels_ivee_2022-02-03.jpg"), ivee_panels, height = 10, width = 9, dpi = 300)
 # 
-# ggsave(here::here("figures", "panels_carp_2022-02-03.jpg"), carp_panels, height = 10, width = 9, dpi = 200)
+# ggsave(here::here("figures", "panels_carp_2022-02-03.jpg"), carp_panels, height = 10, width = 9, dpi = 300)
 # 
-# ggsave(here::here("figures", "panels_mohk_2022-02-03.jpg"), mohk_panels, height = 10, width = 9, dpi = 200)
+# ggsave(here::here("figures", "panels_mohk_2022-02-03.jpg"), mohk_panels, height = 10, width = 9, dpi = 300)
 ```
 
 
@@ -428,10 +430,10 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
 	# Plot delta against time.true
 	# dev.new(width=10, height=5)
 	# par(mfrow=c(1,2))
-	# plot(delta~time.true, type="n")
+	plot(delta~time.true, type="n")
 	time.model.of.impact=max(which(time.model==0))
-	# rect(time.model.of.impact, min(delta)-100, max(time.model)+10, max(delta)+100, col = "grey")
-	# points(delta~time.true, pch=24, bg="white", cex=2)
+	rect(time.model.of.impact, min(delta)-100, max(time.model)+10, max(delta)+100, col = "grey")
+	points(delta~time.true, pch=24, bg="white", cex=2)
 	
 	### STEP 3 - Fit and compete models
 	## Create a 'period' variable
@@ -497,7 +499,7 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
 
 	# Display AICc weights
 	print(w)
-	# barplot(w, col="white", ylab="Relative likelihood (%)", cex.names = 0.9, names.arg =c("Step","Linear","Asymptotic","Sigmoid"))
+	barplot(w, col="white", ylab="Relative likelihood (%)", cex.names = 0.9, names.arg =c("Step","Linear","Asymptotic","Sigmoid"))
 	best.Model<-which(w==max(w))
 
 	### STEP 4 - Derive inference based on the best model (i.e., with the higher AICc weight)
@@ -516,8 +518,6 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
 Function to add a column in the frond data frame for each site called `time.model` that has the timesteps labelled the way the function wants them.
 
 ```{r}
-library(rlang)
-
 time.model.fxn <- function(site) {
   delta_fronds %>% 
     filter(site == {{ site }}) %>% 
