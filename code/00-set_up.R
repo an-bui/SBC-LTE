@@ -89,7 +89,8 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
   # ANOB is incorrectly coded as having "SESSILE" mobility
   mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
   # replace all -99999 values with NA
-  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA)) %>% 
+  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA),
+         wm_gm2 = replace(wm_gm2, wm_gm2 < 0, NA)) %>% 
   # create a sample_ID for each sampling date at each treatment at each site
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
   # create "functional groups" of group and mobility
@@ -110,7 +111,14 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
     site == "IVEE" & date > ivee_after_date ~ "after",
     TRUE ~ "during"
   ),
-  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
+  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
+  mutate(season = case_when(
+    month %in% c(12, 1, 2) ~ "winter",
+    month %in% c(3, 4, 5) ~ "spring",
+    month %in% c (6, 7, 8) ~ "summer",
+    month %in% c(9, 10, 11) ~ "fall"
+  ),
+  season = fct_relevel(season, "winter", "spring", "summer", "fall"))
 
 ############################################
 # b. percent cover
