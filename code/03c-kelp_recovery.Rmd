@@ -1064,5 +1064,84 @@ ggplot(test_annual, aes(x = year)) +
   labs(x = "Year", y = "delta kelp fronds (removal - control)")
 ```
 
+## Biomass by season figure
+
+x-axis: time from winter to fall  
+y-axis: kelp biomass  
+lines: colored by sampling date and year  
+
+Going to try with AQUE first:
+```{r}
+aque_test <- total_biomass %>% 
+  filter(site == "AQUE" & year %in% c(2014, 2015, 2016, 2017)) %>% 
+  unite("color", treatment, year, sep = "_", remove = FALSE) %>% 
+  mutate(season = fct_relevel(season, c("spring", "summer", "fall", "winter"))) %>% 
+  # group_by(color) %>% 
+  ggplot(aes(x = season, y = total_wm_gm2, group = color)) +
+  geom_point(aes(color = color)) +
+  geom_line(aes(color = color)) +
+  # geom_text(aes(label = year)) +
+  facet_wrap(~treatment)
+
+
+aque_test
+```
+
+Ok great. Going to do the rest now:
+
+```{r}
+total_biomass %>% 
+  filter(site == "AQUE") %>% 
+  unite("color", treatment, year, sep = "_", remove = FALSE) %>% 
+  mutate(season = fct_relevel(season, c("spring", "summer", "fall", "winter"))) %>% 
+  ggplot(aes(x = season, y = total_wm_gm2, group = color)) +
+  geom_point(aes(color = color)) +
+  geom_line(aes(color = color)) +
+  theme(legend.position = "none") +
+  # geom_text(aes(label = year)) +
+  facet_wrap(~treatment, nrow = 5, ncol = 3)
+```
+
+## Fall biomass figure
+
+x-axis: time  
+y-axis: biomass  
+only including fall sampling dates
+
+```{r}
+kelp_biomass_fall <- total_biomass %>% 
+  filter(season == "fall") %>% 
+  ggplot(aes(x = date, y = total_wm_gm2)) +
+      annotate("rect", xmin = after_date, xmax = as.Date("2022-02-02"),
+             ymin = rect_ymin*1.1, ymax = rect_ymax*1.1,
+             alpha = 0.2) + 
+  geom_line(aes(color = treatment), size = 1) +
+  geom_point(aes(color = treatment, shape = treatment), size = 3) +
+  scale_color_manual(values = color_palette) +
+  scale_shape_manual(values = shape_palette) +
+  theme_bw() +
+  facet_wrap(~site) +
+  labs(x = "Sampling date", y = "Total biomass (wet mass/gm2)",
+       title = "Fall biomass")
+
+kelp_biomass_summer <- total_biomass %>% 
+  filter(season == "summer") %>% 
+  ggplot(aes(x = date, y = total_wm_gm2)) +
+  geom_line(aes(color = treatment), size = 1) +
+  geom_point(aes(color = treatment, shape = treatment), size = 3) +
+  scale_color_manual(values = color_palette) +
+  scale_shape_manual(values = shape_palette) +
+  theme_bw() +
+  facet_wrap(~site) +
+    labs(x = "Sampling date", y = "Total biomass (wet mass/gm2)",
+       title = "Summer biomass")
+
+kelp_biomass_fall
+kelp_biomass_summer
+```
+
+
+
+
 
 
