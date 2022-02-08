@@ -232,7 +232,7 @@ comparison_biomass_fxn <- function(site_choice) {
     theme_bw() +
     theme(plot.title = element_text(size = 20)) +
     labs(x = " ",
-         y = "Mean kelp biomass (wm/gm2)",
+         y = "Mean kelp biomass (wm g/m2)",
          title = site_choice)
 }
 
@@ -256,7 +256,7 @@ ivee_comparison_biomass <- total_biomass %>%
     theme_bw() +
     theme(plot.title = element_text(size = 20)) +
     labs(x = " ",
-         y = "Mean kelp biomass (wm/gm2)",
+         y = "Mean kelp biomass (wm g/m2)",
          title = "IVEE")
 mohk_comparison_biomass <- comparison_biomass_fxn("MOHK")
 carp_comparison_biomass <- comparison_biomass_fxn("CARP")
@@ -441,28 +441,31 @@ total_biomass_timeseries_fxn <- function(site_choice) {
     scale_color_manual(values = c("CONTROL" = "grey", "ANNUAL" = annual_col, "CONTINUAL" = continual_col)) +
     scale_shape_manual(values = c("CONTROL" = control_shape, "ANNUAL" = annual_shape, "CONTINUAL" = continual_shape))  +
     theme_bw() + 
+    theme(legend.position = "none") +
     labs(title = site_choice,
          x = "Sampling date",
-         y = "Total kelp biomass (wm/gm2)")
+         y = "Total kelp biomass (wm g/m2)")
 }
 
 aque_total_biomass_timeseries <- total_biomass_timeseries_fxn("AQUE")
 napl_total_biomass_timeseries <- total_biomass_timeseries_fxn("NAPL")
-ivee_total_biomass_timeseries <- ggplot(data = total_biomass %>% filter(site == "IVEE"),
-         aes(x = date, y = total_wm_gm2, color = treatment, shape = treatment)) +
-    scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
-    geom_hline(yintercept = 0, color = "grey") +
-    annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
+ivee_total_biomass_timeseries <- ggplot(data = total_biomass %>% 
+                                          filter(site == "IVEE"),
+                                        aes(x = date, y = total_wm_gm2, color = treatment, shape = treatment)) +
+  scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
+  geom_hline(yintercept = 0, color = "grey") +
+  annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
            ymin = -1, ymax = (total_biomass %>% filter(site == "IVEE") %>% pull(total_wm_gm2) %>% max())*1.05,
            alpha = 0.2) +
-    geom_point(size = 3) +
-    geom_line(size = 1) +
-    scale_color_manual(values = c("CONTROL" = "grey", "ANNUAL" = annual_col, "CONTINUAL" = continual_col)) +
-    scale_shape_manual(values = c("CONTROL" = control_shape, "ANNUAL" = annual_shape, "CONTINUAL" = continual_shape))  +
-    theme_bw() + 
-    labs(title = "IVEE",
-         x = "Sampling date",
-         y = "Total kelp biomass (wm/gm2)")
+  geom_point(size = 3) +
+  geom_line(size = 1) +
+  scale_color_manual(values = c("CONTROL" = "grey", "ANNUAL" = annual_col, "CONTINUAL" = continual_col)) +
+  scale_shape_manual(values = c("CONTROL" = control_shape, "ANNUAL" = annual_shape, "CONTINUAL" = continual_shape))  +
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(title = "IVEE",
+       x = "Sampling date",
+       y = "Total kelp biomass (wm g/m2)")
 mohk_total_biomass_timeseries <- total_biomass_timeseries_fxn("MOHK")
 carp_total_biomass_timeseries <- total_biomass_timeseries_fxn("CARP")
 
@@ -642,45 +645,46 @@ delta_biomass_timeseries_fxn <- function(site_choice) {
                        breaks = c("Annual", "Continual"),
                        values = c("Annual" = annual_col, "Continual" = continual_col)) +
     theme_bw() + 
+    theme(legend.position = "none") +
     labs(x = "Sampling date",
-         y = "Total kelp biomass (wm/gm2)",
+         y = "\u0394 kelp biomass \n (wm g/m2, removal - control)",
          title = site_choice)
 }
 
-aque_biomass_timeseries <- delta_biomass_timeseries_fxn("AQUE")
-napl_biomass_timeseries <- delta_biomass_timeseries_fxn("NAPL")
-ivee_biomass_timeseries <- ggplot() +
-    scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-    annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
-             ymin = delta_biomass %>% filter(site == "IVEE") %>% pull(delta_annual) %>% min()*1.1, 
-             ymax = delta_biomass %>% filter(site == "IVEE") %>% pull(delta_annual) %>% max()*1.1,
-             alpha = 0.2) +
-    annotate("text", x = as.Date("2009-04-01"), y = delta_biomass %>% filter(site == "IVEE") %>% pull(delta_annual) %>% max()*1.1, label = "removal > control", size = 3) +
+aque_delta_biomass_timeseries <- delta_biomass_timeseries_fxn("AQUE")
+napl_delta_biomass_timeseries <- delta_biomass_timeseries_fxn("NAPL")
+ivee_delta_biomass_timeseries <- ggplot() +
+  scale_x_date(limits = c(aque_start_date, as.Date("2022-02-02"))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  annotate("rect", xmin = ivee_after_date, xmax = as.Date("2022-02-02"),
+           ymin = delta_biomass %>% filter(site == "IVEE") %>% pull(delta_annual) %>% min()*1.1, 
+           ymax = delta_biomass %>% filter(site == "IVEE") %>% pull(delta_annual) %>% max()*1.1,
+           alpha = 0.2) +
+  annotate("text", x = as.Date("2009-04-01"), y = delta_biomass %>% filter(site == "IVEE") %>% pull(delta_annual) %>% max()*1.1, label = "removal > control", size = 3) +
   annotate("text", x = as.Date("2009-04-01"), y = delta_biomass %>% filter(site == "IVEE") %>% pull(delta_annual) %>% min()*1.1, label = "control > removal", size = 3) +
-    geom_point(data = delta_biomass %>% filter(site == "IVEE" & delta_annual != "NA"), 
-               aes(x = date, y = delta_annual, color = "Annual"), 
-               size = 3, shape = annual_shape) +
-    geom_line(data = delta_biomass %>% filter(site == "IVEE" & delta_annual != "NA"),
-              aes(x = date, y = delta_annual, color = "Annual"), size = 1) +
-    scale_color_manual(name = NULL,
-                       breaks = c("Annual"),
-                       values = c("Annual" = annual_col)) +
-    theme_bw() + 
-    labs(x = "Sampling date",
-         y = "Total kelp biomass (wm/gm2)",
-         title = "IVEE")
-mohk_biomass_timeseries <- delta_biomass_timeseries_fxn("MOHK")
-carp_biomass_timeseries <- delta_biomass_timeseries_fxn("CARP")
+  geom_point(data = delta_biomass %>% filter(site == "IVEE" & delta_annual != "NA"), 
+             aes(x = date, y = delta_annual, color = "Annual"), 
+             size = 3, shape = annual_shape) +
+  geom_line(data = delta_biomass %>% filter(site == "IVEE" & delta_annual != "NA"),
+            aes(x = date, y = delta_annual, color = "Annual"), size = 1) +
+  scale_color_manual(name = NULL,
+                     breaks = c("Annual"),
+                     values = c("Annual" = annual_col)) +
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(x = "Sampling date",
+       y = "\u0394 kelp biomass \n (wm g/m2, removal - control)",
+       title = "IVEE")
+mohk_delta_biomass_timeseries <- delta_biomass_timeseries_fxn("MOHK")
+carp_delta_biomass_timeseries <- delta_biomass_timeseries_fxn("CARP")
 
 
-aque_biomass_timeseries
-napl_biomass_timeseries
-ivee_biomass_timeseries
-mohk_biomass_timeseries
-carp_biomass_timeseries
+aque_delta_biomass_timeseries
+napl_delta_biomass_timeseries
+ivee_delta_biomass_timeseries
+mohk_delta_biomass_timeseries
+carp_delta_biomass_timeseries
 ```
-
 
 ### 2022-02-04 report figures
 
@@ -711,6 +715,45 @@ mohk_panels <- (mohk_comparison_frond / mohk_total_frond_timeseries_labs / mohk_
 # ggsave(here::here("figures", "panels_carp_2022-02-03.jpg"), carp_panels, height = 10, width = 9, dpi = 300)
 # 
 # ggsave(here::here("figures", "panels_mohk_2022-02-03.jpg"), mohk_panels, height = 10, width = 9, dpi = 300)
+```
+
+### 2022-02-11 report figures
+
+```{r}
+aque_panels <- (aque_comparison_biomass / aque_total_biomass_timeseries / aque_delta_biomass_timeseries) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 16))
+
+napl_panels <- (napl_comparison_biomass / napl_total_biomass_timeseries / napl_delta_biomass_timeseries) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 16))
+
+ivee_panels <- (ivee_comparison_biomass / ivee_total_biomass_timeseries / ivee_delta_biomass_timeseries) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 16))
+
+carp_panels <- (carp_comparison_biomass / carp_total_biomass_timeseries / carp_delta_biomass_timeseries) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 16))
+
+mohk_panels <- (mohk_comparison_biomass / mohk_total_biomass_timeseries / mohk_delta_biomass_timeseries) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 16))
+
+# ggsave(here::here("figures", "panels_biomass_aque_2022-02-04.jpg"), aque_panels, height = 10, width = 9, dpi = 300)
+# 
+# ggsave(here::here("figures", "panels_biomass_napl_2022-02-04.jpg"), napl_panels, height = 10, width = 9, dpi = 300)
+# 
+# ggsave(here::here("figures", "panels_biomass_ivee_2022-02-04.jpg"), ivee_panels, height = 10, width = 9, dpi = 300)
+# 
+# ggsave(here::here("figures", "panels_biomass_carp_2022-02-04.jpg"), carp_panels, height = 10, width = 9, dpi = 300)
+# 
+# ggsave(here::here("figures", "panels_biomass_mohk_2022-02-04.jpg"), mohk_panels, height = 10, width = 9, dpi = 300)
 ```
 
 
