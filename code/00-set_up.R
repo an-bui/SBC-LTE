@@ -36,7 +36,11 @@ napl_start_dates <- c("NAPL_CONTROL_2008-01-10", "NAPL_ANNUAL_2008-01-10", "NAPL
 
 napl_start_date <- as_date("2008-01-10")
 
-napl_after_date <- as_date("2016-02-09")
+napl_after_date <- as_date("2016-02-09") 
+
+napl_after_date_annual <- as_date("2017-02-14")
+
+napl_after_date_continual <- as_date("2016-05-17")
 
 ############################################
 # b. Mohawk (MOHK)
@@ -48,6 +52,10 @@ mohk_start_date <- as_date("2008-01-17")
 
 mohk_after_date <- as_date("2017-02-13")
 
+mohk_after_date_annual <- as_date("2019-02-12")
+
+mohk_after_date_continual <- as_date("2018-05-15")
+
 ############################################
 # c. Arroyo Quemado (AQUE)
 ############################################
@@ -57,6 +65,10 @@ aque_start_dates <- c("AQUE_CONTROL_2008-01-30", "AQUE_ANNUAL_2008-01-30", "AQUE
 aque_start_date <- as_date("2008-01-30")
 
 aque_after_date <- as_date("2017-03-02")
+
+aque_after_date_annual <- as_date("2018-02-28")
+
+aque_after_date_continual <- as_date("2017-05-18")
 
 ############################################
 # d. Carpinteria (CARP)
@@ -68,6 +80,10 @@ carp_start_date <- as_date("2008-02-12")
 
 carp_after_date <- as_date("2017-02-15")
 
+carp_after_date_annual <- as_date("2018-02-20")
+
+carp_after_date_continual <- as_date("2017-05-19")
+
 ############################################
 # e. Isla Vista (IVEE)
 ############################################
@@ -77,6 +93,8 @@ ivee_start_dates <- c("IVEE_CONTROL_2011-10-26", "IVEE_ANNUAL_2011-10-26")
 ivee_start_date <- as_date("2011-10-26")
 
 ivee_after_date <- as_date("2016-02-18")
+
+ivee_after_date_annual <- as_date("2017-02-09")
 
 # 3. data -----------------------------------------------------------------
 
@@ -113,8 +131,8 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
   ),
   exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) %>% 
   mutate(season = case_when(
-    month %in% c(12, 1, 2) ~ "winter",
-    month %in% c(3, 4, 5) ~ "spring",
+    month %in% c(12, 1, 2, 3) ~ "winter",
+    month %in% c(4, 5) ~ "spring",
     month %in% c (6, 7, 8) ~ "summer",
     month %in% c(9, 10, 11) ~ "fall"
   ),
@@ -379,10 +397,13 @@ control_col <- "grey"
 kelp_col <- "#6D5A18"
 under_col <- "#CC7540"
 
+color_palette <- c("ANNUAL" = annual_col, "CONTINUAL" = continual_col, "CONTROL" = control_col)
+
 annual_shape <- 19
 continual_shape <- 17
 control_shape <- 21
 
+shape_palette <- c("ANNUAL" = annual_shape, "CONTINUAL" = continual_shape, "CONTROL" = control_shape)
 
 
 
