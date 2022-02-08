@@ -29,7 +29,7 @@ library(MuMIn)
 # 2. start and end dates --------------------------------------------------
 
 ############################################
-# a. Naples (NAPL)
+# a. Naples (NAPL) 
 ############################################
 
 napl_start_dates <- c("NAPL_CONTROL_2008-01-10", "NAPL_ANNUAL_2008-01-10", "NAPL_CONTINUAL_2010-04-27")
@@ -96,10 +96,59 @@ ivee_after_date <- as_date("2016-02-18")
 
 ivee_after_date_annual <- as_date("2017-02-09")
 
-# 3. data -----------------------------------------------------------------
+# 3. useful functions for wrangling ---------------------------------------
+
+after_dates_column <- function(df) {
+  df %>% 
+    mutate(after_dates = case_when(
+      site == "aque" & treatment == "annual" ~ aque_after_date_annual,
+      site == "aque" & treatment == "continual" ~ aque_after_date_continual,
+      site == "aque" & treatment == "control" ~ aque_after_date_annual,
+      site == "napl" & treatment == "annual" ~ napl_after_date_annual,
+      site == "napl" & treatment == "continual" ~ napl_after_date_continual,
+      site == "napl" & treatment == "control" ~ napl_after_date_annual,
+      site == "ivee" & treatment == "annual" ~ ivee_after_date_annual,
+      site == "mohk" & treatment == "annual" ~ mohk_after_date_annual,
+      site == "mohk" & treatment == "continual" ~ mohk_after_date_continual,
+      site == "mohk" & treatment == "control" ~ mohk_after_date_annual,
+      site == "carp" & treatment == "annual" ~ carp_after_date_annual,
+      site == "carp" & treatment == "continual" ~ carp_after_date_continual,
+      site == "carp" & treatment == "control" ~ carp_after_date_annual
+    ))
+}
+
+# make a new column for during and after and set factor levels
+exp_dates_column <- function(df) {
+  df %>% 
+    mutate(exp_dates = case_when(
+      site == "aque" & date > napl_after_date_annual ~ "after",
+      site == "napl" & date > mohk_after_date_annual ~ "after",
+      site == "ivee" & date > ivee_after_date_annual ~ "after",
+      site == "mohk" & date > mohk_after_date_annual ~ "after",
+      site == "carp" & date > carp_after_date_annual ~ "after",
+      TRUE ~ "during"
+    ),
+    exp_dates = fct_relevel(exp_dates, c("during", "after"))) 
+}
+
+# create a new column for season and set factor levels
+season_column <- function(df) {
+  df %>% 
+    mutate(season = case_when(
+      month %in% c(12, 1, 2, 3) ~ "winter",
+      month %in% c(4, 5) ~ "spring",
+      month %in% c (6, 7, 8) ~ "summer",
+      month %in% c(9, 10, 11) ~ "fall"
+    ),
+    season = fct_relevel(season, "spring", "winter", "summer", "fall")) 
+}
+
+
+
+# 4. data -----------------------------------------------------------------
 
 ############################################
-# a. biomass
+# a. LTE all species biomass #############
 ############################################
 
 biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20220202.csv")) %>% 
@@ -114,39 +163,11 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
   # change to lower case
   mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
   # make a new column for after dates
-  mutate(after_dates = case_when(
-    site == "aque" & treatment == "annual" ~ aque_after_date_annual,
-    site == "aque" & treatment == "continual" ~ aque_after_date_continual,
-    site == "aque" & treatment == "control" ~ aque_after_date_annual,
-    site == "napl" & treatment == "annual" ~ napl_after_date_annual,
-    site == "napl" & treatment == "continual" ~ napl_after_date_continual,
-    site == "napl" & treatment == "control" ~ napl_after_date_annual,
-    site == "ivee" & treatment == "annual" ~ ivee_after_date_annual,
-    site == "mohk" & treatment == "annual" ~ mohk_after_date_annual,
-    site == "mohk" & treatment == "continual" ~ mohk_after_date_continual,
-    site == "mohk" & treatment == "control" ~ mohk_after_date_annual,
-    site == "carp" & treatment == "annual" ~ carp_after_date_annual,
-    site == "carp" & treatment == "continual" ~ carp_after_date_continual,
-    site == "carp" & treatment == "control" ~ carp_after_date_annual
-  )) %>% 
+  after_dates_column() %>% 
   # make a new column for during and after and set factor levels
-  mutate(exp_dates = case_when(
-    site == "aque" & date > napl_after_date_annual ~ "after",
-    site == "napl" & date > mohk_after_date_annual ~ "after",
-    site == "ivee" & date > ivee_after_date_annual ~ "after",
-    site == "mohk" & date > mohk_after_date_annual ~ "after",
-    site == "carp" & date > carp_after_date_annual ~ "after",
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  exp_dates_column() %>% 
   # create a new column for season and set factor levels
-  mutate(season = case_when(
-    month %in% c(12, 1, 2, 3) ~ "winter",
-    month %in% c(4, 5) ~ "spring",
-    month %in% c (6, 7, 8) ~ "summer",
-    month %in% c(9, 10, 11) ~ "fall"
-  ),
-  season = fct_relevel(season, "spring", "winter", "summer", "fall")) 
+  season_column()
 
 ############################################
 # b. percent cover
@@ -157,22 +178,13 @@ percov <- read_csv(here::here("data", "LTE_Cover_All_Years_20200605.csv")) %>%
   # create a sample_ID for each sampling date at each treatment at each site
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
   # change to lower case
-  mutate_at(c("group", "mobility", "growth_morph"), str_to_lower) %>% 
-  # make a new column designating "start", "during" and "after" removal
-  mutate(exp_dates = case_when(
-    site == "NAPL" & sample_ID %in% napl_start_dates ~ "start",
-    site == "NAPL" & date > napl_after_date ~ "after",
-    site == "MOHK" & sample_ID %in% mohk_start_dates ~ "start",
-    site == "MOHK" & date > mohk_after_date ~ "after",
-    site == "AQUE" & sample_ID %in% aque_start_dates ~ "start",
-    site == "AQUE" & date > aque_after_date ~ "after",
-    site == "CARP" & sample_ID %in% carp_start_dates ~ "start",
-    site == "CARP" & date > carp_after_date ~ "after",
-    site == "IVEE" & sample_ID %in% ivee_start_dates ~ "start",
-    site == "IVEE" & date > ivee_after_date ~ "after",
-    TRUE ~ "during"
-  ),
-  exp_dates = factor(exp_dates, levels = c("start", "during", "after"))) 
+  mutate_at(c("group", "mobility", "growth_morph", "site", "treatment"), str_to_lower) %>% 
+  # make a new column for after dates
+  after_dates_column() %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column() %>% 
+  # create a new column for season and set factor levels
+  season_column()
 
 ############################################
 # c. traits
@@ -191,10 +203,10 @@ biomass_annual <- read_csv(here::here("data/benthics", "Annual_All_Species_Bioma
   # create a sample_ID for each sampling date at each treatment at each site
   unite("sample_ID", site, date, remove = FALSE) %>% 
   # change to lower case
-  mutate_at(c("group", "mobility", "growth_morph"), str_to_lower)
+  mutate_at(c("group", "mobility", "growth_morph", "site"), str_to_lower)
 
 ############################################
-# e. LTE kelp biomass
+# e. LTE kelp fronds ##############
 ############################################
 
 kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %>% 
@@ -204,49 +216,20 @@ kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %
   # change to lower case
   mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
   # make a new column for after dates
-  mutate(after_dates = case_when(
-    site == "aque" & treatment == "annual" ~ aque_after_date_annual,
-    site == "aque" & treatment == "continual" ~ aque_after_date_continual,
-    site == "aque" & treatment == "control" ~ aque_after_date_annual,
-    site == "napl" & treatment == "annual" ~ napl_after_date_annual,
-    site == "napl" & treatment == "continual" ~ napl_after_date_continual,
-    site == "napl" & treatment == "control" ~ napl_after_date_annual,
-    site == "ivee" & treatment == "annual" ~ ivee_after_date_annual,
-    site == "mohk" & treatment == "annual" ~ mohk_after_date_annual,
-    site == "mohk" & treatment == "continual" ~ mohk_after_date_continual,
-    site == "mohk" & treatment == "control" ~ mohk_after_date_annual,
-    site == "carp" & treatment == "annual" ~ carp_after_date_annual,
-    site == "carp" & treatment == "continual" ~ carp_after_date_continual,
-    site == "carp" & treatment == "control" ~ carp_after_date_annual,
-    TRUE ~ "during"
-  )) %>% 
+  after_dates_column() %>% 
   # make a new column for during and after and set factor levels
-  mutate(exp_dates = case_when(
-    site == "aque" & date > napl_after_date_annual ~ "after",
-    site == "napl" & date > mohk_after_date_annual ~ "after",
-    site == "ivee" & date > ivee_after_date_annual ~ "after",
-    site == "mohk" & date > mohk_after_date_annual ~ "after",
-    site == "carp" & date > carp_after_date_annual ~ "after",
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  exp_dates_column() %>% 
   # create a new column for season and set factor levels
-  mutate(season = case_when(
-    month %in% c(12, 1, 2, 3) ~ "winter",
-    month %in% c(4, 5) ~ "spring",
-    month %in% c (6, 7, 8) ~ "summer",
-    month %in% c(9, 10, 11) ~ "fall"
-  ),
-  season = fct_relevel(season, "spring", "winter", "summer", "fall")) %>% 
+  season_column() %>% 
   filter(fronds > -1)
 
-# 4. operators ------------------------------------------------------------
+# 5. operators ------------------------------------------------------------
 
 # not in operator
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
 
-# 5. useful vectors and data frames ---------------------------------------
+# 6. useful vectors and data frames ---------------------------------------
 
 ############################################
 # a. species
@@ -254,7 +237,7 @@ kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %
 
 # data frame of each species including scientific name, common name, and group
 spp_names <- biomass %>% 
-  select(group, group_mobility, sp_code, scientific_name, common_name) %>% 
+  select(group, sp_code, scientific_name, common_name) %>% 
   unique() 
 
 # vector of each species code (length: 221)
@@ -280,52 +263,6 @@ invert_spp <- spp_names %>%
 # vector of groups
 all_groups <- biomass %>% 
   pull(group) %>% 
-  unique()
-
-# vector of group_mobility
-group_mobility <- biomass %>% 
-  pull(group_mobility) %>% 
-  unique()
-
-# data frame of mobile invert species
-invert_mobile <- biomass %>% 
-  filter(group_mobility == "invert_mobile") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
-
-# data frame of sessile invert species
-invert_sessile <- biomass %>% 
-  filter(group_mobility == "invert_sessile") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
-
-# data frame of mobile fish species
-fish_mobile <- biomass %>% 
-  filter(group_mobility == "fish_mobile") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
-
-# vector of group_mobility
-group_mobility <- biomass %>% 
-  pull(group_mobility) %>% 
-  unique()
-
-# data frame of mobile invert species
-invert_mobile <- biomass %>% 
-  filter(group_mobility == "invert_mobile") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
-
-# data frame of sessile invert species
-invert_sessile <- biomass %>% 
-  filter(group_mobility == "invert_sessile") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
-
-# data frame of mobile fish species
-fish_mobile <- biomass %>% 
-  filter(group_mobility == "fish_mobile") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
   unique()
 
 # data frame of algae species
@@ -405,7 +342,7 @@ all_after_sampleIDs <- percov %>%
   pull(sample_ID)
 
 
-# 6.  plot aesthetics -----------------------------------------------------
+# 7.  plot aesthetics -----------------------------------------------------
 
 aque_col <- "#FDD989"
 carp_col <- "#516238"
