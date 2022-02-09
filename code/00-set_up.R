@@ -52,7 +52,7 @@ mohk_start_date <- as_date("2008-01-17")
 
 mohk_after_date <- as_date("2017-02-13")
 
-mohk_after_date_annual <- as_date("2019-02-12")
+mohk_after_date_annual <- as_date("2018-02-12")
 
 mohk_after_date_continual <- as_date("2018-05-15")
 
@@ -121,14 +121,70 @@ after_dates_column <- function(df) {
 exp_dates_column <- function(df) {
   df %>% 
     mutate(exp_dates = case_when(
-      site == "aque" & date > napl_after_date_annual ~ "after",
-      site == "napl" & date > mohk_after_date_annual ~ "after",
-      site == "ivee" & date > ivee_after_date_annual ~ "after",
-      site == "mohk" & date > mohk_after_date_annual ~ "after",
-      site == "carp" & date > carp_after_date_annual ~ "after",
+      # after for annual removal:
+      site == "aque" & treatment == "annual" & date > aque_after_date_annual ~ "after",
+      site == "napl" & treatment == "annual" & date > napl_after_date_annual ~ "after",
+      site == "ivee" & treatment == "annual" & date > ivee_after_date_annual ~ "after",
+      site == "mohk" & treatment == "annual" & date > mohk_after_date_annual ~ "after",
+      site == "carp" & treatment == "annual" & date > carp_after_date_annual ~ "after",
+      # after for continual removal:
+      site == "aque" & treatment == "continual" & date > aque_after_date_continual ~ "after",
+      site == "napl" & treatment == "continual" & date > napl_after_date_continual ~ "after",
+      site == "mohk" & treatment == "continual" & date > mohk_after_date_continual ~ "after",
+      site == "carp" & treatment == "continual" & date > carp_after_date_continual ~ "after",
+      # after for control:
+      site == "aque" & treatment == "control" & date > aque_after_date_annual ~ "after",
+      site == "napl" & treatment == "control" & date > napl_after_date_annual ~ "after",
+      site == "ivee" & treatment == "control" & date > ivee_after_date_annual ~ "after",
+      site == "mohk" & treatment == "control" & date > mohk_after_date_annual ~ "after",
+      site == "carp" & treatment == "control" & date > carp_after_date_annual ~ "after",
+      # everything else is "during" the experiment
       TRUE ~ "during"
     ),
-    exp_dates = fct_relevel(exp_dates, c("during", "after"))) 
+    exp_dates = fct_relevel(exp_dates, c("during", "after")))  
+}
+
+# make a new column for during and after and set factor levels
+exp_dates_column_annual <- function(df) {
+  df %>% 
+    mutate(exp_dates = case_when(
+      # after for annual removal:
+      site == "aque" & treatment == "annual" & date > aque_after_date_annual ~ "after",
+      site == "napl" & treatment == "annual" & date > napl_after_date_annual ~ "after",
+      site == "ivee" & treatment == "annual" & date > ivee_after_date_annual ~ "after",
+      site == "mohk" & treatment == "annual" & date > mohk_after_date_annual ~ "after",
+      site == "carp" & treatment == "annual" & date > carp_after_date_annual ~ "after",
+      # after for control:
+      site == "aque" & treatment == "control" & date > aque_after_date_annual ~ "after",
+      site == "napl" & treatment == "control" & date > napl_after_date_annual ~ "after",
+      site == "ivee" & treatment == "control" & date > ivee_after_date_annual ~ "after",
+      site == "mohk" & treatment == "control" & date > mohk_after_date_annual ~ "after",
+      site == "carp" & treatment == "control" & date > carp_after_date_annual ~ "after",
+      # everything else is "during" the experiment
+      TRUE ~ "during"
+    ),
+    exp_dates = fct_relevel(exp_dates, c("during", "after")))  
+}
+
+# make a new column for during and after and set factor levels
+exp_dates_column_continual <- function(df) {
+  df %>% 
+    mutate(exp_dates = case_when(
+      # after for continual removal:
+      site == "aque" & treatment == "continual" & date > aque_after_date_continual ~ "after",
+      site == "napl" & treatment == "continual" & date > napl_after_date_continual ~ "after",
+      site == "mohk" & treatment == "continual" & date > mohk_after_date_continual ~ "after",
+      site == "carp" & treatment == "continual" & date > carp_after_date_continual ~ "after",
+      # after for control:
+      site == "aque" & treatment == "control" & date > aque_after_date_continual ~ "after",
+      site == "napl" & treatment == "control" & date > napl_after_date_continual ~ "after",
+      site == "ivee" & treatment == "control" & date > ivee_after_date_continual ~ "after",
+      site == "mohk" & treatment == "control" & date > mohk_after_date_continual ~ "after",
+      site == "carp" & treatment == "control" & date > carp_after_date_continual ~ "after",
+      # everything else is "during" the experiment
+      TRUE ~ "during"
+    ),
+    exp_dates = fct_relevel(exp_dates, c("during", "after")))  
 }
 
 # create a new column for season and set factor levels
@@ -140,7 +196,7 @@ season_column <- function(df) {
       month %in% c (6, 7, 8) ~ "summer",
       month %in% c(9, 10, 11) ~ "fall"
     ),
-    season = fct_relevel(season, "spring", "winter", "summer", "fall")) 
+    season = fct_relevel(season, "spring", "summer", "fall", "winter")) 
 }
 
 
@@ -162,8 +218,8 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
   # change to lower case
   mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
-  # make a new column for after dates
-  after_dates_column() %>% 
+  # # make a new column for after dates
+  # after_dates_column() %>% 
   # make a new column for during and after and set factor levels
   exp_dates_column() %>% 
   # create a new column for season and set factor levels
@@ -215,8 +271,8 @@ kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
   # change to lower case
   mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
-  # make a new column for after dates
-  after_dates_column() %>% 
+  # # make a new column for after dates
+  # after_dates_column() %>% 
   # make a new column for during and after and set factor levels
   exp_dates_column() %>% 
   # create a new column for season and set factor levels
@@ -308,7 +364,7 @@ LTE_sites <- biomass %>%
 
 LTER_sites <- biomass_annual %>% 
   select(site) %>% 
-  mutate(site = fct_relevel(site, c("BULL", "AQUE", "AHND", "NAPL", "IVEE", "GOLB", "ABUR", "MOHK", "CARP", "SCDI", "SCTW"))) %>% 
+  mutate(site = fct_relevel(site, c("bull", "aque", "ahnd", "napl", "ivee", "golb", "abur", "mohk", "carp", "scdi", "sctw"))) %>% 
   unique() %>% 
   pull(site)
 
