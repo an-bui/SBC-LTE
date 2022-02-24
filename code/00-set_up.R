@@ -24,6 +24,7 @@ library(minpack.lm) # Fitting non-linear models
 library(nls2) # Fitting non-linear models
 library(AICcmodavg) # calculate second order AIC (AICc)
 library(MuMIn)
+library(boot)
 
 
 # 2. start and end dates --------------------------------------------------
@@ -36,11 +37,11 @@ napl_start_dates <- c("NAPL_CONTROL_2008-01-10", "NAPL_ANNUAL_2008-01-10", "NAPL
 
 napl_start_date <- as_date("2008-01-10")
 
-napl_after_date <- as_date("2016-02-09") 
+napl_after_date <- as_date("2017-02-14") 
 
-napl_after_date_annual <- as_date("2017-02-14")
+napl_after_date_annual <- as_date("2017-05-16")
 
-napl_after_date_continual <- as_date("2016-05-17")
+napl_after_date_continual <- as_date("2016-08-14")
 
 ############################################
 # b. Mohawk (MOHK)
@@ -52,9 +53,9 @@ mohk_start_date <- as_date("2008-01-17")
 
 mohk_after_date <- as_date("2017-02-13")
 
-mohk_after_date_annual <- as_date("2018-02-12")
+mohk_after_date_annual <- as_date("2018-05-15")
 
-mohk_after_date_continual <- as_date("2018-05-15")
+mohk_after_date_continual <- as_date("2017-08-11")
 
 ############################################
 # c. Arroyo Quemado (AQUE)
@@ -66,9 +67,9 @@ aque_start_date <- as_date("2008-01-30")
 
 aque_after_date <- as_date("2017-03-02")
 
-aque_after_date_annual <- as_date("2018-02-28")
+aque_after_date_annual <- as_date("2018-05-10")
 
-aque_after_date_continual <- as_date("2017-05-18")
+aque_after_date_continual <- as_date("2017-08-16")
 
 ############################################
 # d. Carpinteria (CARP)
@@ -80,9 +81,9 @@ carp_start_date <- as_date("2008-02-12")
 
 carp_after_date <- as_date("2017-02-15")
 
-carp_after_date_annual <- as_date("2018-02-20")
+carp_after_date_annual <- as_date("2018-05-22")
 
-carp_after_date_continual <- as_date("2017-05-19")
+carp_after_date_continual <- as_date("2017-08-10")
 
 ############################################
 # e. Isla Vista (IVEE)
@@ -94,7 +95,7 @@ ivee_start_date <- as_date("2011-10-26")
 
 ivee_after_date <- as_date("2016-02-18")
 
-ivee_after_date_annual <- as_date("2017-02-09")
+ivee_after_date_annual <- as_date("2017-05-15")
 
 # 3. useful functions for wrangling ---------------------------------------
 
@@ -358,9 +359,7 @@ common_algae_df <- algae_spp %>%
 ############################################
 
 # vector of sites
-LTE_sites <- biomass %>% 
-  pull(site) %>% 
-  unique()
+LTE_sites <- c("aque", "napl", "ivee", "mohk", "carp")
 
 LTER_sites <- biomass_annual %>% 
   select(site) %>% 
@@ -406,6 +405,8 @@ ivee_col <- "#4CA2B0"
 mohk_col <- "#985E5C"
 napl_col <- "#D98A63"
 
+site_palette <- c("aque" = aque_col, "napl" = napl_col, "ivee" = ivee_col, "mohk" = mohk_col, "carp" = carp_col)
+
 annual_col <- "#54662C"
 continual_col <- "#009BB0"
 control_col <- "grey"
@@ -425,6 +426,27 @@ napl_full <- "Naples (NAPL)"
 ivee_full <- "Isla Vista (IVEE)"
 mohk_full <- "Mohawk (MOHK)"
 carp_full <- "Carpinteria (CARP)"
+
+sites_full <- setNames(c("Arroyo Quemado (AQUE)",
+                         "Naples (NAPL)",
+                         "Isla Vista (IVEE)",
+                         "Mohawk (MOHK)",
+                         "Carpinteria (CARP)"),
+                       c("aque",
+                         "napl",
+                         "ivee",
+                         "mohk",
+                         "carp"))
+
+sites_continual_full <- setNames(c("Arroyo Quemado (AQUE)",
+                         "Naples (NAPL)",
+                         "Mohawk (MOHK)",
+                         "Carpinteria (CARP)"),
+                       c("aque",
+                         "napl",
+                         "mohk",
+                         "carp"))
+
 
 
 
