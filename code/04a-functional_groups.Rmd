@@ -1,0 +1,240 @@
+---
+title: "Functional group recovery"
+author: "An Bui"
+date: "2/23/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source(here::here("code", "00-set_up.R"))
+```
+
+# Set up data frame
+
+```{r}
+df <- biomass %>% 
+  # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" & treatment %in% c("annual", "control") ~ year + 0.125 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" & treatment %in% c("annual", "control") ~ year + 0.375 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" & treatment %in% c("annual", "control") ~ year + 0.625 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" & treatment %in% c("annual", "control") ~ year + 0.875 - 2008, 
+    # IVEE control and annual started in 2011
+    site == "ivee" & quarter == "Q1" & treatment %in% c("annual", "control") ~ year + 0.125 - 2011,
+    site == "ivee" & quarter == "Q2" & treatment %in% c("annual", "control") ~ year + 0.375 - 2011,
+    site == "ivee" & quarter == "Q3" & treatment %in% c("annual", "control") ~ year + 0.625 - 2011,
+    site == "ivee" & quarter == "Q4" & treatment %in% c("annual", "control") ~ year + 0.875 - 2011,
+    # AQUE, NAPL, MOHK, CARP: continual started in 2010
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" & treatment == "continual" ~ year + 0.125 - 2010,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" & treatment == "continual" ~ year + 0.375 - 2010,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" & treatment == "continual" ~ year + 0.625 - 2010,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" & treatment == "continual" ~ year + 0.875 - 2010
+  )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  mutate(time_yrs_end = case_when(
+    # annual
+    # AQUE
+    site == "aque" & quarter == "Q1" & treatment == "annual" ~ year + 0.125 - 2018,
+    site == "aque" & quarter == "Q2" & treatment == "annual" ~ year + 0.375 - 2018,
+    site == "aque" & quarter == "Q3" & treatment == "annual" ~ year + 0.625 - 2018,
+    site == "aque" & quarter == "Q4" & treatment == "annual" ~ year + 0.875 - 2018,
+    # NAPL
+    site == "napl" & quarter == "Q1" & treatment == "annual" ~ year + 0.125 - 2017,
+    site == "napl" & quarter == "Q2" & treatment == "annual" ~ year + 0.375 - 2017,
+    site == "napl" & quarter == "Q3" & treatment == "annual" ~ year + 0.625 - 2017,
+    site == "napl" & quarter == "Q4" & treatment == "annual" ~ year + 0.875 - 2017,
+    # IVEE
+    site == "ivee" & quarter == "Q1" & treatment == "annual" ~ year + 0.125 - 2017,
+    site == "ivee" & quarter == "Q2" & treatment == "annual" ~ year + 0.375 - 2017,
+    site == "ivee" & quarter == "Q3" & treatment == "annual" ~ year + 0.625 - 2017,
+    site == "ivee" & quarter == "Q4" & treatment == "annual" ~ year + 0.875 - 2017,
+    # MOHK 
+    site == "mohk" & quarter == "Q1" & treatment == "annual" ~ year + 0.125 - 2018,
+    site == "mohk" & quarter == "Q2" & treatment == "annual" ~ year + 0.375 - 2018,
+    site == "mohk" & quarter == "Q3" & treatment == "annual" ~ year + 0.625 - 2018,
+    site == "mohk" & quarter == "Q4" & treatment == "annual" ~ year + 0.875 - 2018,
+    # CARP
+    site == "carp" & quarter == "Q1" & treatment == "annual" ~ year + 0.125 - 2018,
+    site == "carp" & quarter == "Q2" & treatment == "annual" ~ year + 0.375 - 2018,
+    site == "carp" & quarter == "Q3" & treatment == "annual" ~ year + 0.625 - 2018,
+    site == "carp" & quarter == "Q4" & treatment == "annual" ~ year + 0.875 - 2018,
+    # continual
+    # AQUE
+    site == "aque" & quarter == "Q1" & treatment == "continual" ~ year + 0.125 - 2017,
+    site == "aque" & quarter == "Q2" & treatment == "continual" ~ year + 0.375 - 2017,
+    site == "aque" & quarter == "Q3" & treatment == "continual" ~ year + 0.625 - 2017,
+    site == "aque" & quarter == "Q4" & treatment == "continual" ~ year + 0.875 - 2017,
+    # NAPL
+    site == "napl" & quarter == "Q1" & treatment == "continual" ~ year + 0.125 - 2016,
+    site == "napl" & quarter == "Q2" & treatment == "continual" ~ year + 0.375 - 2016,
+    site == "napl" & quarter == "Q3" & treatment == "continual" ~ year + 0.625 - 2016,
+    site == "napl" & quarter == "Q4" & treatment == "continual" ~ year + 0.875 - 2016,
+    # MOHK 
+    site == "mohk" & quarter == "Q1" & treatment == "continual" ~ year + 0.125 - 2017,
+    site == "mohk" & quarter == "Q2" & treatment == "continual" ~ year + 0.375 - 2017,
+    site == "mohk" & quarter == "Q3" & treatment == "continual" ~ year + 0.625 - 2017,
+    site == "mohk" & quarter == "Q4" & treatment == "continual" ~ year + 0.875 - 2017,
+    # CARP
+    site == "carp" & quarter == "Q1" & treatment == "continual" ~ year + 0.125 - 2017,
+    site == "carp" & quarter == "Q2" & treatment == "continual" ~ year + 0.375 - 2017,
+    site == "carp" & quarter == "Q3" & treatment == "continual" ~ year + 0.625 - 2017,
+    site == "carp" & quarter == "Q4" & treatment == "continual" ~ year + 0.875 - 2017,
+    # control
+    # AQUE
+    site == "aque" & quarter == "Q1" & treatment == "control" ~ year + 0.125 - 2017,
+    site == "aque" & quarter == "Q2" & treatment == "control" ~ year + 0.375 - 2017,
+    site == "aque" & quarter == "Q3" & treatment == "control" ~ year + 0.625 - 2017,
+    site == "aque" & quarter == "Q4" & treatment == "control" ~ year + 0.875 - 2017,
+    # NAPL
+    site == "napl" & quarter == "Q1" & treatment == "control" ~ year + 0.125 - 2016,
+    site == "napl" & quarter == "Q2" & treatment == "control" ~ year + 0.375 - 2016,
+    site == "napl" & quarter == "Q3" & treatment == "control" ~ year + 0.625 - 2016,
+    site == "napl" & quarter == "Q4" & treatment == "control" ~ year + 0.875 - 2016,
+    # IVEE
+    site == "ivee" & quarter == "Q1" & treatment == "control" ~ year + 0.125 - 2017,
+    site == "ivee" & quarter == "Q2" & treatment == "control" ~ year + 0.375 - 2017,
+    site == "ivee" & quarter == "Q3" & treatment == "control" ~ year + 0.625 - 2017,
+    site == "ivee" & quarter == "Q4" & treatment == "control" ~ year + 0.875 - 2017,
+    # MOHK 
+    site == "mohk" & quarter == "Q1" & treatment == "control" ~ year + 0.125 - 2017,
+    site == "mohk" & quarter == "Q2" & treatment == "control" ~ year + 0.375 - 2017,
+    site == "mohk" & quarter == "Q3" & treatment == "control" ~ year + 0.625 - 2017,
+    site == "mohk" & quarter == "Q4" & treatment == "control" ~ year + 0.875 - 2017,
+    # CARP
+    site == "carp" & quarter == "Q1" & treatment == "control" ~ year + 0.125 - 2017,
+    site == "carp" & quarter == "Q2" & treatment == "control" ~ year + 0.375 - 2017,
+    site == "carp" & quarter == "Q3" & treatment == "control" ~ year + 0.625 - 2017,
+    site == "carp" & quarter == "Q4" & treatment == "control" ~ year + 0.875 - 2017,
+  )) %>% 
+  group_by(site, exp_dates) %>% 
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ time_yrs_end,
+    exp_dates == "after" ~ time_yrs_end - min(time_yrs_end)
+  )) %>% 
+  ungroup() %>% 
+  mutate(treatment = fct_relevel(treatment, "control", "annual", "continual"))
+```
+
+# Some plots
+
+```{r}
+ggplot(df %>% filter(sp_code == "MAPY"), aes(x = treatment, y = dry_gm2)) +
+  stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
+  stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 10, na.rm = TRUE) +
+  scale_color_manual(values = color_palette) +
+  labs(x = "Treatment", y = expression(paste("Biomass (g dry/", "m"^2, ")", sep = "")),
+       title = "Giant kelp biomass") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        axis.ticks = element_line(size = 1),
+        axis.ticks.length = unit(0.4, "cm"),
+        strip.text = element_text(size = 24), 
+        plot.title = element_text(size = 26), 
+        legend.position = "none") +
+  facet_wrap(~exp_dates)
+
+ggplot(df %>% filter(sp_code != "MAPY" & group == "algae"), aes(x = treatment, y = dry_gm2)) +
+  stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
+  stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 5, na.rm = TRUE) +
+  scale_color_manual(values = color_palette) +
+  labs(x = "Treatment", y = expression(paste("Biomass (g dry/", "m"^2, ")", sep = "")),
+       title = "Understory macroalgal biomass") +
+  theme_bw() +
+  # theme(axis.text = element_text(size = 20),
+  #       axis.title = element_text(size = 20),
+  #       axis.ticks = element_line(size = 1),
+  #       axis.ticks.length = unit(0.4, "cm"),
+  #       strip.text = element_text(size = 24), 
+  #       plot.title = element_text(size = 26), 
+  #       legend.position = "none") +
+  facet_wrap(~exp_dates+site)
+
+ggplot(df %>% filter(group == "fish"), aes(x = treatment, y = dry_gm2)) +
+  stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
+  stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 10, na.rm = TRUE) +
+  scale_color_manual(values = color_palette) +
+  labs(x = "Treatment", y = expression(paste("Biomass (g dry/", "m"^2, ")", sep = "")),
+       title = "Fish biomass") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        axis.ticks = element_line(size = 1),
+        axis.ticks.length = unit(0.4, "cm"),
+        strip.text = element_text(size = 24), 
+        plot.title = element_text(size = 26), 
+        legend.position = "none") +
+  facet_wrap(~exp_dates)
+
+ggplot(df %>% filter(mobility == "sessile" & group == "invert"), aes(x = treatment, y = dry_gm2)) +
+  stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
+  stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 10, na.rm = TRUE) +
+  scale_color_manual(values = color_palette) +
+  labs(x = "Treatment", y = expression(paste("Biomass (g dry/", "m"^2, ")", sep = "")),
+       title = "Sessile invert biomass") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        axis.ticks = element_line(size = 1),
+        axis.ticks.length = unit(0.4, "cm"),
+        strip.text = element_text(size = 24), 
+        plot.title = element_text(size = 26), 
+        legend.position = "none") +
+  facet_wrap(~exp_dates)
+
+```
+
+# Log response ratio
+
+```{r}
+se <- function(x) {
+  sd(x)/sqrt(length(x))
+}
+
+df2 <- df %>% 
+  filter(sp_code != "MAPY") %>% 
+  select(site, year, month, treatment, date, exp_dates, group, mobility, dry_gm2) %>% 
+  group_by(exp_dates, group, mobility, treatment) %>% 
+  summarize(mean_biomass = mean(dry_gm2, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = treatment, values_from = mean_biomass) %>% 
+  mutate(lrr_annual = log2(mean(annual)/mean(control)),
+         lrr_continual = log2(mean(continual)/mean(control)),
+         group_mobility = paste(group, mobility, sep = "_"))
+
+ggplot(df2) +
+  geom_hline(yintercept = 0, lty = 2, col = "grey") +
+  geom_point(aes(x = group_mobility, y = lrr_annual), size = 5) +
+  theme_bw() +
+  labs(x = "Groups", y = "Log response ratio",
+       title = "Annual log response ratio") +
+  facet_wrap(~exp_dates)
+
+ggplot(df2) +
+  geom_hline(yintercept = 0, lty = 2, col = "grey") +
+  geom_point(aes(x = group_mobility, y = lrr_continual), size = 5) +
+  geom_hline(yintercept = 0, lty = 2, col = "grey") +
+  theme_bw() +
+  labs(x = "Groups", y = "Log response ratio",
+       title = "Continual log response ratio") +
+  facet_wrap(~exp_dates)
+  
+```
+
+
+
+
