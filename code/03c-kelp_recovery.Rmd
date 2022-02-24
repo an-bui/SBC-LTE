@@ -58,15 +58,16 @@ control_fronds <- total_fronds %>%
 # total biomass
 kelp_biomass <- biomass %>% 
   filter(sp_code == "MAPY") %>% 
-  select(-sp_code) 
+  select(-sp_code) %>% 
   # # make a new column for after dates
-  # after_dates_column() %>% 
+  after_dates_column() %>% 
   # make a new column for during and after and set factor levels
-  # exp_dates_column() %>% 
+  exp_dates_column()
   # select(site, year, month, treatment, date, wm_gm2)
 
 # delta biomass
 delta_biomass <- kelp_biomass %>% 
+  select(site, year, month, treatment, date, exp_dates, wm_gm2) %>% 
   pivot_wider(names_from = treatment, values_from = wm_gm2) %>% 
   mutate(delta_annual = annual - control,
          delta_continual = continual - control) 
@@ -216,13 +217,13 @@ model.sel(model.dredge) %>%
 
 ```{r}
 summary(aov(data = kelp_biomass,
-    formula = total_wm_gm2 ~ site + treatment + site*treatment))
+    formula = wm_gm2 ~ site + treatment + site*treatment))
 
 TukeyHSD(aov(data = kelp_biomass,
-    formula = total_wm_gm2 ~ site + treatment + site*treatment))
+    formula = wm_gm2 ~ site + treatment + site*treatment))
 
 model.dredge <- dredge(
-  lm(total_wm_gm2 ~ site + treatment + site*treatment, data = kelp_biomass, na.action = na.pass)
+  lm(wm_gm2 ~ site + treatment + site*treatment, data = kelp_biomass, na.action = na.pass)
 )
 
 model.sel(model.dredge) %>% 
@@ -427,6 +428,44 @@ mohk_kelp_biomass_timeseries
 carp_kelp_biomass_timeseries
 ```
 
+### Annual kelp biomass timeseries
+
+```{r}
+annual_biomass_timeseries <- kelp_biomass %>% 
+  filter(treatment == "annual") %>% 
+  group_by(site) %>% 
+  mutate(site_label = case_when(
+    date == last(date) ~ sites_full[as.character(site)],
+    TRUE ~ ""
+  )) %>% 
+  ggplot(aes(x = date, y = wm_gm2)) +
+    annotate("rect", xmin = as.Date("2017-01-01"), xmax = as.Date("2022-02-02"),
+           ymin = -1, ymax = 10000,
+           alpha = 0.2) +
+  geom_point(aes(col = site), size = 3) +
+  geom_line(aes(col = site), size = 1) +
+  # geom_text(aes(label = site_label, col = site), hjust = 0.1, size = 4, vjust = 1, 
+  #           label.padding = unit(0.25, "lines")) +
+  scale_color_manual(values = site_palette) +
+  labs(x = "Sampling date", y = "Kelp biomass (wm g/m2)",
+       title = "Annual only") +
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        plot.title = element_text(size = 16)) 
+
+  # geom_text(data = . %>% filter(date == max(date)),
+  #           aes(color = Province_State, x = as.Date(Inf),
+  #               y = deaths_roll7_100k),
+  #           hjust = 0, size = 4, vjust = 0.7,
+  #           label = c("Arizona\n", "North Carolina"))
+
+
+annual_biomass_timeseries
+
+ggsave(here::here("figures", "annual_biomass_timeseries.jpg"), annual_biomass_timeseries, width = 14, height = 8, dpi = 300)
+```
+
+
 ### Delta kelp frond timeseries
 
 This creates a plot where delta kelp frond density (difference between control and removal density) timeseries are plotted for each LTE site with annual in green circles and continual in blue circles. This was supposed to be a recreation of the plots that Adrian sent a long time ago. There is a `ggsave()` command at the end - **remember to change the date in the file name before saving**.
@@ -564,6 +603,8 @@ delta_biomass_timeseries_fxn <- function(site_choice) {
     mohk_after_date
   }
   
+  plot_title <- pluck(sites_full, site_choice)
+  
   delta_continual_max <- delta_biomass %>% filter(site == site_choice) %>% pull(delta_continual) %>% max(na.rm = TRUE)
   delta_continual_min <- delta_biomass %>% filter(site == site_choice) %>% pull(delta_continual) %>% min(na.rm = TRUE)
   delta_annual_max <- delta_biomass %>% filter(site == site_choice) %>% pull(delta_annual) %>% max(na.rm = TRUE)  
@@ -597,7 +638,7 @@ delta_biomass_timeseries_fxn <- function(site_choice) {
     theme(legend.position = "none") +
     labs(x = "Sampling date",
          y = "\u0394 kelp biomass \n (wm g/m2, removal - control)",
-         title = site_choice)
+         title = plot_title)
 }
 
 aque_delta_biomass_timeseries <- delta_biomass_timeseries_fxn("aque")
@@ -793,7 +834,27 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
 	# print(w)
 	barplot(w, col="white", ylab="Relative likelihood (%)", cex.names = 0.9, names.arg =c("Step","Linear","Asymptotic","Sigmoid"))
 	best.Model<-which(w==max(w))
-
+	
+	message <- if(best.Model==1) {
+	  "Step"
+	} else if(best.Model==2) {
+	  "Linear"
+	} else if(best.Model==3) {
+	  "Asymptotic"
+	} else if(best.Model==4) {
+	  "Sigmoid"
+	}
+	
+	likelihood <- if(best.Model==1) {
+	  paste(round(w[1],1), "%", sep="")
+	} else if(best.Model==2) {
+	  paste(round(w[2],1), "%", sep="")
+	} else if(best.Model==3) {
+	  paste(round(w[3],1), "%", sep="")
+	} else if(best.Model==4) {
+	  paste(round(w[4],1), "%", sep="")
+	}
+	  
 	### STEP 4 - Derive inference based on the best model (i.e., with the higher AICc weight)
 	if(best.Model==1) {writeLines(paste("\n\nSTEP MODEL SELECTED - Likelihood = ", round(w[1],1), "%\n\n", sep=""))
 		print(summary(step.Model))}
@@ -804,7 +865,9 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
 	if(best.Model==4) {writeLines(paste("\n\nSIGMOID MODEL SELECTED - Likelihood = ", round(w[4],1), "%\n\n", sep=""))
 		print(sigmoid.Model)}
 	
-	return(c(aicc.test.results = AICc.test, 
+	return(c(message = message,
+	         likelihood = likelihood,
+	         aicc.test.results = AICc.test, 
 	         step.model.summary = summary(step.Model), 
 	         linear.model.summary = summary(linear.Model), 
 	         asy.model.summary = asymptotic.Model, 
@@ -972,6 +1035,154 @@ carp_continual_bacips_results <- biomass.pcbacips(carp_biomass_continual)
 # STEP MODEL SELECTED - Likelihood = 62.3%
 ```
 
+### Estimated slopes
+```{r}
+aque_annual_slope <- aque_annual_bacips_results$linear.model.summary.coefficients[2, 1]
+napl_annual_slope <- napl_annual_bacips_results$linear.model.summary.coefficients[2, 1]
+ivee_annual_slope <- ivee_annual_bacips_results$linear.model.summary.coefficients[2, 1]
+mohk_annual_slope <- mohk_annual_bacips_results$linear.model.summary.coefficients[2, 1]
+carp_annual_slope <- carp_annual_bacips_results$linear.model.summary.coefficients[2, 1]
+
+sites_annual_slope <- setNames(c(aque_annual_slope,
+                                 napl_annual_slope,
+                                 ivee_annual_slope,
+                                 mohk_annual_slope,
+                                 carp_annual_slope), LTE_sites) 
+
+aque_annual_slope_pval <- aque_annual_bacips_results$linear.model.summary.coefficients[2, 4]
+napl_annual_slope_pval <- napl_annual_bacips_results$linear.model.summary.coefficients[2, 4]
+ivee_annual_slope_pval <- ivee_annual_bacips_results$linear.model.summary.coefficients[2, 4]
+mohk_annual_slope_pval <- mohk_annual_bacips_results$linear.model.summary.coefficients[2, 4]
+carp_annual_slope_pval <- carp_annual_bacips_results$linear.model.summary.coefficients[2, 4]
+
+sites_annual_slope_pval <- setNames(c(aque_annual_slope_pval,
+                                      napl_annual_slope_pval,
+                                      ivee_annual_slope_pval,
+                                      mohk_annual_slope_pval,
+                                      carp_annual_slope_pval), LTE_sites)
+
+aque_annual_model <- aque_annual_bacips_results$message
+napl_annual_model <- napl_annual_bacips_results$message
+ivee_annual_model <- ivee_annual_bacips_results$message
+mohk_annual_model <- mohk_annual_bacips_results$message
+carp_annual_model <- carp_annual_bacips_results$message
+
+sites_annual_message <- c(aque_annual_model,
+                          napl_annual_model,
+                          ivee_annual_model,
+                          mohk_annual_model,
+                          carp_annual_model)
+
+aque_annual_model_likelihood <- aque_annual_bacips_results$likelihood
+napl_annual_model_likelihood <- napl_annual_bacips_results$likelihood
+ivee_annual_model_likelihood <- ivee_annual_bacips_results$likelihood
+mohk_annual_model_likelihood <- mohk_annual_bacips_results$likelihood
+carp_annual_model_likelihood <- carp_annual_bacips_results$likelihood
+
+sites_annual_model_likelihood <- c(aque_annual_model_likelihood,
+                                   napl_annual_model_likelihood,
+                                   ivee_annual_model_likelihood,
+                                   mohk_annual_model_likelihood,
+                                   carp_annual_model_likelihood)
+
+aque_continual_slope <- aque_continual_bacips_results$linear.model.summary.coefficients[2, 1]
+napl_continual_slope <- napl_continual_bacips_results$linear.model.summary.coefficients[2, 1]
+mohk_continual_slope <- mohk_continual_bacips_results$linear.model.summary.coefficients[2, 1]
+carp_continual_slope <- carp_continual_bacips_results$linear.model.summary.coefficients[2, 1]
+
+sites_continual_slope <- setNames(c(aque_continual_slope,
+                                    napl_continual_slope,
+                                    mohk_continual_slope,
+                                    carp_continual_slope), c("aque", "napl", "mohk", "carp"))
+
+aque_continual_slope_pval <- aque_continual_bacips_results$linear.model.summary.coefficients[2, 4]
+napl_continual_slope_pval <- napl_continual_bacips_results$linear.model.summary.coefficients[2, 4]
+mohk_continual_slope_pval <- mohk_continual_bacips_results$linear.model.summary.coefficients[2, 4]
+carp_continual_slope_pval <- carp_continual_bacips_results$linear.model.summary.coefficients[2, 4]
+
+sites_continual_slope_pval <- setNames(c(aque_continual_slope_pval,
+                                         napl_continual_slope_pval,
+                                         mohk_continual_slope_pval,
+                                         carp_continual_slope_pval), c("aque", "napl", "mohk", "carp"))
+
+
+aque_continual_model <- aque_continual_bacips_results$message
+napl_continual_model <- napl_continual_bacips_results$message
+mohk_continual_model <- mohk_continual_bacips_results$message
+carp_continual_model <- carp_continual_bacips_results$message
+
+sites_continual_message <- setNames(c(aque_continual_model,
+                                      napl_continual_model,
+                                      mohk_continual_model,
+                                      carp_continual_model), c("aque", "napl", "mohk", "carp"))
+
+aque_continual_model_likelihood <- aque_continual_bacips_results$likelihood
+napl_continual_model_likelihood <- napl_continual_bacips_results$likelihood
+mohk_continual_model_likelihood <- mohk_continual_bacips_results$likelihood
+carp_continual_model_likelihood <- carp_continual_bacips_results$likelihood
+
+sites_continual_model_likelihood <- c(aque_continual_model_likelihood,
+                                   napl_continual_model_likelihood,
+                                   mohk_continual_model_likelihood,
+                                   carp_continual_model_likelihood)
+```
+
+```{r}
+sites_annual_slope_summary <- enframe(sites_annual_slope) %>% 
+  rename(site = name, est_slope = value) %>% 
+  cbind(sites_annual_slope_pval) %>% 
+  rename(pval = sites_annual_slope_pval) %>% 
+  cbind(sites_annual_message) %>% 
+  rename(model_sel = sites_annual_message) %>% 
+  cbind(sites_annual_model_likelihood) %>% 
+  rename(likelihood = sites_annual_model_likelihood) %>% 
+  cbind(sites_full) %>% 
+  select(sites_full, est_slope, pval, model_sel, likelihood) %>% 
+  mutate(across(c(est_slope, pval), ~ round(., digits = 3))) %>% 
+  gt() %>% 
+  cols_label(
+    sites_full = "Site",
+    est_slope = "Linear slope \n (estimated)",
+    pval = "p-value",
+    model_sel = "Selected model",
+    likelihood = "Likelihood"
+  ) %>% 
+  tab_header(
+    title = "Annual removal slopes"
+  ) 
+
+sites_annual_slope_summary %>% 
+  gtsave("annual_removal_slopes.png", path = here::here("tables"))
+
+sites_continual_slope_summary <- enframe(sites_continual_slope) %>% 
+  rename(site = name, est_slope = value) %>% 
+  cbind(sites_continual_slope_pval) %>% 
+  rename(pval = sites_continual_slope_pval) %>% 
+  cbind(sites_continual_message) %>% 
+  rename(model_sel = sites_continual_message) %>% 
+  cbind(sites_continual_model_likelihood) %>% 
+  rename(likelihood = sites_continual_model_likelihood) %>% 
+  cbind(sites_continual_full) %>% 
+  select(sites_continual_full, est_slope, pval, model_sel, likelihood) %>% 
+  mutate(across(c(est_slope, pval), ~ round(., digits = 3))) %>% 
+  gt() %>% 
+  cols_label(
+    sites_continual_full = "Site",
+    est_slope = "Linear slope \n (estimated)",
+    pval = "p-value",
+    model_sel = "Selected model",
+    likelihood = "Likelihood"
+  ) %>% 
+  tab_header(
+    title = "Continual removal slopes"
+  ) 
+
+sites_continual_slope_summary %>% 
+  gtsave("continual_removal_slopes.png", path = here::here("tables"))
+
+```
+
+
 ### All sites
 
 #### test
@@ -1033,33 +1244,28 @@ Ok great. Going to do the rest now:
 
 ```{r}
 biomass_by_season <- function(site_choice) {
-  plot_title <- if(site_choice == "aque") {
-    aque_full
-  } else if(site_choice == "napl") {
-    napl_full
-  } else if(site_choice == "carp") {
-    carp_full
-  } else if(site_choice == "ivee") {
-    ivee_full
-  } else if(site_choice == "mohk") {
-    mohk_full
-  }
+  plot_title <- pluck(sites_full, site_choice)
   
   kelp_biomass %>% 
-    filter(site == site_choice) %>% 
+    # filter(site == site_choice) %>% 
     unite("color", treatment, year, sep = "_", remove = FALSE) %>% 
     # make a new column for the year label
     mutate(year_label = case_when(
       season == "winter" ~ as.character(year),
       TRUE ~ ""
-    )) %>% 
-    ggplot(aes(x = season, y = total_wm_gm2, group = color)) +
-    geom_point(aes(color = year)) +
-    geom_line(aes(color = year)) +
-    geom_text_repel(aes(label = year_label, color = year),
-                    nudge_x = 1.5, nudge_y = 0.1,
-                    segment.curvature = -1e-20, point.padding = 0.2,
-                    force_pull = 10) +
+    )) %>%
+    mutate(season = fct_relevel(season, c("winter", "spring", "summer", "fall"))) %>% 
+    ggplot(aes(x = season, y = wm_gm2, group = color)) +
+    # stat summary for point and SE for mean biomass during and after with line
+    stat_summary(aes(group = season, color = site), fun = mean, geom = "line", size = 1, alpha = 0.8) +
+    stat_summary(aes(group = season, color = site), fun = mean, geom = "point", size = 4) +
+    stat_summary(aes(group = season, color = site), fun.data = mean_se, geom = "errorbar", alpha = 0.8, width = 0.2) +
+  # geom_point(aes(color = year)) +
+  #   geom_line(aes(color = year)) +
+    # geom_text_repel(aes(label = year_label, color = year),
+    #                 nudge_x = 1.5, nudge_y = 0.1,
+    #                 segment.curvature = -1e-20, point.padding = 0.2,
+    #                 force_pull = 10) +
     theme_bw() +
     theme(legend.position = "none",
           plot.title = element_text(size = 20),
@@ -1085,6 +1291,61 @@ carp_biomass_season <- biomass_by_season("carp")
 
 # ggsave(here::here("figures", "biomass-by-season_carp_2022-02-08.jpg"), carp_biomass_season, height = 10, width = 8, dpi = 200)
 ```
+
+```{r}
+annual_removal_biomass_by_season <- kelp_biomass %>% 
+  filter(treatment == "annual") %>% 
+  unite("color", treatment, year, sep = "_", remove = FALSE) %>% 
+  # make a new column for the year label
+  mutate(year_label = case_when(
+    season == "winter" ~ as.character(year),
+    TRUE ~ ""
+  )) %>% 
+  ggplot(aes(x = season, y = wm_gm2)) +
+  # stat summary for point and SE for mean biomass during and after with line
+  stat_summary(aes(group = site, color = site), fun = mean, geom = "line", size = 1, alpha = 0.8) +
+  stat_summary(aes(group = site, color = site), fun = mean, geom = "point", size = 4) +
+  stat_summary(aes(group = site, color = site), fun.data = mean_se, geom = "errorbar", alpha = 0.8, width = 0.2) +
+  scale_color_manual(values = site_palette) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 40),
+        strip.background = element_rect(fill = "#FFFFFF"),
+        strip.text = element_text(size = 18)) +
+  facet_wrap(~ exp_dates) +
+  labs(x = "Season", y = "Mean biomass (wet g/m2)",
+       title = "Annual removal biomass") 
+
+  # ggsave(here::here("figures", "annual_biomass_timeseries.jpg"), annual_removal_biomass_by_season, width = 14, height = 8, dpi = 300)
+```
+
+```{r}
+biomass_by_season_all <- kelp_biomass %>% 
+  unite("color", treatment, year, sep = "_", remove = FALSE) %>% 
+  # make a new column for the year label
+  mutate(year_label = case_when(
+    season == "winter" ~ as.character(year),
+    TRUE ~ ""
+  )) %>%
+  mutate(season = fct_relevel(season, c("winter", "spring", "summer", "fall"))) %>% 
+  ggplot(aes(x = season, y = wm_gm2, group = site)) +
+  # stat summary for point and SE for mean biomass during and after with line
+  stat_summary(aes(group = site, color = site), fun = mean, geom = "line", size = 1, alpha = 0.8) +
+  stat_summary(aes(group = site, color = site), fun = mean, geom = "point", size = 4) +
+  stat_summary(aes(group = site, color = site), fun.data = mean_se, geom = "errorbar", alpha = 0.8, width = 0.2) +
+  scale_color_manual(values = site_palette) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 20),
+        strip.background = element_rect(fill = "#FFFFFF"),
+        strip.text = element_text(size = 14),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12)) +
+  facet_wrap(~ treatment + exp_dates, nrow = 3, ncol = 2) +
+  labs(x = "Season", y = "Mean biomass (wet g/m2)",
+       title = "Mean kelp biomass within season across sampling years")
+
+# ggsave(here::here("figures", "annual_biomass_timeseries.jpg"), biomass_by_season_all, width = 11, height = 12, dpi = 300)
+```
+
 
 ## Fall biomass figure
 
@@ -1121,7 +1382,85 @@ kelp_biomass_fall
 kelp_biomass_summer
 ```
 
+## Kelp "recovery" by productivity
 
+Plot with "productivity" on x-axis (CARP, AQUE, NAPL, MOHK, IVEE) and time to recovery (delta = 0) on y axis.
+
+```{r}
+df <- delta_biomass %>% 
+  filter(site == "mohk" & exp_dates == "after") %>% 
+  group_by(site) %>% 
+  mutate(time_to_zero = row_number())
+  
+```
+
+## Removal kelp as a function of control
+
+### test
+
+What I want is to have a plot where kelp biomass in the control is the x-axis, and kelp biomass in the removal is the y-axis, and there is a 1:1 line as the diagonal, and each point is connected by an arrow indicating time across sampling dates.
+
+```{r}
+delta_biomass %>% 
+  filter(site == "aque") %>% 
+  ggplot(aes(x = control, y = annual)) +
+  geom_text(aes(col = exp_dates, label = date)) +
+  geom_abline(slope = 1, intercept = 0) +
+  coord_cartesian()
+```
+
+## Ratio of kelp in removal:control plots
+
+Connell et al. 1997:  
+ - damage: 100 x (difference between abundance in census before with that just after disturbance)/(abundance in census just before disturbance)
+ - short term rate of recovery: 100 x (change in abundance between first two censuses)/(damage during disturbance), which is then standardized to 2 year period by "linear interpolation of period between two post-storm censuses"  
+ - extent of recovery: 100 x (highest abundance in period before next disturbance)/(damage during first disturbance)  
+ 
+So, for kelp:
+- impact of removal: 100 x (difference in biomass in control - removal)/(biomass in control)
+- rate of recovery: 100 x (change in abundance between end of experiment and sampling date)/(impact of removal)  
+- extent of recovery: 100 x (highest abundance in period after disturbance)/(impact of removal)
+
+```{r}
+df <- delta_biomass %>% 
+  filter(site == "aque") %>% 
+  mutate(delta_annual = control - annual,
+         delta_continual = control - continual, 
+         impact_annual = round((delta_annual/control), 4),
+         impact_continual = round((delta_continual/control), 4)) %>% 
+  filter(impact_annual > -Inf)
+
+ggplot(df) +
+  geom_line(aes(x = date, y = impact_annual), col = "red") +
+  # geom_line(aes(x = date, y = impact_continual), col = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  annotate("text", x = as.Date("2018-01-01"), y = 10, label = "more kelp in control", size = 3) +
+  annotate("text", x = as.Date("2018-01-01"), y = -10, label = "more kelp in removal", size = 3) +
+  theme_bw() +
+  labs(x = "Date", y = "Removal impact [(control-annual)/control]",
+       title = "Removal impact - AQUE")
+
+ggplot(df, aes(x = control, y = delta_annual)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  geom_smooth(method = "lm", aes(color = exp_dates)) +
+  theme_bw() +
+  labs(x = "Control kelp biomass", y = "Biomass difference (control - removal)",
+       title = "AQUE - delta biomass as a function of control kelp biomass") +
+  annotate("text", x = 6000, y = 200, label = "more kelp in control", size = 3) +
+  annotate("text", x = 6000, y = -200, label = "more kelp in removal", size = 3) 
+
+ggplot(df %>% filter(impact_annual > -200), aes(x = control, y = impact_annual)) +
+  geom_point() +
+  # geom_point(data = df %>% filter(impact_annual < -500), aes(x = control, y = impact_annual), col = "red") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  geom_smooth(method = "lm", aes(color = exp_dates)) +
+  theme_bw() +
+    labs(x = "Control kelp biomass", y = "Removal impact [(control-annual)/control]",
+       title = "AQUE - removal impact as a function of control kelp biomass") +
+  annotate("text", x = 6000, y = 50, label = "more kelp in control", size = 3) +
+  annotate("text", x = 6000, y = -50, label = "more kelp in removal", size = 3) 
+```
 
 
 
