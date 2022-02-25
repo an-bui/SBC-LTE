@@ -447,6 +447,8 @@ sites_continual_full <- setNames(c("Arroyo Quemado (AQUE)",
                          "mohk",
                          "carp"))
 
+todays_date <- Sys.Date()
+
 
 
 

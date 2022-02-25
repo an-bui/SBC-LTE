@@ -16,7 +16,7 @@ source(here::here("code", "00-set_up.R"))
 # Set up data frame
 
 ```{r}
-df <- biomass %>% 
+fg_recovery <- biomass %>% 
   # create a column for quarter
   mutate(quarter = case_when(
     month <= 3 ~ "Q1",
@@ -133,39 +133,39 @@ df <- biomass %>%
 # Some plots
 
 ```{r}
-ggplot(df %>% filter(sp_code == "MAPY"), aes(x = treatment, y = dry_gm2)) +
+ggplot(fg_recovery %>% filter(sp_code == "MAPY"), aes(x = treatment, y = dry_gm2)) +
   stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
-  stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 10, na.rm = TRUE) +
+  stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 5, na.rm = TRUE) +
   scale_color_manual(values = color_palette) +
   labs(x = "Treatment", y = expression(paste("Biomass (g dry/", "m"^2, ")", sep = "")),
        title = "Giant kelp biomass") +
   theme_bw() +
-  theme(axis.text = element_text(size = 20),
-        axis.title = element_text(size = 20),
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
         axis.ticks = element_line(size = 1),
         axis.ticks.length = unit(0.4, "cm"),
-        strip.text = element_text(size = 24), 
-        plot.title = element_text(size = 26), 
+        strip.text = element_text(size = 14), 
+        plot.title = element_text(size = 20), 
         legend.position = "none") +
-  facet_wrap(~exp_dates)
+  facet_wrap(~site+exp_dates, nrow = 5, ncol = 2)
 
-ggplot(df %>% filter(sp_code != "MAPY" & group == "algae"), aes(x = treatment, y = dry_gm2)) +
+ggplot(fg_recovery %>% filter(sp_code != "MAPY" & group == "algae"), aes(x = treatment, y = dry_gm2)) +
   stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
   stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 5, na.rm = TRUE) +
   scale_color_manual(values = color_palette) +
   labs(x = "Treatment", y = expression(paste("Biomass (g dry/", "m"^2, ")", sep = "")),
        title = "Understory macroalgal biomass") +
   theme_bw() +
-  # theme(axis.text = element_text(size = 20),
-  #       axis.title = element_text(size = 20),
-  #       axis.ticks = element_line(size = 1),
-  #       axis.ticks.length = unit(0.4, "cm"),
-  #       strip.text = element_text(size = 24), 
-  #       plot.title = element_text(size = 26), 
-  #       legend.position = "none") +
-  facet_wrap(~exp_dates+site)
+  theme(axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        axis.ticks = element_line(size = 1),
+        axis.ticks.length = unit(0.4, "cm"),
+        strip.text = element_text(size = 24),
+        plot.title = element_text(size = 26),
+        legend.position = "none") +
+  facet_wrap(~exp_dates)
 
-ggplot(df %>% filter(group == "fish"), aes(x = treatment, y = dry_gm2)) +
+ggplot(fg_recovery %>% filter(group == "fish"), aes(x = treatment, y = dry_gm2)) +
   stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
   stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 10, na.rm = TRUE) +
   scale_color_manual(values = color_palette) +
@@ -181,7 +181,7 @@ ggplot(df %>% filter(group == "fish"), aes(x = treatment, y = dry_gm2)) +
         legend.position = "none") +
   facet_wrap(~exp_dates)
 
-ggplot(df %>% filter(mobility == "sessile" & group == "invert"), aes(x = treatment, y = dry_gm2)) +
+ggplot(fg_recovery %>% filter(mobility == "sessile" & group == "invert"), aes(x = treatment, y = dry_gm2)) +
   stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
   stat_summary(aes(col = treatment), fun = "mean", geom = "point", size = 10, na.rm = TRUE) +
   scale_color_manual(values = color_palette) +
@@ -202,11 +202,7 @@ ggplot(df %>% filter(mobility == "sessile" & group == "invert"), aes(x = treatme
 # Log response ratio
 
 ```{r}
-se <- function(x) {
-  sd(x)/sqrt(length(x))
-}
-
-df2 <- df %>% 
+df2 <- fg_recovery %>% 
   filter(sp_code != "MAPY") %>% 
   select(site, year, month, treatment, date, exp_dates, group, mobility, dry_gm2) %>% 
   group_by(exp_dates, group, mobility, treatment) %>% 
@@ -220,18 +216,35 @@ ggplot(df2) +
   geom_hline(yintercept = 0, lty = 2, col = "grey") +
   geom_point(aes(x = group_mobility, y = lrr_annual), size = 5) +
   theme_bw() +
+  theme(axis.text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title = element_text(size = 20),
+        axis.ticks = element_line(size = 1),
+        axis.ticks.length = unit(0.4, "cm"),
+        strip.text = element_text(size = 24), 
+        plot.title = element_text(size = 26), 
+        legend.position = "none") +
   labs(x = "Groups", y = "Log response ratio",
        title = "Annual log response ratio") +
-  facet_wrap(~exp_dates)
+  facet_wrap(~exp_dates) + 
+  ggsave(here::here("figures", paste("annual-log-response-ratio_", todays_date, ".jpg", sep = "")))
 
 ggplot(df2) +
   geom_hline(yintercept = 0, lty = 2, col = "grey") +
   geom_point(aes(x = group_mobility, y = lrr_continual), size = 5) +
-  geom_hline(yintercept = 0, lty = 2, col = "grey") +
   theme_bw() +
+  theme(axis.text = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title = element_text(size = 20),
+        axis.ticks = element_line(size = 1),
+        axis.ticks.length = unit(0.4, "cm"),
+        strip.text = element_text(size = 24), 
+        plot.title = element_text(size = 26), 
+        legend.position = "none") +
   labs(x = "Groups", y = "Log response ratio",
        title = "Continual log response ratio") +
-  facet_wrap(~exp_dates)
+  facet_wrap(~exp_dates) + 
+  ggsave(here::here("figures", paste("continual-log-response-ratio_", todays_date, ".jpg", sep = "")))
   
 ```
 

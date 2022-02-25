@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # 0. set up
 ```{r}
-source(here::here("code", "00-set_up.R"))
+# source(here::here("code", "00-set_up.R"))
 ```
 
 # 1. Kelp biomass
@@ -905,7 +905,7 @@ Function to add a column in the biomass data frame for each site called `time.mo
 #     na.omit()
 # }
 
-time.model.fxn.new <- function(site, treatment) {
+time.model.fxn.new <- function(site, treatment, season_choice) {
   # select an after date based on site and treatment
   treatment_after_date <- if(site == "aque" & treatment == "annual") {
     aque_after_date_annual
@@ -925,9 +925,28 @@ time.model.fxn.new <- function(site, treatment) {
     carp_after_date_annual
   } else if(site == "carp" & treatment == "continual") {
     carp_after_date_continual
-  } 
+  } else {
+    warning("Check your arguments! You might be missing site, treatment, or season.")
+    return(NA)
+  }
+  
+  season_choice <- if(season_choice == "all") {
+    c("winter", "spring", "summer", "fall")
+  } else if(season_choice == "summer") {
+    c("summer")
+  } else if (season_choice == "fall") {
+    c("fall")
+  } else if (season_choice == "winter") {
+    c("winter")
+  } else if (season_choice == "spring") {
+    c("spring")
+  } else {
+    warning("Check your arguments! You might be missing site, treatment, or season.")
+    return(NA)
+  }
   
   kelp_biomass %>% 
+    filter(season %in% season_choice) %>% 
     select(site, year, month, treatment, date, wm_gm2) %>% 
     filter(site == {{ site }} & treatment %in% c({{ treatment }}, "control")) %>% 
     pivot_wider(names_from = "treatment", values_from = "wm_gm2") %>% 
@@ -964,9 +983,13 @@ biomass.pcbacips <- function(df) {
 ### Arroyo Quemado
 
 ```{r}
-aque_biomass_annual <- time.model.fxn.new("aque", "annual")
+aque_biomass_annual <- time.model.fxn.new("aque", "annual", "all")
+aque_biomass_annual_summer <- time.model.fxn.new("aque", "annual", "summer")
+aque_biomass_annual_fall <- time.model.fxn.new("aque", "annual", "fall")
 
-aque_biomass_continual <- time.model.fxn.new("aque", "continual")
+aque_biomass_continual <- time.model.fxn.new("aque", "continual", "all")
+aque_biomass_continual_summer <- time.model.fxn.new("aque", "continual", "summer")
+aque_biomass_continual_fall <- time.model.fxn.new("aque", "continual", "fall")
 
 aque_annual_bacips_results <- biomass.pcbacips(aque_biomass_annual)
 
@@ -975,67 +998,145 @@ aque_annual_bacips_results <- biomass.pcbacips(aque_biomass_annual)
 aque_continual_bacips_results <- biomass.pcbacips(aque_biomass_continual)
 
 # LINEAR MODEL SELECTED - Likelihood = 55.7%
+
+aque_annual_bacips_results_summer <- biomass.pcbacips(aque_biomass_annual_summer)
+# STEP MODEL SELECTED - Likelihood = 62.3%
+
+aque_continual_bacips_results_summer <- biomass.pcbacips(aque_biomass_continual_summer)
+# LINEAR MODEL SELECTED - Likelihood = 54.3%
+
+aque_annual_bacips_results_fall <- biomass.pcbacips(aque_biomass_annual_fall)
+# STEP MODEL SELECTED - Likelihood = 45.9%
+
+aque_continual_bacips_results_fall <- biomass.pcbacips(aque_biomass_continual_fall)
+# LINEAR MODEL SELECTED - Likelihood = 71.9%
 ```
 
 ### Naples
 
 ```{r}
-napl_biomass_annual <- time.model.fxn.new("napl", "annual")
+napl_biomass_annual <- time.model.fxn.new("napl", "annual", "all")
+napl_biomass_annual_summer <- time.model.fxn.new("napl", "annual", "summer")
+napl_biomass_annual_fall <- time.model.fxn.new("napl", "annual", "fall")
 
-napl_biomass_continual <- time.model.fxn.new("napl", "continual")
+napl_biomass_continual <- time.model.fxn.new("napl", "continual", "all")
+napl_biomass_continual_summer <- time.model.fxn.new("napl", "continual", "summer")
+napl_biomass_continual_fall <- time.model.fxn.new("napl", "continual", "fall")
 
 napl_annual_bacips_results <- biomass.pcbacips(napl_biomass_annual)
 
-# STEP MODEL SELECTED - Likelihood = 47.4%
+# LINEAR MODEL SELECTED - Likelihood = 49.1%
 
 napl_continual_bacips_results <- biomass.pcbacips(napl_biomass_continual)
 
 # LINEAR MODEL SELECTED - Likelihood = 68.6%
+
+napl_annual_bacips_results_summer <- biomass.pcbacips(napl_biomass_annual_summer)
+
+# STEP MODEL SELECTED - Likelihood = 60.6%
+
+napl_continual_bacips_results_summer <- biomass.pcbacips(napl_biomass_continual_summer)
+# LINEAR MODEL SELECTED - Likelihood = 67.5%
+
+napl_annual_bacips_results_fall <- biomass.pcbacips(napl_biomass_annual_fall)
+# LINEAR MODEL SELECTED - Likelihood = 50.1%
+
+napl_continual_bacips_results_fall <- biomass.pcbacips(napl_biomass_continual_fall)
+# LINEAR MODEL SELECTED - Likelihood = 76.3%
 ```
 
 ### Isla Vista
 
 ```{r}
-ivee_biomass_annual <- time.model.fxn.new("ivee", "annual")
+ivee_biomass_annual <- time.model.fxn.new("ivee", "annual", "all")
+ivee_biomass_annual_summer <- time.model.fxn.new("ivee", "annual", "summer")
+ivee_biomass_annual_fall <- time.model.fxn.new("ivee", "annual", "fall")
 
 ivee_annual_bacips_results <- biomass.pcbacips(ivee_biomass_annual)
 
-# STEP MODEL SELECTED - Likelihood = 87.3%
+# STEP MODEL SELECTED - Likelihood = 90.2%
+
+ivee_annual_bacips_results_summer <- biomass.pcbacips(ivee_biomass_annual_summer)
+
+# STEP MODEL SELECTED - Likelihood = 60.6%
+
+ivee_annual_bacips_results_fall <- biomass.pcbacips(ivee_biomass_annual_fall)
+
+# STEP MODEL SELECTED - Likelihood = 63.2%
 ```
 
 ### Mohawk
 
 ```{r}
-mohk_biomass_annual <- time.model.fxn.new("mohk", "annual")
+mohk_biomass_annual <- time.model.fxn.new("mohk", "annual", "all")
+mohk_biomass_annual_summer <- time.model.fxn.new("mohk", "annual", "summer")
+mohk_biomass_annual_fall <- time.model.fxn.new("mohk", "annual", "fall")
 
-mohk_biomass_continual <- time.model.fxn.new("mohk", "continual")
+mohk_biomass_continual <- time.model.fxn.new("mohk", "continual", "all")
+mohk_biomass_continual_summer <- time.model.fxn.new("mohk", "continual", "summer")
+mohk_biomass_continual_fall <- time.model.fxn.new("mohk", "continual", "fall")
 
 mohk_annual_bacips_results <- biomass.pcbacips(mohk_biomass_annual)
 
-# LINEAR MODEL SELECTED - Likelihood = 64%
+# LINEAR MODEL SELECTED - Likelihood = 64.7%
 
 mohk_continual_bacips_results <- biomass.pcbacips(mohk_biomass_continual)
 
-# LINEAR MODEL SELECTED - Likelihood = 86.3%
+# LINEAR MODEL SELECTED - Likelihood = 99.1%
+
+mohk_annual_bacips_results_summer <- biomass.pcbacips(mohk_biomass_annual_summer)
+
+# LINEAR MODEL SELECTED - Likelihood = 62.3%
+
+mohk_continual_bacips_results_summer <- biomass.pcbacips(mohk_biomass_continual_summer)
+# LINEAR MODEL SELECTED - Likelihood = 88.9%
+
+mohk_annual_bacips_results_fall <- biomass.pcbacips(mohk_biomass_annual_fall)
+# STEP MODEL SELECTED - Likelihood = 51%
+
+mohk_continual_bacips_results_fall <- biomass.pcbacips(mohk_biomass_continual_fall)
+# LINEAR MODEL SELECTED - Likelihood = 81.6%
 ```
 
 ### Carpinteria
 
 ```{r}
-carp_biomass_annual <- time.model.fxn.new("carp", "annual")
+carp_biomass_annual <- time.model.fxn.new("carp", "annual", "all")
+carp_biomass_annual_summer <- time.model.fxn.new("carp", "annual", "summer")
+carp_biomass_annual_fall <- time.model.fxn.new("carp", "annual", "fall")
 
-carp_biomass_continual <- time.model.fxn.new("carp", "continual")
+carp_biomass_continual <- time.model.fxn.new("carp", "continual", "all")
+carp_biomass_continual_summer <- time.model.fxn.new("carp", "continual", "summer")
+carp_biomass_continual_fall <- time.model.fxn.new("carp", "continual", "fall")
 
 carp_annual_bacips_results <- biomass.pcbacips(carp_biomass_annual)
 
-# LINEAR MODEL SELECTED - Likelihood = 49.9%
+# LINEAR MODEL SELECTED - Likelihood = 55.2%
 
 carp_continual_bacips_results <- biomass.pcbacips(carp_biomass_continual)
 
-# STEP MODEL SELECTED - Likelihood = 62.3%
+# LINEAR MODEL SELECTED - Likelihood = 47.7%
+
+carp_annual_bacips_results_summer <- biomass.pcbacips(carp_biomass_annual_summer)
+
+# STEP MODEL SELECTED - Likelihood = 48.5%
+
+carp_continual_bacips_results_summer <- biomass.pcbacips(carp_biomass_continual_summer)
+# STEP MODEL SELECTED - Likelihood = 50.3%
+
+carp_annual_bacips_results_fall <- biomass.pcbacips(carp_biomass_annual_fall)
+# STEP MODEL SELECTED - Likelihood = 50.2%
+
+carp_continual_bacips_results_fall <- biomass.pcbacips(carp_biomass_continual_fall)
+# STEP MODEL SELECTED - Likelihood = 50.3%
+
+
+
 ```
 
 ### Estimated slopes
+
+#### All seasons
 ```{r}
 aque_annual_slope <- aque_annual_bacips_results$linear.model.summary.coefficients[2, 1]
 napl_annual_slope <- napl_annual_bacips_results$linear.model.summary.coefficients[2, 1]
@@ -1148,11 +1249,11 @@ sites_annual_slope_summary <- enframe(sites_annual_slope) %>%
     likelihood = "Likelihood"
   ) %>% 
   tab_header(
-    title = "Annual removal slopes"
+    title = "Annual removal slopes: all seasons"
   ) 
 
 sites_annual_slope_summary %>% 
-  gtsave("annual_removal_slopes.png", path = here::here("tables"))
+  gtsave(paste("annual_removal_slopes-", todays_date, ".png", sep = ""), path = here::here("tables"))
 
 sites_continual_slope_summary <- enframe(sites_continual_slope) %>% 
   rename(site = name, est_slope = value) %>% 
@@ -1174,14 +1275,309 @@ sites_continual_slope_summary <- enframe(sites_continual_slope) %>%
     likelihood = "Likelihood"
   ) %>% 
   tab_header(
-    title = "Continual removal slopes"
+    title = "Continual removal slopes: all seasons"
   ) 
 
 sites_continual_slope_summary %>% 
-  gtsave("continual_removal_slopes.png", path = here::here("tables"))
+  gtsave(paste("continual_removal_slopes-", todays_date, ".png", sep = ""), path = here::here("tables"))
 
 ```
 
+#### Summer only
+
+```{r}
+aque_annual_slope <- aque_annual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+napl_annual_slope <- napl_annual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+ivee_annual_slope <- ivee_annual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+mohk_annual_slope <- mohk_annual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+carp_annual_slope <- carp_annual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+
+sites_annual_slope <- setNames(c(aque_annual_slope,
+                                 napl_annual_slope,
+                                 ivee_annual_slope,
+                                 mohk_annual_slope,
+                                 carp_annual_slope), LTE_sites) 
+
+aque_annual_slope_pval <- aque_annual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+napl_annual_slope_pval <- napl_annual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+ivee_annual_slope_pval <- ivee_annual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+mohk_annual_slope_pval <- mohk_annual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+carp_annual_slope_pval <- carp_annual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+
+sites_annual_slope_pval <- setNames(c(aque_annual_slope_pval,
+                                      napl_annual_slope_pval,
+                                      ivee_annual_slope_pval,
+                                      mohk_annual_slope_pval,
+                                      carp_annual_slope_pval), LTE_sites)
+
+aque_annual_model <- aque_annual_bacips_results_summer$message
+napl_annual_model <- napl_annual_bacips_results_summer$message
+ivee_annual_model <- ivee_annual_bacips_results_summer$message
+mohk_annual_model <- mohk_annual_bacips_results_summer$message
+carp_annual_model <- carp_annual_bacips_results_summer$message
+
+sites_annual_message <- c(aque_annual_model,
+                          napl_annual_model,
+                          ivee_annual_model,
+                          mohk_annual_model,
+                          carp_annual_model)
+
+aque_annual_model_likelihood <- aque_annual_bacips_results_summer$likelihood
+napl_annual_model_likelihood <- napl_annual_bacips_results_summer$likelihood
+ivee_annual_model_likelihood <- ivee_annual_bacips_results_summer$likelihood
+mohk_annual_model_likelihood <- mohk_annual_bacips_results_summer$likelihood
+carp_annual_model_likelihood <- carp_annual_bacips_results_summer$likelihood
+
+sites_annual_model_likelihood <- c(aque_annual_model_likelihood,
+                                   napl_annual_model_likelihood,
+                                   ivee_annual_model_likelihood,
+                                   mohk_annual_model_likelihood,
+                                   carp_annual_model_likelihood)
+
+aque_continual_slope <- aque_continual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+napl_continual_slope <- napl_continual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+mohk_continual_slope <- mohk_continual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+carp_continual_slope <- carp_continual_bacips_results_summer$linear.model.summary.coefficients[2, 1]
+
+sites_continual_slope <- setNames(c(aque_continual_slope,
+                                    napl_continual_slope,
+                                    mohk_continual_slope,
+                                    carp_continual_slope), c("aque", "napl", "mohk", "carp"))
+
+aque_continual_slope_pval <- aque_continual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+napl_continual_slope_pval <- napl_continual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+mohk_continual_slope_pval <- mohk_continual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+carp_continual_slope_pval <- carp_continual_bacips_results_summer$linear.model.summary.coefficients[2, 4]
+
+sites_continual_slope_pval <- setNames(c(aque_continual_slope_pval,
+                                         napl_continual_slope_pval,
+                                         mohk_continual_slope_pval,
+                                         carp_continual_slope_pval), c("aque", "napl", "mohk", "carp"))
+
+
+aque_continual_model <- aque_continual_bacips_results_summer$message
+napl_continual_model <- napl_continual_bacips_results_summer$message
+mohk_continual_model <- mohk_continual_bacips_results_summer$message
+carp_continual_model <- carp_continual_bacips_results_summer$message
+
+sites_continual_message <- setNames(c(aque_continual_model,
+                                      napl_continual_model,
+                                      mohk_continual_model,
+                                      carp_continual_model), c("aque", "napl", "mohk", "carp"))
+
+aque_continual_model_likelihood <- aque_continual_bacips_results_summer$likelihood
+napl_continual_model_likelihood <- napl_continual_bacips_results_summer$likelihood
+mohk_continual_model_likelihood <- mohk_continual_bacips_results_summer$likelihood
+carp_continual_model_likelihood <- carp_continual_bacips_results_summer$likelihood
+
+sites_continual_model_likelihood <- c(aque_continual_model_likelihood,
+                                   napl_continual_model_likelihood,
+                                   mohk_continual_model_likelihood,
+                                   carp_continual_model_likelihood)
+```
+
+```{r}
+sites_annual_slope_summary <- enframe(sites_annual_slope) %>% 
+  rename(site = name, est_slope = value) %>% 
+  cbind(sites_annual_slope_pval) %>% 
+  rename(pval = sites_annual_slope_pval) %>% 
+  cbind(sites_annual_message) %>% 
+  rename(model_sel = sites_annual_message) %>% 
+  cbind(sites_annual_model_likelihood) %>% 
+  rename(likelihood = sites_annual_model_likelihood) %>% 
+  cbind(sites_full) %>% 
+  select(sites_full, est_slope, pval, model_sel, likelihood) %>% 
+  mutate(across(c(est_slope, pval), ~ round(., digits = 3))) %>% 
+  gt() %>% 
+  cols_label(
+    sites_full = "Site",
+    est_slope = "Linear slope \n (estimated)",
+    pval = "p-value",
+    model_sel = "Selected model",
+    likelihood = "Likelihood"
+  ) %>% 
+  tab_header(
+    title = "Annual removal slopes: summer"
+  ) 
+
+sites_annual_slope_summary %>% 
+  gtsave(paste("annual_removal_slopes-summer-", todays_date, ".png", sep = ""), path = here::here("tables"))
+
+sites_continual_slope_summary <- enframe(sites_continual_slope) %>% 
+  rename(site = name, est_slope = value) %>% 
+  cbind(sites_continual_slope_pval) %>% 
+  rename(pval = sites_continual_slope_pval) %>% 
+  cbind(sites_continual_message) %>% 
+  rename(model_sel = sites_continual_message) %>% 
+  cbind(sites_continual_model_likelihood) %>% 
+  rename(likelihood = sites_continual_model_likelihood) %>% 
+  cbind(sites_continual_full) %>% 
+  select(sites_continual_full, est_slope, pval, model_sel, likelihood) %>% 
+  mutate(across(c(est_slope, pval), ~ round(., digits = 3))) %>% 
+  gt() %>% 
+  cols_label(
+    sites_continual_full = "Site",
+    est_slope = "Linear slope \n (estimated)",
+    pval = "p-value",
+    model_sel = "Selected model",
+    likelihood = "Likelihood"
+  ) %>% 
+  tab_header(
+    title = "Continual removal slopes: summer"
+  ) 
+
+sites_continual_slope_summary %>% 
+  gtsave(paste("continual_removal_slopes_summer-", todays_date, ".png", sep = ""), path = here::here("tables"))
+
+```
+
+#### Fall only
+
+```{r}
+aque_annual_slope <- aque_annual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+napl_annual_slope <- napl_annual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+ivee_annual_slope <- ivee_annual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+mohk_annual_slope <- mohk_annual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+carp_annual_slope <- carp_annual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+
+sites_annual_slope <- setNames(c(aque_annual_slope,
+                                 napl_annual_slope,
+                                 ivee_annual_slope,
+                                 mohk_annual_slope,
+                                 carp_annual_slope), LTE_sites) 
+
+aque_annual_slope_pval <- aque_annual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+napl_annual_slope_pval <- napl_annual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+ivee_annual_slope_pval <- ivee_annual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+mohk_annual_slope_pval <- mohk_annual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+carp_annual_slope_pval <- carp_annual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+
+sites_annual_slope_pval <- setNames(c(aque_annual_slope_pval,
+                                      napl_annual_slope_pval,
+                                      ivee_annual_slope_pval,
+                                      mohk_annual_slope_pval,
+                                      carp_annual_slope_pval), LTE_sites)
+
+aque_annual_model <- aque_annual_bacips_results_fall$message
+napl_annual_model <- napl_annual_bacips_results_fall$message
+ivee_annual_model <- ivee_annual_bacips_results_fall$message
+mohk_annual_model <- mohk_annual_bacips_results_fall$message
+carp_annual_model <- carp_annual_bacips_results_fall$message
+
+sites_annual_message <- c(aque_annual_model,
+                          napl_annual_model,
+                          ivee_annual_model,
+                          mohk_annual_model,
+                          carp_annual_model)
+
+aque_annual_model_likelihood <- aque_annual_bacips_results_fall$likelihood
+napl_annual_model_likelihood <- napl_annual_bacips_results_fall$likelihood
+ivee_annual_model_likelihood <- ivee_annual_bacips_results_fall$likelihood
+mohk_annual_model_likelihood <- mohk_annual_bacips_results_fall$likelihood
+carp_annual_model_likelihood <- carp_annual_bacips_results_fall$likelihood
+
+sites_annual_model_likelihood <- c(aque_annual_model_likelihood,
+                                   napl_annual_model_likelihood,
+                                   ivee_annual_model_likelihood,
+                                   mohk_annual_model_likelihood,
+                                   carp_annual_model_likelihood)
+
+aque_continual_slope <- aque_continual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+napl_continual_slope <- napl_continual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+mohk_continual_slope <- mohk_continual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+carp_continual_slope <- carp_continual_bacips_results_fall$linear.model.summary.coefficients[2, 1]
+
+sites_continual_slope <- setNames(c(aque_continual_slope,
+                                    napl_continual_slope,
+                                    mohk_continual_slope,
+                                    carp_continual_slope), c("aque", "napl", "mohk", "carp"))
+
+aque_continual_slope_pval <- aque_continual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+napl_continual_slope_pval <- napl_continual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+mohk_continual_slope_pval <- mohk_continual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+carp_continual_slope_pval <- carp_continual_bacips_results_fall$linear.model.summary.coefficients[2, 4]
+
+sites_continual_slope_pval <- setNames(c(aque_continual_slope_pval,
+                                         napl_continual_slope_pval,
+                                         mohk_continual_slope_pval,
+                                         carp_continual_slope_pval), c("aque", "napl", "mohk", "carp"))
+
+
+aque_continual_model <- aque_continual_bacips_results_fall$message
+napl_continual_model <- napl_continual_bacips_results_fall$message
+mohk_continual_model <- mohk_continual_bacips_results_fall$message
+carp_continual_model <- carp_continual_bacips_results_fall$message
+
+sites_continual_message <- setNames(c(aque_continual_model,
+                                      napl_continual_model,
+                                      mohk_continual_model,
+                                      carp_continual_model), c("aque", "napl", "mohk", "carp"))
+
+aque_continual_model_likelihood <- aque_continual_bacips_results_fall$likelihood
+napl_continual_model_likelihood <- napl_continual_bacips_results_fall$likelihood
+mohk_continual_model_likelihood <- mohk_continual_bacips_results_fall$likelihood
+carp_continual_model_likelihood <- carp_continual_bacips_results_fall$likelihood
+
+sites_continual_model_likelihood <- c(aque_continual_model_likelihood,
+                                   napl_continual_model_likelihood,
+                                   mohk_continual_model_likelihood,
+                                   carp_continual_model_likelihood)
+```
+
+```{r}
+sites_annual_slope_summary <- enframe(sites_annual_slope) %>% 
+  rename(site = name, est_slope = value) %>% 
+  cbind(sites_annual_slope_pval) %>% 
+  rename(pval = sites_annual_slope_pval) %>% 
+  cbind(sites_annual_message) %>% 
+  rename(model_sel = sites_annual_message) %>% 
+  cbind(sites_annual_model_likelihood) %>% 
+  rename(likelihood = sites_annual_model_likelihood) %>% 
+  cbind(sites_full) %>% 
+  select(sites_full, est_slope, pval, model_sel, likelihood) %>% 
+  mutate(across(c(est_slope, pval), ~ round(., digits = 3))) %>% 
+  gt() %>% 
+  cols_label(
+    sites_full = "Site",
+    est_slope = "Linear slope \n (estimated)",
+    pval = "p-value",
+    model_sel = "Selected model",
+    likelihood = "Likelihood"
+  ) %>% 
+  tab_header(
+    title = "Annual removal slopes: fall"
+  ) 
+
+sites_annual_slope_summary %>% 
+  gtsave(paste("annual_removal_slopes-fall-", todays_date, ".png", sep = ""), path = here::here("tables"))
+
+sites_continual_slope_summary <- enframe(sites_continual_slope) %>% 
+  rename(site = name, est_slope = value) %>% 
+  cbind(sites_continual_slope_pval) %>% 
+  rename(pval = sites_continual_slope_pval) %>% 
+  cbind(sites_continual_message) %>% 
+  rename(model_sel = sites_continual_message) %>% 
+  cbind(sites_continual_model_likelihood) %>% 
+  rename(likelihood = sites_continual_model_likelihood) %>% 
+  cbind(sites_continual_full) %>% 
+  select(sites_continual_full, est_slope, pval, model_sel, likelihood) %>% 
+  mutate(across(c(est_slope, pval), ~ round(., digits = 3))) %>% 
+  gt() %>% 
+  cols_label(
+    sites_continual_full = "Site",
+    est_slope = "Linear slope \n (estimated)",
+    pval = "p-value",
+    model_sel = "Selected model",
+    likelihood = "Likelihood"
+  ) %>% 
+  tab_header(
+    title = "Continual removal slopes: fall"
+  ) 
+
+sites_continual_slope_summary %>% 
+  gtsave(paste("continual_removal_slopes_fall-", todays_date, ".png", sep = ""), path = here::here("tables"))
+
+```
 
 ### All sites
 
@@ -1461,6 +1857,70 @@ ggplot(df %>% filter(impact_annual > -200), aes(x = control, y = impact_annual))
   annotate("text", x = 6000, y = 50, label = "more kelp in control", size = 3) +
   annotate("text", x = 6000, y = -50, label = "more kelp in removal", size = 3) 
 ```
+
+Or, could try impact/rate/recovery with means...  
+
+Just as a note, there probably needs to be two different data frames? Or maybe this can be done in vectors... regardless, maybe it could be a matrix that is 5 rows long, with columns for mean biomass annual during, mean biomass continual during... then deltas would be biomass
+
+```{r}
+
+# - impact of removal: 100 x (difference in biomass in control - removal)/(biomass in control)
+# issues: when removal = 0 --> solution: change 0 to 0.000001? or some very small number?
+# - rate of recovery: 100 x (change in abundance between end of experiment and sampling date)/(impact of removal)  
+# - extent of recovery: 100 x (highest abundance in period after disturbance)/(impact of removal)
+
+# Connell 1997: extent of recovery: ratio of increase to the amount of decline
+# e.g. if cover fell from 75% to 25%, then rose to 55%, then degree of recovery = 60% (rise 30%/fall 50%)
+
+
+df <- biomass %>% 
+  filter(sp_code == "MAPY") %>% 
+  select(-sp_code) %>% 
+  # # make a new column for after dates
+  after_dates_column() %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column() %>% 
+  select(site, year, month, treatment, date, exp_dates, wm_gm2) %>% 
+  group_by(exp_dates, site, treatment) %>% 
+  summarize(mean_biomass = mean(wm_gm2, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = c(treatment, exp_dates), values_from = mean_biomass) %>% 
+  # difference between control and removal during and after experiment ends
+  mutate(delta_annual_during = control_during - annual_during,
+         delta_continual_during = control_during - continual_during,
+         # "rise" is the increase after the experiment ends (difference between after and during)
+         rise_annual = annual_after - annual_during,
+         rise_continual = continual_after - continual_during,
+         # impact is the ratio of delta:control biomass
+         impact_annual = delta_annual_during/control_during,
+         impact_continual = delta_continual_during/control_during,
+         # extent is the ratio of rise:delta
+         extent_annual = rise_annual/delta_annual_during,
+         extent_continual = rise_continual/delta_continual_during,
+         delta_annual_after = control_after - annual_after,
+         delta_continual_after = control_after - continual_after
+  )
+  
+  filter(site == "aque") %>% 
+  mutate(delta_annual = control - annual,
+         delta_continual = control - continual, 
+         impact_annual = round((delta_annual/control), 4),
+         impact_continual = round((delta_continual/control), 4)) %>% 
+  filter(impact_annual > -Inf)
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
 
 
 
