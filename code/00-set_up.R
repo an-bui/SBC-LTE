@@ -224,7 +224,9 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
   # make a new column for during and after and set factor levels
   exp_dates_column() %>% 
   # create a new column for season and set factor levels
-  season_column()
+  season_column() %>% 
+  # take out all the first dates 
+  filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates)))
 
 ############################################
 # b. percent cover
@@ -426,6 +428,8 @@ napl_full <- "Naples (NAPL)"
 ivee_full <- "Isla Vista (IVEE)"
 mohk_full <- "Mohawk (MOHK)"
 carp_full <- "Carpinteria (CARP)"
+
+sites_full_levels <- c("Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)")
 
 sites_full <- setNames(c("Arroyo Quemado (AQUE)",
                          "Naples (NAPL)",
