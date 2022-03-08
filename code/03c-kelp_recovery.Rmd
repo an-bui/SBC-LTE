@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # 0. set up
 ```{r}
-# source(here::here("code", "00-set_up.R"))
+source(here::here("code", "00-set_up.R"))
 ```
 
 # 1. Kelp biomass
@@ -138,50 +138,32 @@ napl_comparison_frond
 #### Kelp biomass
 ```{r}
 comparison_biomass_fxn <- function(site_choice) {
-  plot_title <- if(site_choice == "aque") {
-    aque_full
-  } else if(site_choice == "napl") {
-    napl_full
-  } else if(site_choice == "carp") {
-    carp_full
-  } else if(site_choice == "ivee") {
-    ivee_full
-  } else if(site_choice == "mohk") {
-    mohk_full
-  }
+  plot_title <- pluck(sites_full, site_choice)
   
   kelp_biomass %>% 
     filter(site == site_choice) %>% 
     ggplot(aes(x = exp_dates, y = wm_gm2, col = treatment, shape = treatment)) +
     stat_summary(aes(group = treatment), fun = mean, geom = "line", size = 1, alpha = 0.8, na.rm = TRUE) +
-    stat_summary(fun = mean, geom = "point", size = 4, na.rm = TRUE) +
+    stat_summary(fun = mean, geom = "point", size = 5, na.rm = TRUE) +
     
-    stat_summary(fun.data = mean_se, geom = "errorbar", alpha = 0.8, width = 0.2, na.rm = TRUE) +
+    stat_summary(fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2, na.rm = TRUE) +
     scale_color_manual(values = color_palette) +
     scale_shape_manual(values = shape_palette) +
     theme_bw() +
-    theme(plot.title = element_text(size = 20)) +
+    theme(plot.title = element_text(size = 20),
+          axis.text = element_text(size = 16),
+          axis.title = element_text(size = 18),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 14)) +
     labs(x = " ",
          y = "Mean kelp biomass (wm g/m2)",
-         title = plot_title)
+         title = plot_title,
+         col = "Treatment", shape = "Treatment")
 }
 
 aque_comparison_biomass <- comparison_biomass_fxn("aque")
 napl_comparison_biomass <- comparison_biomass_fxn("napl")
-ivee_comparison_biomass <- kelp_biomass %>% 
-    filter(site == "ivee") %>% 
-    ggplot(aes(x = exp_dates, y = wm_gm2, col = treatment, shape = treatment)) +
-    stat_summary(aes(group = treatment), fun = mean, geom = "line", size = 1, alpha = 0.8, na.rm = TRUE) +
-    stat_summary(fun = mean, geom = "point", size = 4, na.rm = TRUE) +
-    
-    stat_summary(fun.data = mean_se, geom = "errorbar", alpha = 0.8, width = 0.2, na.rm = TRUE) +
-    scale_color_manual(values = color_palette) +
-    scale_shape_manual(values = shape_palette) +
-    theme_bw() +
-    theme(plot.title = element_text(size = 20)) +
-    labs(x = " ",
-         y = "Mean kelp biomass (wm g/m2)",
-         title = ivee_full)
+ivee_comparison_biomass <- comparison_biomass_fxn("ivee")
 mohk_comparison_biomass <- comparison_biomass_fxn("mohk")
 carp_comparison_biomass <- comparison_biomass_fxn("carp")
 
@@ -462,7 +444,7 @@ annual_biomass_timeseries <- kelp_biomass %>%
 
 annual_biomass_timeseries
 
-ggsave(here::here("figures", "annual_biomass_timeseries.jpg"), annual_biomass_timeseries, width = 14, height = 8, dpi = 300)
+# ggsave(here::here("figures", "annual_biomass_timeseries.jpg"), annual_biomass_timeseries, width = 14, height = 8, dpi = 300)
 ```
 
 
@@ -766,13 +748,18 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
 	points(delta~time.true, pch=24, bg="white", cex=2)
 	
 	### STEP 3 - Fit and compete models
-	## Create a 'period' variable
-	period <- ifelse(time.model==0, "Before","After")
+	## Create a 'period' variable: if the time model == 0, assign "before"
+	## otherwise, assign "after"
+	## this is the only predictor in the aov() call below
+	period <- ifelse(time.model == 0, "Before", "After")
 	
 	## Fit a step model
+	# analysis of variance: comparing means
 	step.Model<-aov(delta ~ period)
 
 	## Fit a linear model
+	# linear model: delta as a function of time.model
+	# 0s in "before", sequence of numbers in "after"
 	linear.Model<-lm(delta ~ time.model)
 	
 	## Fit an asymptotic model
@@ -834,6 +821,16 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
 	# print(w)
 	barplot(w, col="white", ylab="Relative likelihood (%)", cex.names = 0.9, names.arg =c("Step","Linear","Asymptotic","Sigmoid"))
 	best.Model<-which(w==max(w))
+	
+	model.formula <- if(best.Model==1) {
+	  step.Model
+	} else if(best.Model==2) {
+	  linear.Model
+	} else if(best.Model==3) {
+	  asymptotic.Model
+	} else if(best.Model==4) {
+	  sigmoid.Model
+	}
 	
 	message <- if(best.Model==1) {
 	  "Step"
@@ -967,7 +964,9 @@ time.model.fxn.new <- function(site, treatment, season_choice) {
     )) %>% 
     # rearrange the sampling dates to be in logical order
     mutate(exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-    arrange(exp_dates)
+    arrange(exp_dates) %>% 
+    # add a column for deltas (not used in function, but useful for later)
+    mutate(delta = .[[7]] - .[[6]])
 }
 
 biomass.pcbacips <- function(df) {
@@ -982,6 +981,8 @@ biomass.pcbacips <- function(df) {
 
 ### Arroyo Quemado
 
+**Notes to self**: maybe the ProgressiveChangeBACIPS is useful for figuring out what is happening in removal plots post-experiment-end relative to during the experiment. For example, it's useful to know when the change is a step change as opposed to a linear change. However, the linear model approximation is not great - that might be due to the model formulation, but probably not. 
+
 ```{r}
 aque_biomass_annual <- time.model.fxn.new("aque", "annual", "all")
 aque_biomass_annual_summer <- time.model.fxn.new("aque", "annual", "summer")
@@ -993,11 +994,16 @@ aque_biomass_continual_fall <- time.model.fxn.new("aque", "continual", "fall")
 
 aque_annual_bacips_results <- biomass.pcbacips(aque_biomass_annual)
 
-# STEP MODEL SELECTED - Likelihood = 72%
+# STEP MODEL SELECTED - Likelihood = 64.4%
+
+control_bio <- aque_biomass_annual$control
+annual_bio <- aque_biomass_annual$annual
+delta_bio <- annual_bio - control_bio
+TukeyHSD(aov(delta_bio ~ aque_biomass_annual$exp_dates))
 
 aque_continual_bacips_results <- biomass.pcbacips(aque_biomass_continual)
 
-# LINEAR MODEL SELECTED - Likelihood = 55.7%
+# LINEAR MODEL SELECTED - Likelihood = 64.9%
 
 aque_annual_bacips_results_summer <- biomass.pcbacips(aque_biomass_annual_summer)
 # STEP MODEL SELECTED - Likelihood = 62.3%
@@ -1029,7 +1035,7 @@ napl_annual_bacips_results <- biomass.pcbacips(napl_biomass_annual)
 
 napl_continual_bacips_results <- biomass.pcbacips(napl_biomass_continual)
 
-# LINEAR MODEL SELECTED - Likelihood = 68.6%
+# SIGMOID MODEL SELECTED - Likelihood = 58.3%
 
 napl_annual_bacips_results_summer <- biomass.pcbacips(napl_biomass_annual_summer)
 
@@ -1077,7 +1083,6 @@ mohk_biomass_continual_summer <- time.model.fxn.new("mohk", "continual", "summer
 mohk_biomass_continual_fall <- time.model.fxn.new("mohk", "continual", "fall")
 
 mohk_annual_bacips_results <- biomass.pcbacips(mohk_biomass_annual)
-
 # LINEAR MODEL SELECTED - Likelihood = 64.7%
 
 mohk_continual_bacips_results <- biomass.pcbacips(mohk_biomass_continual)
@@ -1752,30 +1757,42 @@ only including fall sampling dates
 ```{r}
 kelp_biomass_fall <- kelp_biomass %>% 
   filter(season == "fall") %>% 
-  ggplot(aes(x = date, y = total_wm_gm2)) +
+  ggplot(aes(x = date, y = wm_gm2)) +
   geom_line(aes(color = treatment), size = 1) +
   geom_point(aes(color = treatment, shape = treatment), size = 3) +
   scale_color_manual(values = color_palette) +
   scale_shape_manual(values = shape_palette) +
   theme_bw() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        title = element_text(size = 20),
+        legend.text = element_text(size = 16)) +
   facet_wrap(~site) +
   labs(x = "Sampling date", y = "Total biomass (wet mass/gm2)",
-       title = "Fall biomass")
+       title = "Fall kelp biomass")
 
 kelp_biomass_summer <- kelp_biomass %>% 
   filter(season == "summer") %>% 
-  ggplot(aes(x = date, y = total_wm_gm2)) +
+  ggplot(aes(x = date, y = wm_gm2)) +
   geom_line(aes(color = treatment), size = 1) +
   geom_point(aes(color = treatment, shape = treatment), size = 3) +
   scale_color_manual(values = color_palette) +
   scale_shape_manual(values = shape_palette) +
   theme_bw() +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        title = element_text(size = 20),
+        legend.text = element_text(size = 16)) +
   facet_wrap(~site) +
-    labs(x = "Sampling date", y = "Total biomass (wet mass/gm2)",
-       title = "Summer biomass")
+  labs(x = "Sampling date", y = "Total biomass (wet mass/gm2)",
+       title = "Summer kelp biomass")
 
 kelp_biomass_fall
 kelp_biomass_summer
+
+# ggsave(here::here("figures/timeseries", paste("kelp-biomass_summer_", todays_date, ".jpg", sep = "")), kelp_biomass_summer)
+
+# ggsave(here::here("figures/timeseries", paste("kelp-biomass_fall_", todays_date, ".jpg", sep = "")), kelp_biomass_fall)
 ```
 
 ## Kelp "recovery" by productivity
@@ -1873,48 +1890,231 @@ Just as a note, there probably needs to be two different data frames? Or maybe t
 # e.g. if cover fell from 75% to 25%, then rose to 55%, then degree of recovery = 60% (rise 30%/fall 50%)
 
 
-df <- biomass %>% 
+recovery_df <- biomass %>% 
   filter(sp_code == "MAPY") %>% 
   select(-sp_code) %>% 
   # # make a new column for after dates
   after_dates_column() %>% 
   # make a new column for during and after and set factor levels
   exp_dates_column() %>% 
-  select(site, year, month, treatment, date, exp_dates, wm_gm2) %>% 
+  # select(site, treatment, date, exp_dates, wm_gm2) %>% 
   group_by(exp_dates, site, treatment) %>% 
   summarize(mean_biomass = mean(wm_gm2, na.rm = TRUE)) %>% 
+  ungroup() %>% 
   pivot_wider(names_from = c(treatment, exp_dates), values_from = mean_biomass) %>% 
   # difference between control and removal during and after experiment ends
-  mutate(delta_annual_during = control_during - annual_during,
-         delta_continual_during = control_during - continual_during,
+  mutate(during_delta_annual = control_during - annual_during,
+         during_delta_continual = control_during - continual_during,
          # "rise" is the increase after the experiment ends (difference between after and during)
-         rise_annual = annual_after - annual_during,
-         rise_continual = continual_after - continual_during,
+         both_rise_annual = annual_after - annual_during,
+         both_rise_continual = continual_after - continual_during,
          # impact is the ratio of delta:control biomass
-         impact_annual = delta_annual_during/control_during,
-         impact_continual = delta_continual_during/control_during,
+         both_impact_annual = (during_delta_annual/control_during)*100,
+         both_impact_continual = (during_delta_continual/control_during)*100,
+         # rate of recovery is the ratio of rise:impact
+         both_rate_annual = both_rise_annual/both_impact_annual,
+         both_rate_continual = both_rise_continual/both_impact_continual,
          # extent is the ratio of rise:delta
-         extent_annual = rise_annual/delta_annual_during,
-         extent_continual = rise_continual/delta_continual_during,
-         delta_annual_after = control_after - annual_after,
-         delta_continual_after = control_after - continual_after
-  )
-  
-  filter(site == "aque") %>% 
-  mutate(delta_annual = control - annual,
-         delta_continual = control - continual, 
-         impact_annual = round((delta_annual/control), 4),
-         impact_continual = round((delta_continual/control), 4)) %>% 
-  filter(impact_annual > -Inf)
+         both_extent_annual = both_rise_annual/during_delta_annual,
+         both_extent_continual = both_rise_continual/during_delta_continual,
+         after_delta_annual = control_after - annual_after,
+         after_delta_continual = control_after - continual_after
+  ) %>% 
+  # new column with full site names
+  mutate(site_full = case_when(
+    site == "aque" ~ aque_full,
+    site == "napl" ~ napl_full,
+    site == "ivee" ~ ivee_full,
+    site == "mohk" ~ mohk_full,
+    site == "carp" ~ carp_full
+  )) %>% 
+  pivot_longer(cols = 8:19, names_to = "calc", values_to = "value") %>% 
+  separate(col = calc, into = c("exp_dates", "calc", "treatment")) %>% 
+  select(site_full, exp_dates, calc, treatment, value) %>% 
+  mutate(site_full = fct_relevel(site_full, aque_full, napl_full, ivee_full, mohk_full, carp_full)) 
 
+aque_comparison_biomass
+napl_comparison_biomass
+ivee_comparison_biomass
+mohk_comparison_biomass
+carp_comparison_biomass
 
+impact_plot <- ggplot(recovery_df %>% filter(calc == "impact"), aes(x = site_full, y = value)) +
+  geom_col(aes(fill = treatment), position = "dodge") +
+  scale_fill_manual(values = c(annual_col, continual_col)) +
+  geom_hline(yintercept = 0, lty = 2) +
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+  theme_bw() +
+  labs(x = "Site", y = "Mean kelp biomass impact [(\u0394 control - removal)/control]",
+       title = "Impact of removal during experiment") +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        title = element_text(size = 18),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 16))
+impact_plot
+# ggsave(here::here("figures/recovery-metrics", paste("impact_", todays_date, ".jpg", sep = "")), impact_plot)
 
+extent_plot <- ggplot(recovery_df %>% filter(calc == "extent"), aes(x = site_full, y = value)) +
+  geom_col(aes(fill = treatment), position = "dodge") +
+  scale_fill_manual(values = c(annual_col, continual_col)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 2.5)) +
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+  theme_bw() +
+  labs(x = "Site", y = "Extent of recovery (mean kelp biomass) \n rise/\u0394",
+       title = "Extent of recovery following experiment end") +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        title = element_text(size = 18),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 16))
+extent_plot
+# ggsave(here::here("figures/recovery-metrics", paste("extent_", todays_date, ".jpg", sep = "")), extent_plot)
 
+rate_plot <- ggplot(recovery_df %>% filter(calc == "rate"), aes(x = site_full, y = value)) +
+  geom_col(aes(fill = treatment), position = "dodge") +
+  scale_fill_manual(values = c(annual_col, continual_col)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 40)) +
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+  theme_bw() +
+  labs(x = "Site", y = "Rate of recovery (mean kelp biomass between 'during' and 'after') \n rise/impact",
+       title = "Rate of recovery following experiment end") +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 16),
+        title = element_text(size = 18),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 16))
+rate_plot
+# ggsave(here::here("figures/recovery-metrics", paste("rate_", todays_date, ".jpg", sep = "")), rate_plot)
+```
 
+## Start-end-after
+
+Look at average deltas across 3 years at start of experiment, 3 years at end of experiment, and 3 most recent years after experiment ended. Took out the first sampling dates in the set up script.  
+
+Using delta biomass. Trying to get the data frame in order for annual removal first:  
+
+```{r}
+delta_annual <- delta_biomass %>% 
+  select(site, year, month, date, control, annual, delta_annual) %>% 
+  drop_na(delta_annual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date > aque_after_date_annual ~ "after",
+    site == "napl" & date > napl_after_date_annual ~ "after",
+    site == "ivee" & date > ivee_after_date_annual ~ "after",
+    site == "mohk" & date > mohk_after_date_annual ~ "after",
+    site == "carp" & date > carp_after_date_annual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+   # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
+    # IVEE control and annual started in 2011
+    site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
+    site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
+    site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
+    site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
+    )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  # if "after", then simple: the time in years - the minimum time in years
+  # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)"))
+
+delta_annual_plot <- ggplot(delta_annual, aes(x = time_since_end, y = delta_annual)) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(col = exp_dates)) +
+  geom_smooth(method = "lm", aes(col = exp_dates)) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10)) +
+  labs(x = "Time since end of experiment", y = "\U0394 biomass (treatment - control)",
+       title = "\U0394 annual") +
+  facet_wrap(~site_full, ncol = 1, scales = "free_y")
+
+delta_annual_plot
 ```
 
 
+Now for continual removal:
 
+```{r}
+delta_continual <- delta_biomass %>% 
+  select(site, year, month, date, exp_dates, control, annual, delta_continual) %>% 
+  # take out years where continual removal hadn't happened yet
+  drop_na(delta_continual) %>% 
+  # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: continual started in 2010
+    quarter == "Q1" ~ year + 0.125 - 2010,
+    quarter == "Q2" ~ year + 0.375 - 2010,
+    quarter == "Q3" ~ year + 0.625 - 2010,
+    quarter == "Q4" ~ year + 0.875 - 2010
+  )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)"))
+
+delta_continual_plot <- ggplot(delta_continual, aes(x = time_since_end, y = delta_continual)) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(col = exp_dates)) +
+  geom_smooth(method = "lm", aes(col = exp_dates)) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10)) +
+  labs(x = "Time since end of experiment", y = "\U0394 biomass (treatment - control)",
+       title = "\U0394 continual") +
+  facet_wrap(~site_full, ncol = 1, scales = "free_y")
+
+delta_continual_plot
+```
 
 
 
