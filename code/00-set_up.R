@@ -13,6 +13,7 @@ library(plotly)
 library(fuzzyjoin)
 library(gt)
 library(rlang)
+library(multcompView)
 
 # analysis
 library(vegan)
@@ -25,40 +26,15 @@ library(nls2) # Fitting non-linear models
 library(AICcmodavg) # calculate second order AIC (AICc)
 library(MuMIn)
 library(boot)
+library(lme4)
+library(segmented) # piecewise regression
 
 
 # 2. start and end dates --------------------------------------------------
 
-############################################
-# a. Naples (NAPL) 
-############################################
-
-napl_start_dates <- c("NAPL_CONTROL_2008-01-10", "NAPL_ANNUAL_2008-01-10", "NAPL_CONTINUAL_2010-04-27")
-
-napl_start_date <- as_date("2008-01-10")
-
-napl_after_date <- as_date("2017-02-14") 
-
-napl_after_date_annual <- as_date("2017-05-16")
-
-napl_after_date_continual <- as_date("2016-08-14")
 
 ############################################
-# b. Mohawk (MOHK)
-############################################
-
-mohk_start_dates <- c("MOHK_ANNUAL_2008-01-17", "MOHK_CONTROL_2008-01-17", "MOHK_CONTINUAL_2010-05-05")
-
-mohk_start_date <- as_date("2008-01-17")
-
-mohk_after_date <- as_date("2017-02-13")
-
-mohk_after_date_annual <- as_date("2018-05-15")
-
-mohk_after_date_continual <- as_date("2017-08-11")
-
-############################################
-# c. Arroyo Quemado (AQUE)
+# a. Arroyo Quemado (AQUE)
 ############################################
 
 aque_start_dates <- c("AQUE_CONTROL_2008-01-30", "AQUE_ANNUAL_2008-01-30", "AQUE_CONTINUAL_2010-04-26")
@@ -72,7 +48,47 @@ aque_after_date_annual <- as_date("2018-05-10")
 aque_after_date_continual <- as_date("2017-08-16")
 
 ############################################
-# d. Carpinteria (CARP)
+# b. Naples (NAPL) 
+############################################
+
+napl_start_dates <- c("NAPL_CONTROL_2008-01-10", "NAPL_ANNUAL_2008-01-10", "NAPL_CONTINUAL_2010-04-27")
+
+napl_start_date <- as_date("2008-01-10")
+
+napl_after_date <- as_date("2016-02-19") # wrong in methods? 
+
+napl_after_date_annual <- as_date("2017-05-16")
+
+napl_after_date_continual <- as_date("2016-08-14")
+
+############################################
+# c. Isla Vista (IVEE)
+############################################
+
+ivee_start_dates <- c("IVEE_CONTROL_2011-10-26", "IVEE_ANNUAL_2011-10-26")
+
+ivee_start_date <- as_date("2011-10-26")
+
+ivee_after_date <- as_date("2016-02-18")
+
+ivee_after_date_annual <- as_date("2017-05-15")
+
+############################################
+# d. Mohawk (MOHK)
+############################################
+
+mohk_start_dates <- c("MOHK_ANNUAL_2008-01-17", "MOHK_CONTROL_2008-01-17", "MOHK_CONTINUAL_2010-05-05")
+
+mohk_start_date <- as_date("2008-01-17")
+
+mohk_after_date <- as_date("2017-02-13")
+
+mohk_after_date_annual <- as_date("2018-05-15")
+
+mohk_after_date_continual <- as_date("2017-08-11")
+
+############################################
+# e. Carpinteria (CARP)
 ############################################
 
 carp_start_dates <- c("CARP_CONTROL_2008-02-12", "CARP_ANNUAL_2008-02-12", "CARP_CONTINUAL_2010-04-23")
@@ -84,18 +100,6 @@ carp_after_date <- as_date("2017-02-15")
 carp_after_date_annual <- as_date("2018-05-22")
 
 carp_after_date_continual <- as_date("2017-08-10")
-
-############################################
-# e. Isla Vista (IVEE)
-############################################
-
-ivee_start_dates <- c("IVEE_CONTROL_2011-10-26", "IVEE_ANNUAL_2011-10-26")
-
-ivee_start_date <- as_date("2011-10-26")
-
-ivee_after_date <- as_date("2016-02-18")
-
-ivee_after_date_annual <- as_date("2017-05-15")
 
 # 3. useful functions for wrangling ---------------------------------------
 
@@ -208,7 +212,7 @@ season_column <- function(df) {
 # a. LTE all species biomass #############
 ############################################
 
-biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20220202.csv")) %>% 
+biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20220314.csv")) %>% 
   clean_names() %>% 
   # ANOB is incorrectly coded as having "SESSILE" mobility
   mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
