@@ -14,6 +14,7 @@ library(fuzzyjoin)
 library(gt)
 library(rlang)
 library(multcompView)
+library(ggeffects)
 
 # analysis
 library(vegan)
@@ -28,6 +29,8 @@ library(MuMIn)
 library(boot)
 library(lme4)
 library(segmented) # piecewise regression
+library(DHARMa)
+library(emmeans)
 
 
 # 2. start and end dates --------------------------------------------------
@@ -232,6 +235,22 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
   # take out all the first dates 
   filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates)))
 
+biomass_section <- read_csv(here::here("data", "LTE_Algae_Biomass_at_section_20220422.csv")) %>% 
+  clean_names() %>% 
+  # replace all -99999 values with NA
+  mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA),
+         wm_gm2 = replace(wm_gm2, wm_gm2 < 0, NA)) %>% 
+  # create a sample_ID for each sampling date at each treatment at each site at each section
+  unite("sample_ID", site, treatment, date, quad, side, remove = FALSE) %>% 
+  # change to lower case
+  mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column() %>% 
+  # create a new column for season and set factor levels
+  season_column() %>% 
+  # take out all the first dates 
+  filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates)))
+
 ############################################
 # b. percent cover
 ############################################
@@ -284,7 +303,8 @@ kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %
   exp_dates_column() %>% 
   # create a new column for season and set factor levels
   season_column() %>% 
-  filter(fronds > -1)
+  # replace -99999 values with NA
+  mutate(fronds = replace(fronds, fronds < 0, NA))
 
 # 5. operators ------------------------------------------------------------
 
@@ -375,11 +395,11 @@ LTER_sites <- biomass_annual %>%
 
 site_quality <- tribble(
   ~site, ~quality,
-  "MOHK", "high",
-  "IVEE", "high",
-  "AQUE", "medium",
-  "NAPL", "medium",
-  "CARP", "low"
+  "mohk", "high",
+  "ivee", "high",
+  "aque", "medium",
+  "napl", "medium",
+  "carp", "low"
 ) %>% 
   mutate(quality = fct_relevel(quality, c("low", "medium", "high")))
 
@@ -456,6 +476,11 @@ sites_continual_full <- setNames(c("Arroyo Quemado (AQUE)",
                          "carp"))
 
 todays_date <- Sys.Date()
+
+# function to calculate standard error
+se <- function(x,...){
+  sd(x, na.rm = TRUE)/sqrt(length(na.omit(x)))
+}
 
 
 
