@@ -1,0 +1,145 @@
+---
+title: "Community"
+author: "An Bui"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 0. set up
+```{r}
+source(here::here("code", "00-set_up.R"))
+```
+
+# 1. data wrangling
+
+Getting a community matrix and its metadata together.
+
+```{r}
+comm_meta <- biomass %>% 
+  # filter for algae only
+  filter(group == "algae" & sp_code != "MAPY") %>% 
+  # filter out species with 0 observations
+  filter(dry_gm2 > 0) %>% 
+  dplyr:: select(sample_ID, site, treatment, year, month, transect, exp_dates) %>% 
+  full_join(., site_quality, by = "site") %>% 
+  unique()
+
+comm_meta_annual <- comm_meta %>% 
+  filter(treatment %in% c("control", "annual")) %>% 
+  # weird point?
+  filter(sample_ID != "MOHK_CONTROL_2020-08-12") %>% 
+  mutate(exp_dates = as_factor(exp_dates))
+
+comm_mat <- biomass %>% 
+  # filter for algae only
+  filter(group == "algae" & sp_code != "MAPY") %>% 
+  # filter out species with 0 observations
+  filter(dry_gm2 > 0) %>% 
+  # select sample ID, scientific name, and biomass
+  dplyr::select(sample_ID, scientific_name, dry_gm2) %>% 
+  # get into wide form
+  pivot_wider(names_from = "scientific_name", values_from = "dry_gm2") %>% 
+  # replace NA with 0
+  replace(is.na(.), 0)
+
+comm_mat_annual <- comm_mat %>% 
+  filter(sample_ID %in% comm_meta_annual$sample_ID) %>% 
+  # make the sample_ID column row names
+  column_to_rownames("sample_ID") 
+
+```
+
+# 2. Bray-Curtis
+```{r}
+bc_annual_dist <- vegdist(comm_mat_annual, "bray")
+bc_annual_nmds <- metaMDS(comm_mat_annual, "bray")
+stressplot(bc_annual_nmds)
+
+bc_annual_plotdf <- scores(bc_annual_nmds, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(comm_meta_annual, .)
+
+bc_annual_species <- scores(bc_annual_nmds, display = "species") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("scientific_name")
+
+simper(comm_mat_annual, comm_meta_annual$exp_dates)
+# PTCA, CO, CC, EGME, CYOS, DL, R
+
+adonis(comm_mat_annual ~ exp_dates, data = comm_meta_annual)
+anova(betadisper(bc_annual_dist, comm_meta_annual$exp_dates))
+
+ggplot() +
+  coord_cartesian() +
+  geom_point(data = bc_annual_plotdf %>% filter(exp_dates == "during" & site == "aque"), aes(x = NMDS1, y = NMDS2), color = "grey") +
+  geom_segment(data = bc_annual_plotdf %>% filter(exp_dates == "after" & site == "aque"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA),
+                   color = year),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               size = 0.5) +
+  geom_text(data = bc_annual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
+  theme_bw() +
+  theme(panel.grid = element_line(color = "white")) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2, color = "grey")
+```
+
+# 2. rank abundances
+
+```{r}
+ra_algae_after <- rankabundance(x = comm_mat_annual, y = comm_meta_annual,
+              factor = "exp_dates", level = c("after")) %>% 
+  as.data.frame()
+
+ra_algae_during <- rankabundance(x = comm_mat_annual, y = comm_meta_annual,
+              factor = "exp_dates", level = c("during")) %>% 
+  as.data.frame()
+
+comm_meta_annual_during <- comm_meta_annual %>% 
+  filter(exp_dates == "during")
+
+comm_mat_annual_during <- subset(comm_mat_annual, rownames(comm_mat_annual) %in% (comm_meta_annual_during$sample_ID))
+
+algae_during_rank <- rankabundance(x = comm_mat_annual_during, y = comm_meta_annual_during, factor = "exp_dates") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("scientific_name")
+
+comm_meta_annual_after <- comm_meta_annual %>% 
+  filter(exp_dates == "after")
+
+comm_mat_annual_after <- subset(comm_mat_annual, rownames(comm_mat_annual) %in% (comm_meta_annual_after$sample_ID)) 
+
+algae_after_rank <- rankabundance(x = comm_mat_annual_after, y = comm_meta_annual_after, factor = "exp_dates") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("scientific_name")
+
+algae_during_rank_plot <- ggplot(algae_during_rank, aes(x = rank, y = proportion)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  geom_text_repel(data = algae_during_rank %>% filter(rank < 11),
+                  aes(label = scientific_name),
+                    segment.curvature = -1e-20, point.padding = 0.2, 
+                    force_pull = 10, direction = "y", 
+                    nudge_x = 15, nudge_y = 0.1,
+                    size = 5, col = "red") +
+  labs(title = "during")
+
+algae_after_rank_plot <- ggplot(algae_after_rank, aes(x = rank, y = proportion)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  geom_text_repel(data = algae_after_rank %>% filter(rank < 11),
+                  aes(label = scientific_name), 
+                    segment.curvature = -1e-20, point.padding = 0.2, 
+                    force_pull = 10, direction = "y", 
+                    nudge_x = 15, nudge_y = 0.1,
+                    size = 5, col = "red") +
+  labs(title = "after")
+
+plots_together <- (algae_during_rank_plot + algae_after_rank_plot)
+# during: PTCA, DL, CYOS, CC, R, EC, POLA, RAT, CO, EGME
+# after: PTCA, CYOS, CO, EGME, EC, BO, AU, RAT, DL, R
+```
+

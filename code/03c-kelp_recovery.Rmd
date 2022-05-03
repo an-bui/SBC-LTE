@@ -2742,36 +2742,34 @@ grid <- ref_grid(linear_model_sel, cov.keep = c("mean_tse", "quality"))
 emm <- emmeans(grid, spec = c("mean_tse", "quality"), level = 0.95) %>% 
   data.frame(.)
 
-ggplot() +
+annual_kelp_sitequality_ggpredict <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   # raw data: means and error bars
   facet_wrap(~quality, nrow = 1) +
   geom_point(data = annual_means, aes(x = mean_tse, y = mean_delta, color = exp_dates, shape = site)) +
-  geom_errorbar(data = annual_means, aes(x = mean_tse, y = mean_delta, ymin = mean_delta - se_delta, ymax = mean_delta + se_delta, color = exp_dates)) +
+  # geom_errorbar(data = annual_means, aes(x = mean_tse, y = mean_delta, ymin = mean_delta - se_delta, ymax = mean_delta + se_delta, color = exp_dates)) +
   scale_color_manual(values = c("during" = "grey", "after" = "black"), guide = "none") +
   # predicted values
-  geom_ribbon(data = predicted, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high, fill = quality), alpha = 0.5) +
+  geom_ribbon(data = predicted, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high, fill = quality), alpha = 0.5, show.legend = FALSE) +
   geom_line(data = predicted, aes(x = x, y = predicted)) +
   # theme
   theme_bw() + 
-  theme(legend.position = "none",
-        axis.title = element_text(size = 14),
+  theme(axis.title = element_text(size = 14),
         plot.title = element_text(size = 18),
         axis.text = element_text(size = 10),
         strip.text = element_text(size = 10)) +
   labs(x = "Time since end of experiment", y = "\U0394 biomass (treatment - control)",
-       title = "\U0394 annual - annualized data", caption = "ggpredict")
+       title = "Kelp biomass", caption = "ggpredict")
 
-ggplot() +
+annual_kelp_sitequality_emmeans <-ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
-  facet_wrap(~quality, ncol = 1) +
-  geom_point(data = annual_means, aes(x = mean_tse, y = mean_delta, color = exp_dates)) +
+  facet_wrap(~quality, nrow = 1) +
+  geom_point(data = annual_means, aes(x = mean_tse, y = mean_delta, color = exp_dates, shape = site)) +
   scale_color_manual(values = c("during" = "grey", "after" = "black"), guide = "none") +
-  geom_ribbon(data = emm, aes(x = mean_tse, y = emmean, ymin = lower.CL, ymax = upper.CL, fill = quality), alpha = 0.5) +
+  geom_ribbon(data = emm, aes(x = mean_tse, y = emmean, ymin = lower.CL, ymax = upper.CL, fill = quality), alpha = 0.5, show.legend = FALSE) +
   geom_line(data = emm, aes(x = mean_tse, y = emmean, col = quality)) +
   theme_bw() + 
-  theme(legend.position = "none",
-        axis.title = element_text(size = 14),
+  theme(axis.title = element_text(size = 14),
         plot.title = element_text(size = 18),
         axis.text = element_text(size = 10),
         strip.text = element_text(size = 10)) +

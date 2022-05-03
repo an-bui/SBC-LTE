@@ -320,7 +320,7 @@ kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %
 
 # data frame of each species including scientific name, common name, and group
 spp_names <- biomass %>% 
-  select(group, sp_code, scientific_name, common_name) %>% 
+  dplyr::select(group, sp_code, scientific_name, common_name) %>% 
   unique() 
 
 # vector of each species code (length: 221)
@@ -379,6 +379,9 @@ common_algae_df <- algae_spp %>%
 # not found: 
 # Pseudolithophyllum neofarlowii 
 # Polysiphonia spp. 
+
+# from rank abundance curves
+algae_selection <- c("PTCA", "DL", "CYOS", "CC", "R", "EC", "POLA", "RAT", "CO", "EGME", "BO", "AU")
 
 ############################################
 # b. sites

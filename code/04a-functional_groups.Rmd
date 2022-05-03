@@ -272,7 +272,7 @@ ggplot(df2) +
 ```{r}
 spp_recovery <- fg_recovery %>% 
   filter(sp_code != "MAPY") %>% 
-  select(site, treatment, exp_dates, sp_code, dry_gm2) %>%
+  dplyr::select(site, treatment, exp_dates, sp_code, dry_gm2) %>%
   group_by(treatment, exp_dates, sp_code) %>% 
   summarize(mean_biomass = mean(dry_gm2, na.rm = TRUE),
             sample_n = length(dry_gm2),
@@ -300,9 +300,10 @@ spp_recovery <- fg_recovery %>%
 
 algae_2018 <- c("EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")
 
+
 lrr_understory_annual <- spp_recovery %>% 
-  filter(sp_code %in% algae_2018) %>% 
-  mutate(sp_code = fct_relevel(sp_code, "EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")) %>%
+  filter(sp_code %in% algae_selection) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "PTCA", "DL", "CYOS", "CC", "R", "EC", "POLA", "RAT", "CO", "EGME", "BO", "AU")) %>%
   ggplot() +
   geom_hline(yintercept = 0, lty = 2, color = "grey") +
   geom_point(aes(x = sp_code, y = lrr_annual), size = 5) +
@@ -496,6 +497,38 @@ lrr_end_inv_continual <- spp_recovery %>%
 
 ```
 
+# timeseries
+
+Species from rank abundance curves: `algae_selection`
+
+```{r}
+algae_prop <- biomass %>%
+  dplyr::select(sample_ID, site, year, date, treatment, sp_code, dry_gm2) %>%
+  # create a new column where total biomass is calculated
+  group_by(sample_ID) %>%
+  mutate(total_dry = sum(dry_gm2)) %>%
+  ungroup() %>%
+  # create a new column where total biomass for the species for the whole survey is calculated
+  group_by(sample_ID, sp_code) %>%
+  mutate(total_sp_dry = sum(dry_gm2)) %>%
+  ungroup() %>%
+  # create a new column where percent of total biomass per survey for each species is calculated
+  mutate(percent_sp_dry = total_sp_dry/total_dry) %>%
+  # double check to make sure the percents worked out...
+  dplyr::select(sample_ID, site, year, date, sp_code,
+         # values that need to be unique:
+         total_sp_dry, percent_sp_dry) %>%
+  unique() %>%
+  group_by(sample_ID) %>%
+  mutate(total_percent = sum(percent_sp_dry)) 
+
+algae_prop %>% 
+  filter(sp_code %in% algae_selection) %>% 
+  ggplot(aes(x = date, y = percent_sp_dry)) +
+  stat_summary(aes(col = sp_code), fun = "sum", geom = "line", size = 1) +
+  stat_summary(aes(col = sp_code), fun = "sum", geom = "point", size = 2) +
+  facet_wrap(~site)
+```
 
 
 
