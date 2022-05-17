@@ -15,6 +15,7 @@ library(gt)
 library(rlang)
 library(multcompView)
 library(ggeffects)
+library(ggnewscale)
 
 # analysis
 library(vegan)
@@ -28,9 +29,11 @@ library(AICcmodavg) # calculate second order AIC (AICc)
 library(MuMIn)
 library(boot)
 library(lme4)
-library(segmented) # piecewise regression
+library(nlme)
 library(DHARMa)
+library(performance)
 library(emmeans)
+library(gtsummary)
 
 
 # 2. start and end dates --------------------------------------------------
@@ -207,6 +210,18 @@ season_column <- function(df) {
     season = fct_relevel(season, "spring", "summer", "fall", "winter")) 
 }
 
+# create a new column for new groupings
+new_group_column <- function(df) {
+  df %>% 
+    mutate(new_group = case_when(
+      group == "algae" ~ "algae",
+      group == "fish" ~ "fish",
+      group == "invert" & taxon_family != "Pholadidae" & mobility == "sessile" ~ "epi_inverts",
+      taxon_family == "Pholadidae" ~ "endo_inverts",
+      sp_code %in% c("OPSP", "SPL", "LIGL", "SFL", "MECR") ~ "herb_inverts",
+      TRUE ~ "carn_inverts"
+    ))
+}
 
 
 # 4. data -----------------------------------------------------------------
@@ -374,12 +389,6 @@ common_algae <- c("PH", "PTCA", # Pterygophora californica
                   "DP" # Dictyota spp. 
 )
 
-common_algae_df <- algae_spp %>% 
-  filter(sp_code %in% common_algae)
-# not found: 
-# Pseudolithophyllum neofarlowii 
-# Polysiphonia spp. 
-
 # from rank abundance curves
 algae_selection <- c("PTCA", "DL", "CYOS", "CC", "R", "EC", "POLA", "RAT", "CO", "EGME", "BO", "AU")
 
@@ -391,7 +400,7 @@ algae_selection <- c("PTCA", "DL", "CYOS", "CC", "R", "EC", "POLA", "RAT", "CO",
 LTE_sites <- c("aque", "napl", "ivee", "mohk", "carp")
 
 LTER_sites <- biomass_annual %>% 
-  select(site) %>% 
+  dplyr::select(site) %>% 
   mutate(site = fct_relevel(site, c("bull", "aque", "ahnd", "napl", "ivee", "golb", "abur", "mohk", "carp", "scdi", "sctw"))) %>% 
   unique() %>% 
   pull(site)
@@ -434,7 +443,14 @@ ivee_col <- "#4CA2B0"
 mohk_col <- "#985E5C"
 napl_col <- "#D98A63"
 
-site_palette <- c("aque" = aque_col, "napl" = napl_col, "ivee" = ivee_col, "mohk" = mohk_col, "carp" = carp_col)
+color_palette_site <- c("aque" = aque_col, "napl" = napl_col, "mohk" = mohk_col, "carp" = carp_col)
+
+aque_shape <- 21
+napl_shape <- 22
+mohk_shape <- 23
+carp_shape <- 24
+
+shape_palette_site <- c("aque" = aque_shape, "napl" = napl_shape, "mohk" = mohk_shape, "carp" = carp_shape)
 
 annual_col <- "#54662C"
 continual_col <- "#009BB0"

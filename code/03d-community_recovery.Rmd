@@ -178,10 +178,18 @@ delta_algae_continual <- delta_algae_biomass %>%
     site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
     kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
   )) %>% 
-  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after"))
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+  # create a new sample ID that is site, year, quarter
+  unite("sample_ID", site, year, quarter, remove = FALSE) %>% 
+  rename("control_algae" = control,
+         "continual_algae" = continual,
+         "delta_continual_algae" = delta_continual) %>% 
+  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
 ```
 
-# 2. annualized data for site quality
+# 2. algae
+
+## a. annualized delta for site quality
 
 ```{r}
 algae_annual_means <- delta_algae_annual %>% 
@@ -214,7 +222,7 @@ emm <- emmeans(grid, spec = c("mean_tse", "quality"), level = 0.95) %>%
 annual_algae_sitequality_ggpredict <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   # raw data: means and error bars
-  facet_wrap(~quality, nrow = 1) +
+  # facet_wrap(~quality, nrow = 1) +
   geom_point(data = algae_annual_means, aes(x = mean_tse, y = mean_delta, color = exp_dates, shape = site)) +
   # geom_errorbar(data = algae_annual_means, aes(x = mean_tse, y = mean_delta, ymin = mean_delta - se_delta, ymax = mean_delta + se_delta, color = exp_dates)) +
   scale_color_manual(values = c("during" = "grey", "after" = "black"), guide = "none") +
@@ -250,12 +258,146 @@ annual_algae_sitequality_emmeans <- ggplot() +
        caption = "emmeans")
 ```
 
+## b. delta algae vs delta kelp
+```{r}
+cor.test(delta_algae_continual$delta_continual_algae, delta_algae_continual$delta_continual,
+         method = "pearson")
+
+delta_algae_vs_kelp <- lm(delta_continual_algae ~ delta_continual, data = delta_algae_continual)
+summary(delta_algae_vs_kelp)
+
+delta_algae_vs_kelp_lme <- lme(delta_continual_algae ~ delta_continual, 
+                               random = ~ 1|year/site, 
+                               data = delta_algae_continual, na.action = na.pass)
+summary(delta_algae_vs_kelp_lme)
+
+delta_algae_vs_kelp_lmer <- lmer(delta_continual_algae ~ delta_continual + (1|year) + (1|site), 
+                                data = delta_algae_continual)
+summary(delta_algae_vs_kelp_lmer)
+plot(simulateResiduals(delta_algae_vs_kelp_lmer))
+MuMIn::r.squaredGLMM(delta_algae_vs_kelp_lmer)
+
+predicted_delta_algae_vs_kelp <- ggpredict(delta_algae_vs_kelp_lmer, terms = ~ delta_continual, type = "fixed")
+
+delta_algae_continual %>% 
+  ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+  # geom_point(aes(col = comp_3yrs)) +
+  # new_scale("color") +
+  # stat_summary(aes(group = comp_3yrs), fun = mean, geom = "point", size = 10) +
+  # geom_text(aes(label = date)) +
+  geom_segment(aes(x = delta_continual, y = delta_continual_algae, 
+                   xend = c(tail(delta_continual, n = -1), NA), 
+                   yend = c(tail(delta_continual_algae, n = -1), NA), 
+                   group = site, color = time_since_end), 
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1) +
+  scale_color_gradient(low = "red", high = "blue") +
+  labs(x = "\U0394 kelp biomass (treatment - control)",
+       y = "\U0394 understory algae biomass (treatment - control)") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        strip.background = element_rect(fill = "#FFFFFF")) +
+  facet_wrap(~site)
+
+algae_vs_kelp <- delta_algae_continual %>% 
+  ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
+  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21) + 
+  geom_smooth(method = "lm", se = FALSE, color = "#000000", size = 2) +
+  scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
+  scale_fill_manual(values = c("during" = "#FFFFFF", after = under_col)) +
+  labs(x = "\U0394 kelp biomass (treatment - control)",
+       y = "\U0394 understory algae biomass (treatment - control)") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        legend.position = c(0.9, 0.9),
+        legend.text = element_text(size = 18),
+        legend.title = element_blank())
+
+delta_algae_continual %>% 
+  ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
+  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21) + 
+  geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), size = 2) +
+  scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
+  scale_fill_manual(values = c("during" = "#FFFFFF", after = under_col)) +
+  labs(x = "\U0394 kelp biomass (treatment - control)",
+       y = "\U0394 understory algae biomass (treatment - control)",
+       caption = "marginal R2 = 0.028, conditional R2 = 0.519") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        legend.position = c(0.9, 0.9),
+        legend.text = element_text(size = 18),
+        legend.title = element_blank())
+```
+
+## c. delta algae as a function of time since end of experiment
+```{r}
+algae_continual_after <- delta_algae_continual %>% 
+  filter(exp_dates == "after")
+
+linear_model_algae_lme <- lme(delta_continual_algae ~ time_since_end, random = ~ 1|site, data = algae_continual_after, na.action = na.pass)
+summary(linear_model_algae_lme)
+
+linear_model_algae_lmer <- lmer(delta_continual_algae ~ time_since_end + (1|site), data = algae_continual_after, na.action = na.pass)
+plot(simulateResiduals(linear_model_algae_lmer))
+
+linear_model_algae_lmer_during <- lmer(delta_continual_algae ~ time_since_end + (1|site), data = delta_algae_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+# ggeffects
+predicted_algae_after <- ggpredict(linear_model_algae_lmer, terms = ~ time_since_end, type = "fixed")
+predicted_algae_during <- ggpredict(linear_model_algae_lmer_during, terms = ~ time_since_end, type = "fixed")
+
+algae_time <- ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_algae_continual, 
+             aes(x = time_since_end, y = delta_continual_algae, fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  # new_scale("color") + 
+  # overall
+  geom_line(data = predicted_algae_after, aes(x = x, y = predicted), size = 2) +
+  geom_ribbon(data = predicted_algae_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  geom_line(data = predicted_algae_during, aes(x = x, y = predicted), size = 2) +
+  geom_ribbon(data = predicted_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = c(0.08, 0.75), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of experiment", y = "\U0394 understory algal biomass")
+```
+
+```{r}
+delta_algae_continual %>% 
+  drop_na(comp_2yrs) %>% 
+  ggplot(aes(x = comp_2yrs, y = delta_continual_algae)) +
+  geom_boxplot() +
+  geom_jitter() 
+```
+
+
 # 3. sessile invert deltas
 
 ```{r}
 # total biomass
 invert_biomass <- biomass %>% 
   filter(group == "invert" & mobility == "sessile") %>% 
+  # take out piddocks?
+  filter(taxon_family != "Pholadidae") %>% 
   # make a new column for after dates
   after_dates_column() %>% 
   # make a new column for during and after and set factor levels
@@ -412,10 +554,18 @@ delta_invert_continual <- delta_invert_biomass %>%
     site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
     kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
   )) %>% 
-  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after"))
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+  # create a new sample ID that is site, year, quarter
+  unite("sample_ID", site, year, quarter, remove = FALSE) %>% 
+  rename("control_inverts" = control,
+         "continual_inverts" = continual,
+         "delta_continual_inverts" = delta_continual) %>% 
+  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
 ```
 
-# 4. annualized data for site quality
+# 4. inverts
+
+## a. annualized data for inverts
 
 ```{r}
 invert_annual_means <- delta_invert_annual %>% 
@@ -448,13 +598,15 @@ emm <- emmeans(grid, spec = c("mean_tse", "quality"), level = 0.95) %>%
 annual_invert_sitequality_ggpredict <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   # raw data: means and error bars
-  facet_wrap(~quality, nrow = 1) +
+  # facet_wrap(~quality, nrow = 1) +
   geom_point(data = invert_annual_means, aes(x = mean_tse, y = mean_delta, color = exp_dates, shape = site)) +
+  # geom_smooth(data = invert_annual_means, aes(x = mean_tse, y = mean_delta, color = exp_dates), method = "lm") +
   # geom_errorbar(data = algae_annual_means, aes(x = mean_tse, y = mean_delta, ymin = mean_delta - se_delta, ymax = mean_delta + se_delta, color = exp_dates)) +
   scale_color_manual(values = c("during" = "grey", "after" = "black"), guide = "none") +
   # predicted values
   geom_ribbon(data = predicted, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high, fill = quality), alpha = 0.5, show.legend = FALSE) +
   geom_line(data = predicted, aes(x = x, y = predicted)) +
+  facet_wrap(~quality) +
   # theme
   theme_bw() + 
   theme(axis.title = element_text(size = 14),
@@ -490,13 +642,129 @@ plots_together <- (annual_kelp_sitequality_ggpredict / annual_algae_sitequality_
 plots_together
 ```
 
+## b. delta inverts vs delta kelp
+
+```{r}
+delta_invert_continual %>% 
+  ggplot(aes(x = delta_continual, y = delta_continual_inverts)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+  # geom_point(aes(col = comp_3yrs)) +
+  # new_scale("color") +
+  # stat_summary(aes(group = comp_3yrs), fun = mean, geom = "point", size = 10) +
+  # geom_text(aes(label = date)) +
+  geom_segment(aes(x = delta_continual, y = delta_continual_inverts, 
+                   xend = c(tail(delta_continual, n = -1), NA), 
+                   yend = c(tail(delta_continual_inverts, n = -1), NA), 
+                   group = site, color = time_since_end), 
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1) +
+  scale_color_gradient(low = "red", high = "blue") +
+  labs(x = "\U0394 kelp biomass (treatment - control)",
+       y = "\U0394 invert biomass (treatment - control)",
+       title = "Sessile inverts") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        strip.background = element_rect(fill = "#FFFFFF")) +
+  facet_wrap(~site)
+
+inverts_vs_kelp <- delta_invert_continual %>% 
+  ggplot(aes(x = delta_continual, y = delta_continual_inverts)) +
+  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 24) + 
+  geom_smooth(method = "lm", se = FALSE, color = "#000000", size = 2) +
+  scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
+  scale_fill_manual(values = c("during" = "#FFFFFF", after = carp_col)) +
+  labs(x = "\U0394 kelp biomass (treatment - control)",
+       y = "\U0394 invert biomass (treatment - control)") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        legend.position = c(0.9, 0.9),
+        legend.text = element_text(size = 18),
+        legend.title = element_blank())
+```
+
+## c. delta inverts
+
+```{r}
+invert_continual_after <- delta_invert_continual %>% 
+  filter(exp_dates == "after")
+
+linear_model_invert_lme <- lme(delta_continual_inverts ~ time_since_end, random = ~ 1|site, data = invert_continual_after, na.action = na.pass)
+summary(linear_model_invert_lme)
+# no effect of time since end
+
+linear_model_invert_lmer <- lmer(delta_continual_inverts ~ time_since_end + (1|site), data = invert_continual_after, na.action = na.pass)
+summary(linear_model_invert_lmer)
+plot(simulateResiduals(linear_model_invert_lmer))
+
+linear_model_invert_lmer_during <- lmer(delta_continual_inverts ~ time_since_end + (1|site), data = delta_invert_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+# ggeffects
+predicted_invert_after <- ggpredict(linear_model_invert_lmer, terms = ~ time_since_end, type = "fixed")
+predicted_invert_during <- ggpredict(linear_model_invert_lmer_during, terms = ~ time_since_end, type = "fixed")
+
+invert_time <- ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_invert_continual, 
+             aes(x = time_since_end, y = delta_continual_inverts, fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  # new_scale("color") + 
+  # overall
+  geom_line(data = predicted_invert_after, aes(x = x, y = predicted), size = 2) +
+  geom_ribbon(data = predicted_invert_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  geom_line(data = predicted_invert_during, aes(x = x, y = predicted), size = 2) +
+  geom_ribbon(data = predicted_invert_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = "none", 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of experiment", y = "\U0394 sessile invertebrate biomass")
+```
+
+
+## d. plots together
+
+### class vs kelp
+```{r}
+plots_together <- algae_vs_kelp + inverts_vs_kelp
+plots_together
+ggsave(here::here("figures", paste("delta_vs_kelp-one_slope-", todays_date, ".jpg", sep = "")), 
+       plot = plots_together, 
+       height = 8, width = 16, dpi = 150)
+```
+
+
+### algae and inverts
+
+```{r}
+plots_together <- algae_time/invert_time &
+  plot_annotation(tag_levels = "A")
+
+plots_together
+ggsave(here::here("figures", paste("algae_invert_time", todays_date, ".jpg", sep = "")), 
+       plot = plots_together, 
+       height = 8, width = 10, dpi = 150)
+```
+
+
 # 5. annualized data for algae species from rank abundance
 
 
 ```{r}
 # total biomass
 algae_spp_biomass <- biomass %>% 
-  filter(sp_code %in% algae_selection) %>% 
+  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>% 
   # # make a new column for after dates
   after_dates_column() %>% 
   # make a new column for during and after and set factor levels
@@ -649,7 +917,7 @@ annual_algae_spp_sitequality_ggpredict <- ggplot() +
        caption = "ggpredict")
 
 ggsave(here::here("figures", "algae_biomass_ts-grid.jpg"), annual_algae_spp_sitequality_ggpredict, 
-       height = 25, width = 8, dpi = 300)
+       height = 16, width = 8, dpi = 300)
 
 annual_algae_sitequality_emmeans <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
