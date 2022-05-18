@@ -33,27 +33,27 @@ Data frames:
 
 ```{r}
 # total fronds
-total_fronds <- kelp_fronds %>% 
-  group_by(site, year, month, treatment, date) %>% 
-  summarize(total_fronds = sum(fronds)) %>% 
-  ungroup() %>% 
-  # # make a new column for after dates
-  # after_dates_column() %>% 
-  # make a new column for during and after and set factor levels
-  exp_dates_column() %>% 
-  # create a new column for season and set factor levels
-  season_column() %>% 
-  filter(total_fronds > -1) 
-
-# delta fronds
-delta_fronds <- total_fronds %>% 
-  pivot_wider(names_from = treatment, values_from = total_fronds) %>% 
-  mutate(delta_annual = annual - control,
-         delta_continual = continual - control) 
-
-# just control
-control_fronds <- total_fronds %>% 
-  filter(treatment == "control")
+# total_fronds <- kelp_fronds %>% 
+#   group_by(site, year, month, treatment, date) %>% 
+#   summarize(total_fronds = sum(fronds)) %>% 
+#   ungroup() %>% 
+#   # # make a new column for after dates
+#   # after_dates_column() %>% 
+#   # make a new column for during and after and set factor levels
+#   exp_dates_column() %>% 
+#   # create a new column for season and set factor levels
+#   season_column() %>% 
+#   filter(total_fronds > -1) 
+# 
+# # delta fronds
+# delta_fronds <- total_fronds %>% 
+#   pivot_wider(names_from = treatment, values_from = total_fronds) %>% 
+#   mutate(delta_annual = annual - control,
+#          delta_continual = continual - control) 
+# 
+# # just control
+# control_fronds <- total_fronds %>% 
+#   filter(treatment == "control")
 
 # total biomass
 kelp_biomass <- biomass %>% 
@@ -3255,18 +3255,18 @@ overall <- ggplot() +
   scale_fill_manual(values = color_palette_site) +
   # new_scale("color") + 
   # overall
-  geom_line(data = predicted_kelp_after_overall, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_after_overall, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
-  geom_line(data = predicted_kelp_during_overall, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_during_overall, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 1000), limits = c(-1800, 900)) +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
         axis.text = element_text(size = 16),
         legend.text = element_text(size = 16), 
-        legend.position = c(0.18, 0.87), 
+        legend.position = "none", 
         plot.margin = margin(0, 0, 0, 0)) +
   labs(x = "Time since end of removal", y = "\U0394 kelp biomass (treatment - control)")
 
@@ -3274,14 +3274,14 @@ aque <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   geom_point(data = delta_continual %>% filter(site == "aque"), aes(x = time_since_end, y = delta_continual), shape = aque_shape, fill = aque_col, size = 3, alpha = 0.9) +
   # during
-  geom_line(data = predicted_kelp_during_aque, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_during_aque, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_during_aque, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   # after
-  geom_line(data = predicted_kelp_after_aque, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_after_aque, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_aque, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
-  geom_text(aes(x = -6.6, y = 1400), label = "aque", size = 8) +
+  # scale_y_continuous(breaks = seq(-1500, 1000, by = 1000), limits = c(-1800, 1000)) +
+  geom_text(aes(x = -6.6, y = 600), label = "aque", size = 8) +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -3297,14 +3297,14 @@ napl <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   geom_point(data = delta_continual %>% filter(site == "napl"), aes(x = time_since_end, y = delta_continual), shape = napl_shape, fill = napl_col, size = 3, alpha = 0.9) +
   # during
-  geom_line(data = predicted_kelp_during_napl, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_during_napl, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_during_napl, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   # after
-  geom_line(data = predicted_kelp_after_napl, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_after_napl, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_napl, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
-  geom_text(aes(x = -6.8, y = 1400), label = "napl", size = 8) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  geom_text(aes(x = -6.8, y = 700), label = "napl", size = 8) +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -3320,14 +3320,14 @@ mohk <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   geom_point(data = delta_continual %>% filter(site == "mohk"), aes(x = time_since_end, y = delta_continual), shape = mohk_shape, fill = mohk_col, size = 3, alpha = 0.9) +
   # during
-  geom_line(data = predicted_kelp_during_mohk, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_during_mohk, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_during_mohk, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   # after
-  geom_line(data = predicted_kelp_after_mohk, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_after_mohk, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_mohk, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
-  geom_text(aes(x = -6.6, y = 1400), label = "mohk", size = 8) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  geom_text(aes(x = -6.6, y = 900), label = "mohk", size = 8) +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -3343,14 +3343,14 @@ carp <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   geom_point(data = delta_continual %>% filter(site == "carp"), aes(x = time_since_end, y = delta_continual), shape = carp_shape, fill = carp_col, size = 3, alpha = 0.9) +
   # during
-  geom_line(data = predicted_kelp_during_carp, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_during_carp, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_during_carp, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   # after
-  geom_line(data = predicted_kelp_after_carp, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_kelp_after_carp, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_carp, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
-  geom_text(aes(x = -6.8, y = 1400), label = "carp", size = 8) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  geom_text(aes(x = -6.8, y = 1000), label = "carp", size = 8) +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -3367,9 +3367,14 @@ yaxislabel <- ggplot(data.frame(l = "\U0394 biomass (treatment - control)", x = 
   theme(plot.margin = margin(0, 0, 0, 0)) +
   coord_cartesian(clip = "off")
 
-plots_together <- overall + aque/napl/mohk/carp 
+plots_together <- (aque | napl) / (overall + (mohk/carp)) + 
+  plot_layout(ncol = 1, heights = c(0.5, 1)) 
+
+
+plots_together <- (plot_spacer() / overall / plot_spacer()) | (aque/napl/mohk/carp) 
+  
 plots_together
-# ggsave(here::here("figures", paste("delta_continual-", todays_date, ".jpg", sep = "")), plot = plots_together, height = 8, width = 16, dpi = 150)
+ggsave(here::here("figures", paste("delta_continual-", todays_date, ".jpg", sep = "")), plot = plots_together, height = 8, width = 16, dpi = 150)
 ```
 
 ### continual with site quality
@@ -3550,20 +3555,24 @@ predicted_kelp_raw_during_site <- ggpredict(linear_model_kelp_raw_during_lmer, t
   rename("site" = group)
 predicted_kelp_raw_during_overall <- ggpredict(linear_model_kelp_raw_during_lmer, terms = ~ time_since_end, type = "fixed")
 
-ggplot() +
+overall_raw <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
+  # geom_point(data = delta_continual,
+  #            aes(x = time_since_end, y = control, shape = site), size = 3, alpha = 0.4) +
   geom_point(data = delta_continual,
-             aes(x = time_since_end, y = control, shape = site), size = 3, alpha = 0.4) +
-  geom_point(data = delta_continual, 
              aes(x = time_since_end, y = continual, fill = site, shape = site), size = 3, alpha = 0.9) +
   scale_shape_manual(values = shape_palette_site) +
   scale_fill_manual(values = color_palette_site) +
+  geom_smooth(data = delta_continual,
+              aes(x = time_since_end, y = continual, group = exp_dates), 
+              method = "lm", 
+              color = "#000000", alpha = 0.7, size = 1) +
   # new_scale("color") + 
   # overall
-  geom_line(data = predicted_kelp_raw_after_overall, aes(x = x, y = predicted), size = 2) +
-  geom_ribbon(data = predicted_kelp_raw_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
-  geom_line(data = predicted_kelp_raw_during_overall, aes(x = x, y = predicted), size = 2) +
-  geom_ribbon(data = predicted_kelp_raw_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  # geom_line(data = predicted_kelp_raw_after_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  # geom_line(data = predicted_kelp_raw_during_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
   theme_bw() + 
@@ -3571,10 +3580,135 @@ ggplot() +
         plot.title = element_text(size = 18),
         axis.text = element_text(size = 14),
         legend.text = element_text(size = 14), 
-        legend.position = c(0.15, 0.87), 
+        legend.position = "none", 
         plot.margin = margin(0, 0, 0, 0)) +
   labs(x = "Time since end of experiment", y = "Kelp biomass",
       caption = "high point is MOHK on 2019-11-19")
+
+aque_raw <- delta_continual %>% 
+  filter(site == "aque") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  # geom_point(data = delta_continual,
+  #            aes(x = time_since_end, y = control, shape = site), size = 3, alpha = 0.4) +
+  geom_point(aes(x = time_since_end, y = continual), 
+             shape = aque_shape, fill = aque_col, size = 3, alpha = 0.9) +
+  geom_smooth(data = delta_continual,
+              aes(x = time_since_end, y = continual, group = exp_dates), 
+              method = "lm", 
+              color = "#000000", alpha = 0.7, size = 1) +
+  # new_scale("color") + 
+  # overall
+  # geom_line(data = predicted_kelp_raw_after_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  # geom_line(data = predicted_kelp_raw_during_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  geom_text(aes(x = -6.6, y = 350), label = "aque", size = 8) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of experiment", y = "Kelp biomass")
+
+napl_raw <- delta_continual %>% 
+  filter(site == "napl") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  # geom_point(data = delta_continual,
+  #            aes(x = time_since_end, y = control, shape = site), size = 3, alpha = 0.4) +
+  geom_point(aes(x = time_since_end, y = continual), 
+             shape = napl_shape, fill = napl_col, size = 3, alpha = 0.9) +
+  geom_smooth(data = delta_continual,
+              aes(x = time_since_end, y = continual, group = exp_dates), 
+              method = "lm", 
+              color = "#000000", alpha = 0.7, size = 1) +
+  # new_scale("color") + 
+  # overall
+  # geom_line(data = predicted_kelp_raw_after_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  # geom_line(data = predicted_kelp_raw_during_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  geom_text(aes(x = -6.6, y = 590), label = "napl", size = 8) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of experiment", y = "Kelp biomass")
+
+mohk_raw <- delta_continual %>% 
+  filter(site == "mohk") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  # geom_point(data = delta_continual,
+  #            aes(x = time_since_end, y = control, shape = site), size = 3, alpha = 0.4) +
+  geom_point(aes(x = time_since_end, y = continual), 
+             shape = mohk_shape, fill = mohk_col, size = 3, alpha = 0.9) +
+  geom_smooth(data = delta_continual,
+              aes(x = time_since_end, y = continual, group = exp_dates), 
+              method = "lm", 
+              color = "#000000", alpha = 0.7, size = 1) +
+  # new_scale("color") + 
+  # overall
+  # geom_line(data = predicted_kelp_raw_after_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  # geom_line(data = predicted_kelp_raw_during_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  geom_text(aes(x = -6.6, y = 1800), label = "mohk", size = 8) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of experiment", y = "Kelp biomass")
+
+carp_raw <- delta_continual %>% 
+  filter(site == "carp") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  # geom_point(data = delta_continual,
+  #            aes(x = time_since_end, y = control, shape = site), size = 3, alpha = 0.4) +
+  geom_point(aes(x = time_since_end, y = continual), 
+             shape = carp_shape, fill = carp_col, size = 3, alpha = 0.9) +
+  geom_smooth(data = delta_continual,
+              aes(x = time_since_end, y = continual, group = exp_dates), 
+              method = "lm", 
+              color = "#000000", alpha = 0.7, size = 1) +
+  # new_scale("color") + 
+  # overall
+  # geom_line(data = predicted_kelp_raw_after_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  # geom_line(data = predicted_kelp_raw_during_overall, aes(x = x, y = predicted), size = 2) +
+  # geom_ribbon(data = predicted_kelp_raw_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  geom_text(aes(x = -6.6, y = 350), label = "carp", size = 8) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of experiment", y = "Kelp biomass")
+
+plots_together <- (aque_raw | napl_raw) / (overall_raw + (mohk_raw/carp_raw)) + 
+  plot_layout(ncol = 1, heights = c(0.5, 1)) 
+
+
+plots_together <- (plot_spacer() / overall / plot_spacer()) | (aque/napl/mohk/carp) 
+  
+plots_together
+# ggsave(here::here("figures", paste("raw_continual-", todays_date, ".jpg", sep = "")), plot = plots_together, height = 8, width = 16, dpi = 150)
 ```
 
 

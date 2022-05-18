@@ -293,7 +293,7 @@ delta_algae_continual %>%
                    group = site, color = time_since_end), 
                arrow = arrow(length = unit(0.3, "cm")),
                size = 1) +
-  scale_color_gradient(low = "red", high = "blue") +
+  scale_color_gradient2(low = "red", mid = "lightgrey", high = "blue") +
   labs(x = "\U0394 kelp biomass (treatment - control)",
        y = "\U0394 understory algae biomass (treatment - control)") +
   theme_bw() + 
@@ -301,27 +301,9 @@ delta_algae_continual %>%
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 14),
         strip.background = element_rect(fill = "#FFFFFF")) +
-  facet_wrap(~site)
+  facet_wrap(~site, scale = "free")
 
 algae_vs_kelp <- delta_algae_continual %>% 
-  ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
-  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
-  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
-  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21) + 
-  geom_smooth(method = "lm", se = FALSE, color = "#000000", size = 2) +
-  scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
-  scale_fill_manual(values = c("during" = "#FFFFFF", after = under_col)) +
-  labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 understory algae biomass (treatment - control)") +
-  theme_bw() + 
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 15),
-        strip.text = element_text(size = 14),
-        legend.position = c(0.9, 0.9),
-        legend.text = element_text(size = 18),
-        legend.title = element_blank())
-
-delta_algae_continual %>% 
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
   geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
   geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
@@ -329,6 +311,7 @@ delta_algae_continual %>%
   geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), size = 2) +
   scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
   scale_fill_manual(values = c("during" = "#FFFFFF", after = under_col)) +
+  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
        y = "\U0394 understory algae biomass (treatment - control)",
        caption = "marginal R2 = 0.028, conditional R2 = 0.519") +
@@ -365,10 +348,10 @@ algae_time <- ggplot() +
   scale_fill_manual(values = color_palette_site) +
   # new_scale("color") + 
   # overall
-  geom_line(data = predicted_algae_after, aes(x = x, y = predicted), size = 2) +
-  geom_ribbon(data = predicted_algae_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
-  geom_line(data = predicted_algae_during, aes(x = x, y = predicted), size = 2) +
-  geom_ribbon(data = predicted_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  geom_line(data = predicted_algae_after, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_algae_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  geom_line(data = predicted_algae_during, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
   theme_bw() + 
@@ -645,6 +628,25 @@ plots_together
 ## b. delta inverts vs delta kelp
 
 ```{r}
+cor.test(delta_invert_continual$delta_continual_inverts, delta_invert_continual$delta_continual,
+         method = "pearson")
+
+delta_invert_vs_kelp <- lm(delta_continual_inverts ~ delta_continual, data = delta_invert_continual)
+summary(delta_invert_vs_kelp)
+
+delta_invert_vs_kelp_lme <- lme(delta_continual_inverts ~ delta_continual, 
+                               random = ~ 1|year/site, 
+                               data = delta_invert_continual, na.action = na.pass)
+summary(delta_invert_vs_kelp_lme)
+
+delta_invert_vs_kelp_lmer <- lmer(delta_continual_inverts ~ delta_continual + (1|year) + (1|site), 
+                                data = delta_invert_continual)
+summary(delta_invert_vs_kelp_lmer)
+plot(simulateResiduals(delta_invert_vs_kelp_lmer))
+MuMIn::r.squaredGLMM(delta_invert_vs_kelp_lmer)
+
+predicted_delta_invert_vs_kelp <- ggpredict(delta_invert_vs_kelp_lmer, terms = ~ delta_continual, type = "fixed")
+
 delta_invert_continual %>% 
   ggplot(aes(x = delta_continual, y = delta_continual_inverts)) +
   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
@@ -659,27 +661,28 @@ delta_invert_continual %>%
                    group = site, color = time_since_end), 
                arrow = arrow(length = unit(0.3, "cm")),
                size = 1) +
-  scale_color_gradient(low = "red", high = "blue") +
+  scale_color_gradient2(low = "red", mid = "lightgrey", high = "blue") +
   labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 invert biomass (treatment - control)",
-       title = "Sessile inverts") +
+       y = "\U0394 invert biomass (treatment - control)") +
   theme_bw() + 
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 14),
         strip.background = element_rect(fill = "#FFFFFF")) +
-  facet_wrap(~site)
+  facet_wrap(~site, scale = "free")
 
 inverts_vs_kelp <- delta_invert_continual %>% 
   ggplot(aes(x = delta_continual, y = delta_continual_inverts)) +
   geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
   geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
   geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 24) + 
-  geom_smooth(method = "lm", se = FALSE, color = "#000000", size = 2) +
+  geom_line(data = predicted_delta_invert_vs_kelp, aes(x = x, y = predicted), size = 2) +
   scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
   scale_fill_manual(values = c("during" = "#FFFFFF", after = carp_col)) +
+  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 invert biomass (treatment - control)") +
+       y = "\U0394 understory invert biomass (treatment - control)",
+       caption = "marginal R2 = 0.043, conditional R2 = 0.391") +
   theme_bw() + 
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 15),
@@ -687,6 +690,7 @@ inverts_vs_kelp <- delta_invert_continual %>%
         legend.position = c(0.9, 0.9),
         legend.text = element_text(size = 18),
         legend.title = element_blank())
+
 ```
 
 ## c. delta inverts
@@ -716,10 +720,10 @@ invert_time <- ggplot() +
   scale_fill_manual(values = color_palette_site) +
   # new_scale("color") + 
   # overall
-  geom_line(data = predicted_invert_after, aes(x = x, y = predicted), size = 2) +
-  geom_ribbon(data = predicted_invert_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
-  geom_line(data = predicted_invert_during, aes(x = x, y = predicted), size = 2) +
-  geom_ribbon(data = predicted_invert_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.4) +
+  geom_line(data = predicted_invert_after, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_invert_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  geom_line(data = predicted_invert_during, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_invert_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
   theme_bw() + 

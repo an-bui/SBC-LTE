@@ -581,13 +581,13 @@ delta_fg_df %>%
   filter(comp_2yrs %in% c("during", "after")) %>%
   # take out fish with big biomass
   filter(!(new_group == "fish" & date == "2014-08-15")) %>% 
-  filter(new_group != "endo_inverts") %>% 
-  mutate(new_group = fct_relevel(new_group, "algae", "epi_inverts", "carn_inverts", "herb_inverts", "fish")) %>% 
+  # filter(new_group != "endo_inverts") %>% 
+  # mutate(new_group = fct_relevel(new_group, "algae", "epi_inverts", "carn_inverts", "herb_inverts", "fish")) %>% 
   ggplot() +
   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-  geom_jitter(aes(x = new_group, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
-  stat_summary(aes(x = new_group, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
-  stat_summary(aes(x = new_group, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
+  geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
   labs(x = "Group",
        y = "\U0394 biomass (treatment - control)",
        col = "", shape = "") +
@@ -595,7 +595,9 @@ delta_fg_df %>%
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 18),
-        legend.text = element_text(size = 16))
+        legend.text = element_text(size = 16),
+        legend.position = "none") +
+  facet_wrap(~new_group, scales = "free")
 
 delta_fg_df %>%
   filter(comp_2yrs %in% c("during", "after")) %>%
@@ -692,9 +694,9 @@ delta_sp_df %>%
   filter(comp_2yrs %in% c("during", "after")) %>% 
   ggplot() +
   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-  geom_jitter(aes(x = sp_code, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
-  stat_summary(aes(x = sp_code, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
-  stat_summary(aes(x = sp_code, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
+  geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
   labs(x = "Species",
        y = "\U0394 biomass (treatment - control)",
        col = "", shape = "") +
@@ -702,7 +704,9 @@ delta_sp_df %>%
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 18),
-        legend.text = element_text(size = 16))
+        legend.text = element_text(size = 16),
+        legend.position = "none") +
+  facet_wrap(~sp_code, scales = "free", nrow = 2)
 
 delta_sp_df %>% 
   filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
@@ -710,9 +714,9 @@ delta_sp_df %>%
   filter(comp_2yrs %in% c("during", "after")) %>% 
   ggplot() +
   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-  geom_jitter(aes(x = sp_code, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
-  stat_summary(aes(x = sp_code, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
-  stat_summary(aes(x = sp_code, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
+  geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
   labs(x = "Species",
        y = "\U0394 biomass (treatment - control)",
        col = "", shape = "") +
@@ -720,7 +724,9 @@ delta_sp_df %>%
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 18),
-        legend.text = element_text(size = 16))
+        legend.text = element_text(size = 16),
+        legend.position = "none") +
+  facet_wrap(~sp_code, scales = "free", nrow = 2)
 
 delta_sp_df %>% 
   filter(sp_code %in% c("CHOV", "PACA")) %>% 
@@ -728,9 +734,9 @@ delta_sp_df %>%
   filter(comp_2yrs %in% c("during", "after")) %>% 
   ggplot() +
   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-  geom_jitter(aes(x = sp_code, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
-  stat_summary(aes(x = sp_code, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
-  stat_summary(aes(x = sp_code, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
+  geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
   labs(x = "Species",
        y = "\U0394 biomass (treatment - control)",
        col = "", shape = "") +
@@ -738,7 +744,9 @@ delta_sp_df %>%
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 18),
-        legend.text = element_text(size = 16))
+        legend.text = element_text(size = 16),
+        legend.position = "none") +
+  facet_wrap(~sp_code, nrow = 1, scales = "free")
 
 ```
 
@@ -777,7 +785,7 @@ prop_algae_biomass %>%
   filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>% 
   filter(treatment == "continual") %>% 
   ggplot(aes(x = comp_2yrs, y = percent_sp_dry, col = sp_code)) +
-  geom_jitter(alpha = 0.4) +
+  # geom_jitter(alpha = 0.4) +
   stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 3) +
   stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 1) +
   geom_text_repel(data = test, 
@@ -828,7 +836,7 @@ prop_epi_inverts_biomass %>%
   filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
   filter(treatment == "continual") %>% 
   ggplot(aes(x = comp_2yrs, y = percent_sp_dry, col = sp_code)) +
-  geom_jitter(alpha = 0.4) +
+  # geom_jitter(alpha = 0.4) +
   stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 3) +
   stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 1) +
   geom_text_repel(data = test, 
@@ -836,12 +844,36 @@ prop_epi_inverts_biomass %>%
             size = 6) +
   labs(x = "",
        y = "Percent biomass",
-       title = "Sessile inverts") +
+       title = "Sessile epilithic inverts") +
   theme_bw() +
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 18),
         legend.position = "none",
         plot.title = element_text(size = 20))
+```
+
+# 8. delta biomass for fg groups
+
+```{r}
+fg_deltas <- delta_fg_df %>% 
+  filter(new_group %in% c("algae", "epi_inverts", "endo_inverts")) %>% 
+  mutate(new_group = fct_relevel(new_group, "algae", "epi_inverts", "endo_inverts")) %>% 
+  ggplot(aes(x = time_since_end, y = continual)) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(fill = site, shape = site)) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  geom_smooth(aes(group = exp_dates), method = "lm", col = "#000000") +
+  facet_wrap(~new_group, ncol = 1, scales = "free") +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of experiment", 
+       y = "Raw biomass")
+fg_deltas
 ```
 
