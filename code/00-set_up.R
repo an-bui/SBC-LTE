@@ -229,6 +229,145 @@ se <- function(x,...){
   sd(x, na.rm = TRUE)/sqrt(length(na.omit(x)))
 }
 
+# time since start and time since end
+# expects data frame with the following columns:
+# site, year, month, date, control, annual, delta_annual
+time_since_columns_annual <- function(df) {
+  df %>% 
+    # create a column for quarter
+    mutate(quarter = case_when(
+      month <= 3 ~ "Q1",
+      month <= 6 ~ "Q2",
+      month <= 9 ~ "Q3",
+      TRUE ~ "Q4"
+    )) %>% 
+    # calculate time since start of experiment
+    mutate(time_yrs = case_when(
+      # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+      site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
+      site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
+      site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
+      site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
+      # IVEE control and annual started in 2011
+      site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
+      site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
+      site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
+      site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
+    )) %>% 
+    group_by(site) %>% 
+    mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+    ungroup() %>% 
+    # calculate time since end of experiment
+    group_by(site, exp_dates) %>% 
+    # if "after", then simple: the time in years - the minimum time in years
+    # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
+    mutate(time_since_end = case_when(
+      exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+      exp_dates == "after" ~ time_yrs - min(time_yrs)
+    )) %>% 
+    ungroup()
+}
+
+time_since_columns_continual <- function(df) {
+  df %>% 
+    # create a column for quarter
+    mutate(quarter = case_when(
+      month <= 3 ~ "Q1",
+      month >= 4 & month <= 6 ~ "Q2",
+      month >= 7 & month <= 9 ~ "Q3",
+      month >= 10 & month <= 12 ~ "Q4"
+    )) %>% 
+    # mutate(quarter = case_when(
+    #   month <= 3 ~ "Q1",
+    #   month <= 6 ~ "Q2",
+    #   month <= 9 ~ "Q3",
+    #   TRUE ~ "Q4"
+    # )) %>% 
+    # calculate time since start of experiment
+    mutate(time_yrs = case_when(
+      # AQUE, NAPL, MOHK, CARP: continual started in 2010
+      quarter == "Q1" ~ year + 0.125 - 2010,
+      quarter == "Q2" ~ year + 0.375 - 2010,
+      quarter == "Q3" ~ year + 0.625 - 2010,
+      quarter == "Q4" ~ year + 0.875 - 2010
+    )) %>% 
+    group_by(site) %>% 
+    mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+    ungroup() %>% 
+    # calculate time since end of experiment
+    group_by(site, exp_dates) %>% 
+    mutate(time_since_end = case_when(
+      exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+      exp_dates == "after" ~ time_yrs - min(time_yrs)
+    )) %>% 
+    mutate(test_min_time_yrs = min(time_yrs)) %>% 
+    ungroup()
+}
+
+# kelp year
+# expects data frame that already has quarter from time_since_columns functions
+kelp_year_column <- function(df) {
+  df %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+    mutate(kelp_year = case_when(
+      quarter %in% c("Q2", "Q3", "Q4") ~ year,
+      quarter == "Q1" ~ year - 1
+    )) %>% 
+    mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) 
+}
+
+# comparison column for annual removal
+# first 2 or 3 years of start, last 2 or 3 years during experimental removal, most recent 2 or 3 years
+comparison_column_annual <- function(df) {
+  df %>% 
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+    mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+    # create a column for the points to compare for "3 year interval"
+    mutate(comp_3yrs = case_when(
+      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
+      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+      site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+      site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+      kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+    )) %>% 
+    mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+    # add in full names of sites
+    left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+    rename(site_full = value) %>% 
+    mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)"))
+}
+
+comparison_column_continual <- function(df) {
+  df %>% 
+    # create a column for the points to compare for "2 year interval"
+    mutate(comp_2yrs = case_when(
+      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
+      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+      site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+      site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+      kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+    )) %>% 
+    mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+    # create a column for the points to compare for "3 year interval"
+    mutate(comp_3yrs = case_when(
+      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
+      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+      site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+      site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+      kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+    )) %>% 
+    mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+    # create a new sample ID that is site, year, quarter
+    unite("sample_ID", site, year, quarter, remove = FALSE)
+}
+
 # 4. data -----------------------------------------------------------------
 
 # ⟞ a. Max's guild data ---------------------------------------------------
@@ -256,8 +395,6 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
   # change to lower case
   mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
-  # # make a new column for after dates
-  # after_dates_column() %>% 
   # make a new column for during and after and set factor levels
   exp_dates_column() %>% 
   # create a new column for season and set factor levels
@@ -305,7 +442,6 @@ percov <- read_csv(here::here("data", "LTE_Cover_All_Years_20200605.csv")) %>%
 
 percov_annual <- read_csv(here::here("data/benthics", "Annual_Cover_All_Years_20210108.csv"))
 
-
 # ⟞ f. annual benthics biomass --------------------------------------------
 
 biomass_annual <- read_csv(here::here("data/benthics", "Annual_All_Species_Biomass_at_transect_20210108.csv")) %>% 
@@ -338,7 +474,6 @@ kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
 # 6. useful vectors and data frames ---------------------------------------
-
 
 # ⟞ a. species -----------------------------------------------------------
 
@@ -460,6 +595,12 @@ color_palette_site <- c("aque" = aque_col,
                         "napl" = napl_col, 
                         "mohk" = mohk_col, 
                         "carp" = carp_col)
+
+color_palette_site_annual <- c("aque" = aque_col, 
+                               "napl" = napl_col, 
+                               "ivee" = ivee_col,
+                               "mohk" = mohk_col, 
+                               "carp" = carp_col)
 
 aque_shape <- 21
 napl_shape <- 22
