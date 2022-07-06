@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 source(here::here("code", "00-set_up.R"))
-
 ```
 
 # 1. algae deltas
@@ -21,7 +20,7 @@ source(here::here("code", "00-set_up.R"))
 ```{r}
 # total biomass
 algae_biomass <- biomass %>% 
-  filter(group == "algae" & sp_code != "MAPY") %>% 
+  filter(new_group == "algae" & sp_code != "MAPY") %>% 
   # # make a new column for after dates
   after_dates_column() %>% 
   # make a new column for during and after and set factor levels
@@ -37,81 +36,6 @@ delta_algae_biomass <- algae_biomass %>%
   mutate(delta_annual = annual - control,
          delta_continual = continual - control) 
 
-delta_algae_annual <- delta_algae_biomass %>% 
-  dplyr::select(site, year, month, date, control, annual, delta_annual) %>% 
-  drop_na(delta_annual) %>% 
-  mutate(exp_dates = case_when(
-    # after for annual removal:
-    site == "aque" & date >= aque_after_date_annual ~ "after",
-    site == "napl" & date >= napl_after_date_annual ~ "after",
-    site == "ivee" & date >= ivee_after_date_annual ~ "after",
-    site == "mohk" & date >= mohk_after_date_annual ~ "after",
-    site == "carp" & date >= carp_after_date_annual ~ "after",
-    # everything else is "during" the experiment
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-   # create a column for quarter
-  mutate(quarter = case_when(
-    month <= 3 ~ "Q1",
-    month <= 6 ~ "Q2",
-    month <= 9 ~ "Q3",
-    TRUE ~ "Q4"
-  )) %>% 
-  # calculate time since start of experiment
-  mutate(time_yrs = case_when(
-    # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
-    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
-    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
-    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
-    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
-    # IVEE control and annual started in 2011
-    site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
-    site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
-    site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
-    site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
-    )) %>% 
-  group_by(site) %>% 
-  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
-  ungroup() %>% 
-  # calculate time since end of experiment
-  group_by(site, exp_dates) %>% 
-  # if "after", then simple: the time in years - the minimum time in years
-  # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
-  mutate(time_since_end = case_when(
-    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
-    exp_dates == "after" ~ time_yrs - min(time_yrs)
-  )) %>% 
-  ungroup() %>% 
-  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-  rename(site_full = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
-  # create a new column for "kelp year"
-  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
-  mutate(kelp_year = case_when(
-    quarter %in% c("Q2", "Q3", "Q4") ~ year,
-    quarter == "Q1" ~ year - 1
-  )) %>% 
-  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
-  # create a column for the points to compare for "2 year interval"
-  mutate(comp_2yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
-  # create a column for the points to compare for "3 year interval"
-  mutate(comp_3yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after"))
-
 delta_algae_continual <- delta_algae_biomass %>% 
   dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
   # take out years where continual removal hadn't happened yet
@@ -126,59 +50,9 @@ delta_algae_continual <- delta_algae_biomass %>%
     TRUE ~ "during"
   ),
   exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  # create a column for quarter
-  mutate(quarter = case_when(
-    month <= 3 ~ "Q1",
-    month <= 6 ~ "Q2",
-    month <= 9 ~ "Q3",
-    TRUE ~ "Q4"
-  )) %>% 
-  # calculate time since start of experiment
-  mutate(time_yrs = case_when(
-    # AQUE, NAPL, MOHK, CARP: continual started in 2010
-    quarter == "Q1" ~ year + 0.125 - 2010,
-    quarter == "Q2" ~ year + 0.375 - 2010,
-    quarter == "Q3" ~ year + 0.625 - 2010,
-    quarter == "Q4" ~ year + 0.875 - 2010
-  )) %>% 
-  group_by(site) %>% 
-  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
-  ungroup() %>% 
-  # calculate time since end of experiment
-  group_by(site, exp_dates) %>% 
-  mutate(time_since_end = case_when(
-    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
-    exp_dates == "after" ~ time_yrs - min(time_yrs)
-  )) %>% 
-  ungroup() %>% 
-  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-  rename(site_full = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
-  # create a new column for "kelp year"
-  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
-  mutate(kelp_year = case_when(
-    quarter %in% c("Q2", "Q3", "Q4") ~ year,
-    quarter == "Q1" ~ year - 1
-  )) %>% 
-  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
-  # create a column for the points to compare for "2 year interval"
-  mutate(comp_2yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
-  # create a column for the points to compare for "3 year interval"
-  mutate(comp_3yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+  time_since_columns_continual() %>% 
+  kelp_year_column() %>% 
+  comparison_column_continual() %>% 
   # create a new sample ID that is site, year, quarter
   unite("sample_ID", site, year, quarter, remove = FALSE) %>% 
   rename("control_algae" = control,
@@ -205,9 +79,7 @@ algae_annual_after_means <- algae_annual_means %>%
   filter(exp_dates == "after")
 
 linear_model <- lm(mean_delta ~ mean_tse + quality + mean_tse*quality, data = algae_annual_after_means, na.action = na.pass)
-dredge(linear_model) %>% 
-  model.sel() %>% 
-  gt()
+
 linear_model_sel <- lm(mean_delta ~ mean_tse + quality + mean_tse*quality, data = algae_annual_after_means, na.action = na.pass)
 summary(linear_model_sel)
 plot(simulateResiduals(linear_model_sel))
@@ -273,8 +145,12 @@ summary(delta_algae_vs_kelp_lme)
 
 delta_algae_vs_kelp_lmer <- lmer(delta_continual_algae ~ delta_continual + (1|year) + (1|site), 
                                 data = delta_algae_continual)
+test_glmm <- glmer(delta_continual_algae ~ delta_continual + (1|year) + (1|site), 
+                                data = delta_algae_continual, family = quasi(link = "log"))
 summary(delta_algae_vs_kelp_lmer)
 plot(simulateResiduals(delta_algae_vs_kelp_lmer))
+delta_algae_vs_kelp_lmer %>% 
+  tbl_regression()
 MuMIn::r.squaredGLMM(delta_algae_vs_kelp_lmer)
 
 predicted_delta_algae_vs_kelp <- ggpredict(delta_algae_vs_kelp_lmer, terms = ~ delta_continual, type = "fixed")
@@ -294,8 +170,34 @@ delta_algae_continual %>%
                arrow = arrow(length = unit(0.3, "cm")),
                size = 1) +
   scale_color_gradient2(low = "red", mid = "lightgrey", high = "blue") +
-  labs(x = "\U0394 kelp biomass (treatment - control)",
+  labs(x = "\U0394 kelp biomass (treatment - control)", 
        y = "\U0394 understory algae biomass (treatment - control)") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        strip.background = element_rect(fill = "#FFFFFF")) +
+  facet_wrap(~site)
+
+
+
+delta_algae_continual %>% 
+  ggplot(aes(x = control, y = control_algae)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+  # geom_point(aes(col = comp_3yrs)) +
+  # new_scale("color") +
+  # stat_summary(aes(group = comp_3yrs), fun = mean, geom = "point", size = 10) +
+  # geom_text(aes(label = date)) +
+  geom_segment(aes(x = control, y = control_algae, 
+                   xend = c(tail(control, n = -1), NA), 
+                   yend = c(tail(control_algae, n = -1), NA), 
+                   group = site, color = time_since_end), 
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1) +
+  scale_color_gradient2(low = "red", mid = "lightgrey", high = "blue") +
+  labs(x = "kelp biomass",
+       y = "understory algae biomass") +
   theme_bw() + 
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 15),
@@ -313,13 +215,50 @@ algae_vs_kelp <- delta_algae_continual %>%
   scale_fill_manual(values = c("during" = "#FFFFFF", after = under_col)) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
+       y = "\U0394 understory algae biomass (treatment - control)") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        legend.position = c(0.9, 0.9),
+        legend.text = element_text(size = 18),
+        legend.title = element_blank())
+
+delta_algae_continual %>% 
+  ggplot(aes(x = continual, y = continual_algae)) +
+  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21) + 
+  scale_fill_manual(values = c("during" = "#FFFFFF", after = under_col)) +
+  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
+  labs(x = "kelp biomass",
+       y = "understory algae biomass") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        legend.position = c(0.9, 0.9),
+        legend.text = element_text(size = 18),
+        legend.title = element_blank())
+
+delta_algae_continual %>% 
+  group_by(site, kelp_year) %>% 
+  mutate(mean_delta_kelp = mean(delta_continual),
+         mean_algae = mean(delta_continual_algae)) %>% 
+  ggplot(aes(x = mean_delta_kelp, y = mean_algae)) +
+  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_point(size = 5, aes(fill = year, shape = site), alpha = 0.8) +
+  scale_shape_manual(values = shape_palette_site) +
+  geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), size = 2) +
+  labs(x = "\U0394 kelp biomass (treatment - control)",
        y = "\U0394 understory algae biomass (treatment - control)",
        caption = "marginal R2 = 0.028, conditional R2 = 0.519") +
   theme_bw() + 
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 15),
         strip.text = element_text(size = 14),
-        legend.position = c(0.9, 0.9),
+        legend.position = c(0.9, 0.7),
         legend.text = element_text(size = 18),
         legend.title = element_blank())
 ```
@@ -332,10 +271,25 @@ algae_continual_after <- delta_algae_continual %>%
 linear_model_algae_lme <- lme(delta_continual_algae ~ time_since_end, random = ~ 1|site, data = algae_continual_after, na.action = na.pass)
 summary(linear_model_algae_lme)
 
+algae_time <- linear_model_algae_lme %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+
 linear_model_algae_lmer <- lmer(delta_continual_algae ~ time_since_end + (1|site), data = algae_continual_after, na.action = na.pass)
 plot(simulateResiduals(linear_model_algae_lmer))
+summary(linear_model_algae_lmer)
+MuMIn::r.squaredGLMM(linear_model_algae_lmer)
+
+AICc(linear_model_algae_lme, linear_model_algae_lmer)
 
 linear_model_algae_lmer_during <- lmer(delta_continual_algae ~ time_since_end + (1|site), data = delta_algae_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+linear_model_algae_lme_during <- lme(delta_continual_algae ~ time_since_end, random = ~ 1|site, data = delta_algae_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+summary(linear_model_algae_lmer_during)
+summary(linear_model_algae_lme_during)
+algae_time_during <- linear_model_algae_lme_during %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+MuMIn::r.squaredGLMM(linear_model_algae_lmer_during)
 # ggeffects
 predicted_algae_after <- ggpredict(linear_model_algae_lmer, terms = ~ time_since_end, type = "fixed")
 predicted_algae_during <- ggpredict(linear_model_algae_lmer_during, terms = ~ time_since_end, type = "fixed")
@@ -361,15 +315,96 @@ algae_time <- ggplot() +
         legend.text = element_text(size = 14), 
         legend.position = c(0.08, 0.75), 
         plot.margin = margin(0, 0, 0, 0)) +
-  labs(x = "Time since end of experiment", y = "\U0394 understory algal biomass")
+  labs(x = "Time since end of removal", y = "\U0394 understory algal biomass")
+
+raw_algae_time <- ggplot(delta_algae_continual, aes(x = time_since_end, y = control_algae)) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  # new_scale("color") + 
+  # overall
+  geom_smooth(aes(group = exp_dates), method = "lm") +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = c(0.08, 0.9), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = expression(understory~algal~biomass~(g/m^{"2"})))
 ```
 
+## d. start-during-after
+
 ```{r}
-delta_algae_continual %>% 
-  drop_na(comp_2yrs) %>% 
-  ggplot(aes(x = comp_2yrs, y = delta_continual_algae)) +
-  geom_boxplot() +
-  geom_jitter() 
+sda_algae_biomass <- ggplot(delta_algae_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_continual_algae, group = 1)) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
+  stat_summary(geom = "line", fun = "mean") +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
+  stat_summary(fun = mean, geom = "point", size = 6) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        legend.title = element_text(size = 16),
+        plot.margin = margin(0, 0, 0, 0),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time period", y = "\U0394 algae biomass")
+sda_algae_biomass
+```
+
+## e. algae vs kelp timeseries
+
+```{r}
+ggplot(data = delta_algae_continual) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(x = time_since_end, y = delta_continual_algae), alpha = 0.7) +
+  geom_point(aes(x = time_since_end, y = delta_continual), alpha = 0.7, col = "blue") +
+  # predicted values for algae
+  geom_line(data = predicted_algae_after, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_algae_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  geom_line(data = predicted_algae_during, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  # predicted values for kelp
+  geom_line(data = predicted_kelp_after_overall, aes(x = x, y = predicted), size = 2, alpha = 0.7, col = "blue") +
+  geom_ribbon(data = predicted_kelp_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2, fill = "blue") +
+  geom_line(data = predicted_kelp_during_overall, aes(x = x, y = predicted), size = 2, alpha = 0.7, col = "blue") +
+  geom_ribbon(data = predicted_kelp_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2, fill = "blue") +
+  annotate("text", x = -6.5, y = 600, label = "algae", size = 12) +
+  annotate("text", x = -6.5, y = -1500, label = "kelp", size = 12, col = "blue") +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = "\U0394 biomass (treatment - control)")
+```
+
+## f. raw algae biomass
+
+```{r}
+ggplot(delta_algae_continual) +
+  geom_line(aes(x = time_since_end, y = control_algae, col = site), alpha = 0.5, size = 2.5) +
+  geom_point(aes(x = time_since_end, y = control_algae, shape = site, col = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual_algae, col = site), size = 2.5) +
+  geom_point(aes(x = time_since_end, y = continual_algae, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_color_manual(values = color_palette_site) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time since end of experiment", 
+       y = expression(Algae~biomass~(dry~g/m^{"2"}))) +
+  facet_wrap(~site, scales = "free_y") 
 ```
 
 
@@ -378,8 +413,8 @@ delta_algae_continual %>%
 ```{r}
 # total biomass
 invert_biomass <- biomass %>% 
-  filter(group == "invert" & mobility == "sessile") %>% 
-  # take out piddocks?
+  filter(new_group == "epilithic.sessile.invert") %>% 
+  # # take out piddocks?
   filter(taxon_family != "Pholadidae") %>% 
   # make a new column for after dates
   after_dates_column() %>% 
@@ -543,7 +578,8 @@ delta_invert_continual <- delta_invert_biomass %>%
   rename("control_inverts" = control,
          "continual_inverts" = continual,
          "delta_continual_inverts" = delta_continual) %>% 
-  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
+  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID") %>% 
+  filter(sample_ID != "mohk_2014_Q3")
 ```
 
 # 4. inverts
@@ -671,18 +707,58 @@ delta_invert_continual %>%
         strip.background = element_rect(fill = "#FFFFFF")) +
   facet_wrap(~site, scale = "free")
 
+delta_invert_continual %>% 
+  ggplot(aes(x = continual, y = continual_inverts)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+  # geom_point(aes(col = comp_3yrs)) +
+  # new_scale("color") +
+  # stat_summary(aes(group = comp_3yrs), fun = mean, geom = "point", size = 10) +
+  # geom_text(aes(label = date)) +
+  geom_segment(aes(x = continual, y = continual_inverts, 
+                   xend = c(tail(continual, n = -1), NA), 
+                   yend = c(tail(continual_inverts, n = -1), NA), 
+                   group = site, color = time_since_end), 
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1) +
+  scale_color_gradient2(low = "red", mid = "lightgrey", high = "blue") +
+  labs(x = "kelp biomass",
+       y = "invert biomass") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        strip.background = element_rect(fill = "#FFFFFF")) +
+  facet_wrap(~site, scale = "free")
+
 inverts_vs_kelp <- delta_invert_continual %>% 
   ggplot(aes(x = delta_continual, y = delta_continual_inverts)) +
   geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
   geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
-  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 24) + 
+  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 25) + 
   geom_line(data = predicted_delta_invert_vs_kelp, aes(x = x, y = predicted), size = 2) +
   scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
-  scale_fill_manual(values = c("during" = "#FFFFFF", after = carp_col)) +
+  scale_fill_manual(values = c("during" = "#FFFFFF", after = ivee_col)) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 understory invert biomass (treatment - control)",
-       caption = "marginal R2 = 0.043, conditional R2 = 0.391") +
+       y = "\U0394 invert biomass (treatment - control)") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        legend.position = c(0.9, 0.9),
+        legend.text = element_text(size = 18),
+        legend.title = element_blank())
+
+delta_invert_continual %>% 
+  ggplot(aes(x = continual, y = continual_inverts)) +
+  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 24) + 
+  scale_fill_manual(values = c("during" = "#FFFFFF", after = carp_col)) +
+  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
+  labs(x = "kelp biomass",
+       y = "epilithic invert biomass") +
   theme_bw() + 
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 15),
@@ -693,7 +769,7 @@ inverts_vs_kelp <- delta_invert_continual %>%
 
 ```
 
-## c. delta inverts
+## c. delta inverts as a function of time since end
 
 ```{r}
 invert_continual_after <- delta_invert_continual %>% 
@@ -703,11 +779,27 @@ linear_model_invert_lme <- lme(delta_continual_inverts ~ time_since_end, random 
 summary(linear_model_invert_lme)
 # no effect of time since end
 
+epi_invert_time <- linear_model_invert_lme %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+
 linear_model_invert_lmer <- lmer(delta_continual_inverts ~ time_since_end + (1|site), data = invert_continual_after, na.action = na.pass)
-summary(linear_model_invert_lmer)
 plot(simulateResiduals(linear_model_invert_lmer))
+summary(linear_model_invert_lmer)
+MuMIn::r.squaredGLMM(linear_model_invert_lmer)
+
+
+AICc(linear_model_invert_lme, linear_model_invert_lmer)
 
 linear_model_invert_lmer_during <- lmer(delta_continual_inverts ~ time_since_end + (1|site), data = delta_invert_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+summary(linear_model_invert_lmer_during) 
+linear_model_invert_lme_during <- lme(delta_continual_inverts ~ time_since_end, random = ~ 1|site, data = delta_invert_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+summary(linear_model_invert_lme_during)
+MuMIn::r.squaredGLMM(linear_model_invert_lmer_during)
+
+epi_invert_time_during <- linear_model_invert_lme_during %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
 # ggeffects
 predicted_invert_after <- ggpredict(linear_model_invert_lmer, terms = ~ time_since_end, type = "fixed")
 predicted_invert_during <- ggpredict(linear_model_invert_lmer_during, terms = ~ time_since_end, type = "fixed")
@@ -733,15 +825,1057 @@ invert_time <- ggplot() +
         legend.text = element_text(size = 14), 
         legend.position = "none", 
         plot.margin = margin(0, 0, 0, 0)) +
-  labs(x = "Time since end of experiment", y = "\U0394 sessile invertebrate biomass")
+  labs(x = "Time since end of removal", y = "\U0394 epilithic invert biomass")
+```
+
+### raw invert biomass
+```{r}
+raw_invert_time <- ggplot(delta_invert_continual) +
+  geom_line(aes(x = time_since_end, y = control_inverts, col = site), alpha = 0.5, size = 2.5) +
+  geom_point(aes(x = time_since_end, y = control_inverts, shape = site, col = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual_inverts, col = site), size = 2.5) +
+  geom_point(aes(x = time_since_end, y = continual_inverts, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_color_manual(values = color_palette_site) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time since end of experiment", 
+       y = expression(Epilithic~invert~biomass~(dry~g/m^{"2"}))) +
+  facet_wrap(~site, scales = "free_y") 
+
+ggplot(delta_invert_continual) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(x = time_since_end, y = control_inverts, fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  geom_smooth(aes(x = time_since_end, y = control_inverts, group = exp_dates), method = "lm") +
+    scale_y_continuous(limits = c(-1, 125)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = "none", 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = "epilithic invert biomass",
+       title = "control plots")
+```
+
+### start-during-after
+
+```{r}
+sda_invert_biomass <- ggplot(delta_invert_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_continual_inverts, group = 1)) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
+  stat_summary(geom = "line", fun = "mean") +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
+  stat_summary(fun = mean, geom = "point", size = 6) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        legend.title = element_text(size = 16),
+        plot.margin = margin(0, 0, 0, 0),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time period", y = "\U0394 epilithic invert biomass")
+sda_invert_biomass
+```
+
+### invert vs kelp timeseries
+
+```{r}
+ggplot(data = delta_invert_continual) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(x = time_since_end, y = delta_continual_inverts), alpha = 0.7) +
+  geom_point(aes(x = time_since_end, y = delta_continual), alpha = 0.7, col = "blue") +
+  # predicted values for epi inverts
+  geom_line(data = predicted_invert_after, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_invert_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  geom_line(data = predicted_invert_during, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_invert_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  # predicted values for kelp
+  geom_line(data = predicted_kelp_after_overall, aes(x = x, y = predicted), size = 2, alpha = 0.7, col = "blue") +
+  geom_ribbon(data = predicted_kelp_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2, fill = "blue") +
+  geom_line(data = predicted_kelp_during_overall, aes(x = x, y = predicted), size = 2, alpha = 0.7, col = "blue") +
+  geom_ribbon(data = predicted_kelp_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2, fill = "blue") +
+  annotate("text", x = -6, y = 600, label = "inverts", size = 12) +
+  annotate("text", x = -6.5, y = -1500, label = "kelp", size = 12, col = "blue") +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = "\U0394 biomass (treatment - control)")
 ```
 
 
-## d. plots together
+## d. delta clams
+
+```{r}
+# total biomass
+clam_biomass <- biomass %>% 
+  # take out piddocks?
+  filter(taxon_family == "Pholadidae") %>% 
+  # make a new column for after dates
+  after_dates_column() %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column()
+
+# delta biomass
+delta_clam_biomass <- clam_biomass %>% 
+  dplyr::select(site, year, month, treatment, date, exp_dates, dry_gm2) %>% 
+  group_by(site, exp_dates, year, month, treatment, date) %>% 
+  summarize(total_dry = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = total_dry) %>% 
+  mutate(delta_annual = annual - control,
+         delta_continual = continual - control) 
+
+delta_clam_annual <- delta_clam_biomass %>% 
+  dplyr::select(site, year, month, date, control, annual, delta_annual) %>% 
+  drop_na(delta_annual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_annual ~ "after",
+    site == "napl" & date >= napl_after_date_annual ~ "after",
+    site == "ivee" & date >= ivee_after_date_annual ~ "after",
+    site == "mohk" & date >= mohk_after_date_annual ~ "after",
+    site == "carp" & date >= carp_after_date_annual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+   # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
+    # IVEE control and annual started in 2011
+    site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
+    site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
+    site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
+    site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
+    )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  # if "after", then simple: the time in years - the minimum time in years
+  # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after"))
+
+delta_clam_continual <- delta_clam_biomass %>% 
+  dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
+  # take out years where continual removal hadn't happened yet
+  drop_na(delta_continual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_continual ~ "after",
+    site == "napl" & date >= napl_after_date_continual ~ "after",
+    site == "mohk" & date >= mohk_after_date_continual ~ "after",
+    site == "carp" & date >= carp_after_date_continual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: continual started in 2010
+    quarter == "Q1" ~ year + 0.125 - 2010,
+    quarter == "Q2" ~ year + 0.375 - 2010,
+    quarter == "Q3" ~ year + 0.625 - 2010,
+    quarter == "Q4" ~ year + 0.875 - 2010
+  )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+  # create a new sample ID that is site, year, quarter
+  unite("sample_ID", site, year, quarter, remove = FALSE) %>% 
+  rename("control_clams" = control,
+         "continual_clams" = continual,
+         "delta_continual_clams" = delta_continual) %>% 
+  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
+```
+
+### delta clams as a function of time since end of experiment
+
+```{r}
+clam_continual_after <- delta_clam_continual %>% 
+  filter(exp_dates == "after")
+
+linear_model_clam_lme <- lme(delta_continual_clams ~ time_since_end, random = ~ 1|site, data = clam_continual_after, na.action = na.pass)
+summary(linear_model_clam_lme)
+# no effect of time since end
+
+clam_time <- linear_model_clam_lme %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+
+linear_model_clam_lmer <- lmer(delta_continual_clams ~ time_since_end + (1|site), data = clam_continual_after, na.action = na.pass)
+plot(simulateResiduals(linear_model_clam_lmer))
+summary(linear_model_clam_lmer)
+MuMIn::r.squaredGLMM(linear_model_clam_lmer)
+
+linear_model_clam_lmer_during <- lmer(delta_continual_clams ~ time_since_end + (1|site), data = delta_clam_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+linear_model_clam_lme_during <- lme(delta_continual_clams ~ time_since_end, random = ~ 1|site, data = delta_clam_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+summary(linear_model_clam_lme_during)
+summary(linear_model_clam_lmer_during)
+clam_time_during <- linear_model_clam_lme_during %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+MuMIn::r.squaredGLMM(linear_model_clam_lmer_during)
+
+# ggeffects
+predicted_clam_after <- ggpredict(linear_model_clam_lmer, terms = ~ time_since_end, type = "fixed")
+predicted_clam_during <- ggpredict(linear_model_clam_lmer_during, terms = ~ time_since_end, type = "fixed")
+
+clam_time <- ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_clam_continual, 
+             aes(x = time_since_end, y = delta_continual_clams, fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  # new_scale("color") + 
+  # overall
+  geom_line(data = predicted_clam_after, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_clam_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  geom_line(data = predicted_clam_during, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_clam_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = "none", 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = "\U0394 endolithic invert biomass")
+
+raw_clam_time <- ggplot(delta_clam_continual) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(x = time_since_end, y = control_clams, fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  geom_smooth(aes(x = time_since_end, y = continual_clams, group = exp_dates), method = "lm") +
+  # scale_y_continuous(limits = c(-1, 125)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = "none", 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = expression(endolithic~invertebrate~biomass~(g/m^{"2"})))
+
+tbl_merge(tbls = list(algae_time_during, epi_invert_time_during, clam_time_during),
+          tab_spanner = c("Algae", "Epi", "Endo"))
+```
+
+### start-during-after
+
+```{r}
+sda_clam_biomass <- ggplot(delta_clam_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_continual_clams, group = 1)) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
+  stat_summary(geom = "line", fun = "mean") +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
+  stat_summary(fun = mean, geom = "point", size = 6) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        legend.title = element_text(size = 16),
+        plot.margin = margin(0, 0, 0, 0),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time period", y = "\U0394 endolithic invert biomass")
+sda_clam_biomass
+```
+
+
+### clams vs kelp
+
+```{r}
+delta_clam_vs_kelp_lme <- lme(delta_continual_clams ~ delta_continual, 
+                               random = ~ 1|year/site, 
+                               data = delta_clam_continual, na.action = na.pass)
+summary(delta_clam_vs_kelp_lme)
+
+delta_clam_vs_kelp_lmer <- lmer(delta_continual_clams ~ delta_continual + (1|year) + (1|site), 
+                                data = delta_clam_continual)
+summary(delta_clam_vs_kelp_lmer)
+plot(simulateResiduals(delta_clam_vs_kelp_lmer))
+MuMIn::r.squaredGLMM(delta_clam_vs_kelp_lmer)
+
+predicted_delta_clam_vs_kelp <- ggpredict(delta_clam_vs_kelp_lmer, terms = ~ delta_continual, type = "fixed")
+
+delta_clam_continual %>% 
+  ggplot(aes(x = delta_continual, y = delta_continual_clams)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+  # geom_point(aes(col = comp_3yrs)) +
+  # new_scale("color") +
+  # stat_summary(aes(group = comp_3yrs), fun = mean, geom = "point", size = 10) +
+  # geom_text(aes(label = date)) +
+  geom_segment(aes(x = delta_continual, y = delta_continual_clams, 
+                   xend = c(tail(delta_continual, n = -1), NA), 
+                   yend = c(tail(delta_continual_clams, n = -1), NA), 
+                   group = site, color = time_since_end), 
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1) +
+  scale_color_gradient2(low = "red", mid = "lightgrey", high = "blue") +
+  labs(x = "\U0394 kelp biomass (treatment - control)",
+       y = "\U0394 clam biomass (treatment - control)") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        strip.background = element_rect(fill = "#FFFFFF")) +
+  facet_wrap(~site, scale = "free")
+
+clams_vs_kelp <- delta_clam_continual %>% 
+  ggplot(aes(x = delta_continual, y = delta_continual_clams)) +
+  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 23) + 
+  geom_line(data = predicted_delta_clam_vs_kelp, aes(x = x, y = predicted), size = 2) +
+  scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
+  scale_fill_manual(values = c("during" = "#FFFFFF", after = napl_col)) +
+  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
+  labs(x = "\U0394 kelp biomass (treatment - control)",
+       y = "\U0394 endolithic invert biomass (treatment - control)",
+       caption = "marginal R2 = 0.004, conditional R2 = 0.349, no significance") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 15),
+        strip.text = element_text(size = 14),
+        legend.position = c(0.9, 0.9),
+        legend.text = element_text(size = 18),
+        legend.title = element_blank())
+```
+
+### raw clam biomass
+```{r}
+ggplot(delta_clam_continual) +
+  geom_line(aes(x = time_since_end, y = control_clams, col = site), alpha = 0.5, size = 2.5) +
+  geom_point(aes(x = time_since_end, y = control_clams, shape = site, col = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual_clams, col = site), size = 2.5) +
+  geom_point(aes(x = time_since_end, y = continual_clams, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_color_manual(values = color_palette_site) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time since end of experiment", 
+       y = expression(Endolithic~invert~biomass~(dry~g/m^{"2"}))) +
+  facet_wrap(~site, scales = "free_y") 
+```
+
+
+## e. potential manuscript plots
+
+```{r}
+fig3 <- (sda_algae_biomass + algae_time) /
+        (sda_invert_biomass + invert_time) /
+        (sda_clam_biomass + clam_time) +
+  # (sda_algae_biomass / sda_invert_biomass / sda_clam_biomass) | (algae_time / invert_time / clam_time) +
+  plot_layout(widths = c(2, 3)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 24))
+
+fig3
+
+ggsave(here::here("figures", paste("fig3_", todays_date, ".jpg", sep = "")), plot = fig3, height = 10, width = 14, dpi = 150)
+```
+
+
+# 5. delta fish
+
+```{r}
+# total biomass
+fish_biomass <- biomass %>% 
+  filter(new_group == "fish") %>% 
+  # make a new column for after dates
+  after_dates_column() %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column()
+
+# delta biomass
+delta_fish_biomass <- fish_biomass %>% 
+  dplyr::select(site, year, month, treatment, date, exp_dates, dry_gm2) %>% 
+  group_by(site, exp_dates, year, month, treatment, date) %>% 
+  summarize(total_dry = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = total_dry) %>% 
+  mutate(delta_annual = annual - control,
+         delta_continual = continual - control) 
+
+delta_fish_annual <- delta_fish_biomass %>% 
+  dplyr::select(site, year, month, date, control, annual, delta_annual) %>% 
+  drop_na(delta_annual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_annual ~ "after",
+    site == "napl" & date >= napl_after_date_annual ~ "after",
+    site == "ivee" & date >= ivee_after_date_annual ~ "after",
+    site == "mohk" & date >= mohk_after_date_annual ~ "after",
+    site == "carp" & date >= carp_after_date_annual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+   # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
+    # IVEE control and annual started in 2011
+    site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
+    site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
+    site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
+    site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
+    )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  # if "after", then simple: the time in years - the minimum time in years
+  # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after"))
+
+delta_fish_continual <- delta_fish_biomass %>% 
+  dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
+  # take out years where continual removal hadn't happened yet
+  drop_na(delta_continual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_continual ~ "after",
+    site == "napl" & date >= napl_after_date_continual ~ "after",
+    site == "mohk" & date >= mohk_after_date_continual ~ "after",
+    site == "carp" & date >= carp_after_date_continual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: continual started in 2010
+    quarter == "Q1" ~ year + 0.125 - 2010,
+    quarter == "Q2" ~ year + 0.375 - 2010,
+    quarter == "Q3" ~ year + 0.625 - 2010,
+    quarter == "Q4" ~ year + 0.875 - 2010
+  )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+  # create a new sample ID that is site, year, quarter
+  unite("sample_ID", site, year, quarter, remove = FALSE) %>% 
+  rename("control_fish" = control,
+         "continual_fish" = continual,
+         "delta_continual_fish" = delta_continual) %>% 
+  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
+```
+
+```{r}
+fish_time <- delta_fish_continual %>% 
+  filter(sample_ID != "mohk_2014_Q3") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(x = time_since_end, y = delta_continual_fish, fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  # new_scale("color") + 
+  # overall
+  geom_smooth(aes(x = time_since_end, y = delta_continual_fish, group = exp_dates), method = "lm") +
+  # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = "none", 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = "\U0394 fish biomass")
+fish_time
+```
+
+# 6. delta mobile inverts
+
+```{r}
+# total biomass
+herb_invert_biomass <- biomass %>% 
+  filter(new_group == "herb_inverts") %>% 
+  # make a new column for after dates
+  after_dates_column() %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column()
+
+# delta biomass
+delta_herb_invert_biomass <- herb_invert_biomass %>% 
+  dplyr::select(site, year, month, treatment, date, exp_dates, dry_gm2) %>% 
+  group_by(site, exp_dates, year, month, treatment, date) %>% 
+  summarize(total_dry = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = total_dry) %>% 
+  mutate(delta_annual = annual - control,
+         delta_continual = continual - control) 
+
+delta_herb_invert_annual <- delta_herb_invert_biomass %>% 
+  dplyr::select(site, year, month, date, control, annual, delta_annual) %>% 
+  drop_na(delta_annual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_annual ~ "after",
+    site == "napl" & date >= napl_after_date_annual ~ "after",
+    site == "ivee" & date >= ivee_after_date_annual ~ "after",
+    site == "mohk" & date >= mohk_after_date_annual ~ "after",
+    site == "carp" & date >= carp_after_date_annual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+   # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
+    # IVEE control and annual started in 2011
+    site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
+    site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
+    site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
+    site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
+    )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  # if "after", then simple: the time in years - the minimum time in years
+  # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after"))
+
+delta_herb_invert_continual <- delta_herb_invert_biomass %>% 
+  dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
+  # take out years where continual removal hadn't happened yet
+  drop_na(delta_continual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_continual ~ "after",
+    site == "napl" & date >= napl_after_date_continual ~ "after",
+    site == "mohk" & date >= mohk_after_date_continual ~ "after",
+    site == "carp" & date >= carp_after_date_continual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: continual started in 2010
+    quarter == "Q1" ~ year + 0.125 - 2010,
+    quarter == "Q2" ~ year + 0.375 - 2010,
+    quarter == "Q3" ~ year + 0.625 - 2010,
+    quarter == "Q4" ~ year + 0.875 - 2010
+  )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+  # create a new sample ID that is site, year, quarter
+  unite("sample_ID", site, year, quarter, remove = FALSE) %>% 
+  rename("control_herb_invert" = control,
+         "continual_herb_invert" = continual,
+         "delta_continual_herb_invert" = delta_continual) %>% 
+  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
+```
+
+```{r}
+herb_invert_time <- delta_herb_invert_continual %>% 
+  # filter(sample_ID != "mohk_2014_Q3") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(x = time_since_end, y = control_herb_invert, fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  scale_y_continuous(limits = c(0, 1300)) +
+  # new_scale("color") + 
+  # overall
+  geom_smooth(aes(x = time_since_end, y = control_herb_invert, group = exp_dates), method = "lm") +
+  # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = "none", 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = "herbivorous invert biomass",
+       title = "Control")
+herb_invert_time
+```
+
+# 7. delta carnivorous inverts
+
+```{r}
+# total biomass
+carn_invert_biomass <- biomass %>% 
+  filter(new_group == "carn_inverts") %>% 
+  # make a new column for after dates
+  after_dates_column() %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column()
+
+# delta biomass
+delta_carn_invert_biomass <- carn_invert_biomass %>% 
+  dplyr::select(site, year, month, treatment, date, exp_dates, dry_gm2) %>% 
+  group_by(site, exp_dates, year, month, treatment, date) %>% 
+  summarize(total_dry = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = total_dry) %>% 
+  mutate(delta_annual = annual - control,
+         delta_continual = continual - control) 
+
+delta_carn_invert_annual <- delta_carn_invert_biomass %>% 
+  dplyr::select(site, year, month, date, control, annual, delta_annual) %>% 
+  drop_na(delta_annual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_annual ~ "after",
+    site == "napl" & date >= napl_after_date_annual ~ "after",
+    site == "ivee" & date >= ivee_after_date_annual ~ "after",
+    site == "mohk" & date >= mohk_after_date_annual ~ "after",
+    site == "carp" & date >= carp_after_date_annual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+   # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
+    # IVEE control and annual started in 2011
+    site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
+    site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
+    site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
+    site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
+    )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  # if "after", then simple: the time in years - the minimum time in years
+  # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after"))
+
+delta_carn_invert_continual <- delta_carn_invert_biomass %>% 
+  dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
+  # take out years where continual removal hadn't happened yet
+  drop_na(delta_continual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_continual ~ "after",
+    site == "napl" & date >= napl_after_date_continual ~ "after",
+    site == "mohk" & date >= mohk_after_date_continual ~ "after",
+    site == "carp" & date >= carp_after_date_continual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: continual started in 2010
+    quarter == "Q1" ~ year + 0.125 - 2010,
+    quarter == "Q2" ~ year + 0.375 - 2010,
+    quarter == "Q3" ~ year + 0.625 - 2010,
+    quarter == "Q4" ~ year + 0.875 - 2010
+  )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+  # create a new sample ID that is site, year, quarter
+  unite("sample_ID", site, year, quarter, remove = FALSE) %>% 
+  rename("control_carn_invert" = control,
+         "continual_carn_invert" = continual,
+         "delta_continual_carn_invert" = delta_continual) %>% 
+  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
+```
+
+```{r}
+carn_invert_time <- delta_carn_invert_continual %>% 
+  # filter(sample_ID != "mohk_2014_Q3") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(x = time_since_end, y = delta_continual_carn_invert, fill = site, shape = site), size = 3, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  # new_scale("color") + 
+  # overall
+  geom_smooth(aes(x = time_since_end, y = delta_continual_carn_invert, group = exp_dates), method = "lm") +
+  # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = "none", 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = "Time since end of removal", y = "\U0394 carnivorous invert biomass")
+carn_invert_time
+```
+
+
+
+# 8. plots together
 
 ### class vs kelp
 ```{r}
-plots_together <- algae_vs_kelp + inverts_vs_kelp
+plots_together <- algae_vs_kelp + inverts_vs_kelp &
+    plot_annotation(tag_levels = "A") &
+    theme(plot.tag = element_text(size = 20))
 plots_together
 ggsave(here::here("figures", paste("delta_vs_kelp-one_slope-", todays_date, ".jpg", sep = "")), 
        plot = plots_together, 
@@ -752,17 +1886,39 @@ ggsave(here::here("figures", paste("delta_vs_kelp-one_slope-", todays_date, ".jp
 ### algae and inverts
 
 ```{r}
-plots_together <- algae_time/invert_time &
-  plot_annotation(tag_levels = "A")
+plots_together <- algae_time/invert_time/clam_time &
+  plot_annotation(tag_levels = "A") &
+    theme(plot.tag = element_text(size = 20))
 
 plots_together
-ggsave(here::here("figures", paste("algae_invert_time", todays_date, ".jpg", sep = "")), 
+ggsave(here::here("figures", paste("algae_invert_time_delta-site_int-", todays_date, ".jpg", sep = "")), 
        plot = plots_together, 
-       height = 8, width = 10, dpi = 150)
+       height = 12, width = 16, dpi = 150)
+
+plots_together_raw <- raw_algae_time/raw_invert_time/raw_clam_time &
+  plot_annotation(tag_levels = "A") &
+    theme(plot.tag = element_text(size = 20))
+plots_together_raw
+
+ggsave(here::here("figures", paste("algae_invert_time_control-", todays_date, ".jpg", sep = "")), 
+       plot = plots_together_raw, 
+       height = 12, width = 16, dpi = 150)
+```
+
+# 9. algae vs inverts
+
+```{r}
+alg_inv_df <- delta_algae_continual %>% 
+  select(sample_ID, control_algae, continual_algae, delta_continual_algae) %>% 
+  left_join(., delta_invert_continual, by = "sample_ID")
+
+alg_inv_df %>% 
+  ggplot(aes(x = delta_continual_algae, y = delta_continual_inverts)) +
+  geom_point(aes(col = comp_3yrs))
 ```
 
 
-# 5. annualized data for algae species from rank abundance
+# 10. annualized data for algae species from rank abundance
 
 
 ```{r}
