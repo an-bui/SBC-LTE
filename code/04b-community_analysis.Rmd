@@ -31,59 +31,12 @@ comm_df <- biomass %>%
   dplyr::select(-annual) %>% 
   mutate(delta_continual = continual - control) %>% 
   drop_na(delta_continual) %>% 
-  mutate(quarter = case_when(
-    month <= 3 ~ "Q1",
-    month <= 6 ~ "Q2",
-    month <= 9 ~ "Q3",
-    TRUE ~ "Q4"
-  )) %>% 
-  # calculate time since start of experiment
-  mutate(time_yrs = case_when(
-    # AQUE, NAPL, MOHK, CARP: continual started in 2010
-    quarter == "Q1" ~ year + 0.125 - 2010,
-    quarter == "Q2" ~ year + 0.375 - 2010,
-    quarter == "Q3" ~ year + 0.625 - 2010,
-    quarter == "Q4" ~ year + 0.875 - 2010
-  )) %>% 
-  group_by(site) %>% 
-  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
-  ungroup() %>% 
-  # calculate time since end of experiment
-  group_by(site, exp_dates) %>% 
-  mutate(time_since_end = case_when(
-    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
-    exp_dates == "after" ~ time_yrs - min(time_yrs)
-  )) %>% 
-  ungroup() %>% 
-  filter(time_since_end > -8.5) %>% 
+  time_since_columns_continual() %>% 
+  kelp_year_column() %>% 
+  comparison_column_continual() %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename(site_full = value) %>% 
   mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
-  # create a new column for "kelp year"
-  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
-  mutate(kelp_year = case_when(
-    quarter %in% c("Q2", "Q3", "Q4") ~ year,
-    quarter == "Q1" ~ year - 1
-  )) %>% 
-  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
-  # create a column for the points to compare for "2 year interval"
-  mutate(comp_2yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
-  # create a column for the points to compare for "3 year interval"
-  mutate(comp_3yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
   full_join(., site_quality, by = "site") %>% 
   dplyr::select(-delta_continual) %>% 
   pivot_longer(cols = c(control, continual), names_to = "treatment", values_to = "dry_gm2") %>% 
@@ -105,18 +58,6 @@ comm_meta_control <- comm_df %>%
   # weird point?
   filter(sample_ID != "mohk_control_2020-08-12") %>% 
   unique()
-
-# comm_mat <- biomass %>% 
-#   # filter for algae only
-#   filter(group == "algae" & sp_code != "MAPY") %>% 
-#   # filter out species with 0 observations
-#   filter(dry_gm2 > 0) %>% 
-#   # select sample ID, scientific name, and biomass
-#   dplyr::select(sample_ID, scientific_name, dry_gm2) %>% 
-#   # get into wide form
-#   pivot_wider(names_from = "scientific_name", values_from = "dry_gm2") %>% 
-#   # replace NA with 0
-#   replace(is.na(.), 0)
 
 comm_mat_continual_algae <- comm_df %>% 
   filter(new_group == "algae") %>% 
@@ -152,8 +93,8 @@ comm_mat_continual_epi_inverts <- comm_df %>%
 
 ## a. all
 ```{r}
-bc_continual_dist <- vegdist(comm_mat_continual_algae, "bray")
-bc_continual_nmds <- metaMDS(comm_mat_continual_algae, "bray")
+bc_continual_dist <- vegdist(comm_mat_continual_algae, "jacc")
+bc_continual_nmds <- metaMDS(comm_mat_continual_algae, "jacc")
 stressplot(bc_continual_nmds)
 
 bc_continual_plotdf <- scores(bc_continual_nmds, display = "sites") %>%
@@ -168,14 +109,17 @@ simper(comm_mat_continual_algae, comm_meta_continual$treatment)
 # PTCA, CYOS, DL, CC, EC, R, CO
 
 adonis(comm_mat_continual_algae ~ comp_2yrs*treatment, data = comm_meta_continual)
-anova(betadisper(bc_continual_dist, comm_meta_continual$exp_dates))
+anova(betadisper(bc_continual_dist, comm_meta_continual$comp_2yrs))
 # not significantly different in dispersion
 
-ggplot(bc_continual_plotdf, aes(x = NMDS1, y = NMDS2)) +
+ggplot(bc_continual_plotdf %>% filter(treatment == "continual"), aes(x = NMDS1, y = NMDS2)) +
   coord_cartesian() +
-  geom_point(aes(col = comp_2yrs, shape = site, alpha = treatment), size = 3) +
-  scale_alpha_manual(values = c("continual" = 1, "control" = 0.3)) +
-  theme_bw()
+  geom_point(aes(col = comp_2yrs, shape = site_full), size = 3) +
+  # scale_shape_manual(values = shape_palette_site) +
+  # scale_alpha_manual(values = c("continual" = 1, "control" = 0.3)) +
+  theme_bw() +
+  labs(shape = "Site", col = "Experimental period") +
+  theme(panel.grid = element_line(color = "white"))
  
 
 # aque_comm <- ggplot() +
@@ -578,6 +522,31 @@ delta_fg_df <- biomass %>%
   full_join(., site_quality, by = "site")
 
 delta_fg_df %>%
+  # filter(comp_2yrs %in% c("during", "after")) %>%
+  # take out fish with big biomass
+  filter(!(new_group == "fish" & date == "2014-08-15")) %>% 
+  # filter(new_group %in% c("algae", "epi_inverts", "endo_inverts")) %>% 
+  # mutate(new_group = fct_relevel(new_group, "algae", "epi_inverts", "endo_inverts")) %>% 
+  # filter(new_group != "endo_inverts") %>% 
+  # mutate(new_group = fct_relevel(new_group, "algae", "epi_inverts", "carn_inverts", "herb_inverts", "fish")) %>% 
+  ggplot() +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  # geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
+  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
+  labs(x = "",
+       y = "delta biomass (g dry/m2)",
+       col = "", shape = "") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16),
+        legend.position = "none") +
+  facet_wrap(~new_group, scales = "free") 
+ggsave(here::here("figures", "fg_biomass_exp-dates_deltas_no-jitter_2022-05-25.jpg"), width = 7, height = 6, dpi = 150)
+
+delta_fg_df %>%
   filter(comp_2yrs %in% c("during", "after")) %>%
   # take out fish with big biomass
   filter(!(new_group == "fish" & date == "2014-08-15")) %>% 
@@ -620,6 +589,8 @@ delta_fg_df %>%
 
 # 5. delta biomass for focal species
 
+## a. wrangling
+
 ```{r}
 delta_sp_df <- biomass %>% 
   filter(sp_code != "MAPY") %>% 
@@ -633,70 +604,32 @@ delta_sp_df <- biomass %>%
   dplyr::select(-annual) %>% 
   mutate(delta_continual = continual - control) %>% 
   drop_na(delta_continual) %>% 
-  mutate(quarter = case_when(
-    month <= 3 ~ "Q1",
-    month <= 6 ~ "Q2",
-    month <= 9 ~ "Q3",
-    TRUE ~ "Q4"
-  )) %>% 
-  # calculate time since start of experiment
-  mutate(time_yrs = case_when(
-    # AQUE, NAPL, MOHK, CARP: continual started in 2010
-    quarter == "Q1" ~ year + 0.125 - 2010,
-    quarter == "Q2" ~ year + 0.375 - 2010,
-    quarter == "Q3" ~ year + 0.625 - 2010,
-    quarter == "Q4" ~ year + 0.875 - 2010
-  )) %>% 
-  group_by(site) %>% 
-  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
-  ungroup() %>% 
-  # calculate time since end of experiment
-  group_by(site, exp_dates) %>% 
-  mutate(time_since_end = case_when(
-    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
-    exp_dates == "after" ~ time_yrs - min(time_yrs)
-  )) %>% 
-  ungroup() %>% 
-  filter(time_since_end > -8.5) %>% 
+  time_since_columns_continual() %>% 
+  kelp_year_column() %>% 
+  comparison_column_continual() %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename(site_full = value) %>% 
   mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
-  # create a new column for "kelp year"
-  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
-  mutate(kelp_year = case_when(
-    quarter %in% c("Q2", "Q3", "Q4") ~ year,
-    quarter == "Q1" ~ year - 1
-  )) %>% 
-  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
-  # create a column for the points to compare for "2 year interval"
-  mutate(comp_2yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
-  # create a column for the points to compare for "3 year interval"
-  mutate(comp_3yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
   full_join(., site_quality, by = "site")
+```
 
+## b. algae
+
+### during/after
+
+```{r}
+# during and after comparison
 delta_sp_df %>% 
-  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>% 
-  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
-  filter(comp_2yrs %in% c("during", "after")) %>% 
+  filter(sp_code %in% algae_spp) %>% 
+  drop_na(comp_2yrs) %>% 
+  # filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>% 
+  # mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  # filter(comp_2yrs %in% c("during", "after")) %>% 
   ggplot() +
   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-  geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
-  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
-  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
+  # geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
+  stat_summary(aes(x = comp_2yrs, y = delta_continual, col = comp_2yrs), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
+  stat_summary(aes(x = comp_2yrs, y = delta_continual, col = comp_2yrs, shape = exp_dates), fun = mean, geom = "point", size = 4) +
   labs(x = "Species",
        y = "\U0394 biomass (treatment - control)",
        col = "", shape = "") +
@@ -706,28 +639,429 @@ delta_sp_df %>%
         axis.title = element_text(size = 18),
         legend.text = element_text(size = 16),
         legend.position = "none") +
-  facet_wrap(~sp_code, scales = "free", nrow = 2)
+  facet_wrap(~sp_code, scales = "free")
+
+ggsave(here::here("figures", "sda_algae_panel.jpg"), height = 20, width = 20, dpi = 200)
+```
+
+### during/after tile or table
+
+```{r}
+sda_algae_tile <- delta_sp_df %>% 
+  filter(sp_code %in% algae_spp) %>% 
+  drop_na(comp_2yrs) %>% 
+  group_by(sp_code, comp_2yrs) %>% 
+  summarize(mean_deltas = mean(delta_continual)) %>% 
+  ungroup() %>% 
+  mutate(fill = case_when(
+    mean_deltas > 0 ~ "> control",
+    mean_deltas < 0 ~ "< control",
+    mean_deltas == 0 ~ "no difference"
+  )) %>% 
+  # filter(comp_2yrs != "start") %>% 
+  arrange(comp_2yrs, mean_deltas) %>% 
+  mutate(sp_code = fct_inorder(sp_code)) %>% 
+  # mutate(fill = fct_relevel(fill, "increase", "no_change", "decrease")) %>% 
+  ggplot() +
+  geom_tile(aes(x = comp_2yrs, y = sp_code, fill = fill), alpha = 0.8, color = "#FFFFFF", width = 0.9, height = 0.9) +
+  scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+  labs(x = " ",
+       y = " ",
+       fill = " ",
+       title = "Algae") +
+  theme_bw() +
+  theme(legend.position = "none",
+        panel.grid = element_line(color = "white"), 
+        axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 12),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.text = element_text(size = 16)) +
+  coord_fixed()
+
+sda_algae_tile
+```
+
+
+### timeseries of deltas
+
+```{r}
+# timeseries of deltas
+delta_sp_df %>% 
+  # filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>% 
+  # mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  filter(sp_code %in% c("PTCA", "EGME", "CYOS")) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA")) %>% 
+  group_by(sp_code) %>%
+  ungroup() %>% 
+  ggplot(aes(x = time_since_end, y = delta_continual, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 100), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = delta_continual, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = delta_continual, col = sp_code), fun = mean, geom = "point", size = 1) +
+  labs(x = "Time since end of removal",
+       y = "\U0394 biomass (treatment - control)",
+       col = "", shape = "",
+       title = "\U0394 macroalgae") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.1, 0.3))
+```
+
+### timeseries of raw biomass
+
+x: time since end of removal  
+y: raw biomass in continual removal plots  
+
+```{r}
+delta_sp_df %>% 
+  filter(sp_code %in% c("PTCA", "EGME", "CYOS")) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA")) %>% 
+  ggplot(aes(x = time_since_end, y = continual, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 200), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = continual, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = continual, col = sp_code), fun = mean, geom = "point", size = 1) +
+  
+  labs(x = "Time since end of removal",
+       y = "biomass (dry g/m2)",
+       col = "", shape = "",
+       title = "Continual removal plots") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.15, 0.8)) 
+  # facet_wrap(~sp_code, scales = "free", nrow = 2)
+
+delta_sp_df %>% 
+  filter(sp_code %in% c("PTCA", "EGME", "CYOS")) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA")) %>% 
+  # filter(comp_2yrs %in% c("during", "after")) %>% 
+  ggplot(aes(x = time_since_end, y = control, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 70), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = control, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = control, col = sp_code), fun = mean, geom = "point", size = 1) +
+  scale_y_continuous(limits = c(0, 70)) +
+  
+  labs(x = "Time since end of removal",
+       y = "biomass (dry g/m2)",
+       col = "", shape = "",
+       title = "Control plots") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        legend.position = "none") 
+```
+ 
+
+### delta timeseries with annual means
+
+```{r}
+# delta timeseries with annual means
+algae_am <- delta_sp_df %>% 
+  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  group_by(sp_code, kelp_year) %>%
+  summarize(mean_delta = mean(delta_continual, na.rm = TRUE),
+            mean_tse = mean(time_since_end),
+            se_delta = se(delta_continual),
+            mean_continual = mean(continual, na.rm = TRUE),
+            se_continual = se(continual)) %>%
+  ungroup() %>% 
+  # group_by(sp_code) %>% 
+  # mutate(sp_label = case_when(
+  #   mean_tse == min(mean_tse) ~ sp_code,
+  #   FALSE ~ ""
+  # )) %>% 
+  ggplot(aes(x = mean_tse, y = mean_continual, col = sp_code)) +
+  geom_line(size = 1) +
+  geom_errorbar(aes(ymin = mean_continual - se_continual, ymax = mean_continual + se_continual), alpha = 0.4) +
+  labs(x = "Time since end of removal", y = "Mean biomass",
+       caption = "summarized by kelp year across sites",
+       title = "Macroalgae") +
+  scale_x_continuous(limits = c(-7.5, 3)) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16),
+        legend.position = "none") 
+algae_am
+
+algae_am_v2 <- delta_sp_df %>% 
+  filter(sp_code %in% c("PTCA", "EGME", "CYOS")) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA")) %>% 
+  mutate(year_since_end = round(time_since_end)) %>% 
+  group_by(sp_code, year_since_end) %>% 
+  summarize(mean_delta = mean(delta_continual, na.rm = TRUE),
+            mean_tse = mean(time_since_end),
+            se_delta = se(delta_continual),
+            mean_continual = mean(continual, na.rm = TRUE),
+            se_continual = se(continual)) %>%
+  ungroup() %>% 
+  # group_by(sp_code) %>% 
+  # mutate(sp_label = case_when(
+  #   mean_tse == min(mean_tse) ~ sp_code,
+  #   FALSE ~ ""
+  # )) %>% 
+  ggplot(aes(x = year_since_end, y = mean_continual, col = sp_code)) +
+  geom_line(size = 1) +
+  geom_errorbar(aes(ymin = mean_continual - se_continual, ymax = mean_continual + se_continual), alpha = 0.4) +
+  labs(x = "Time since end of removal", y = "Mean biomass (dry g/m2)",
+       caption = "summarized by year since end across sites",
+       title = "Macroalgae") +
+  scale_x_continuous(limits = c(-7.5, 5.5)) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16)) 
+algae_am_v2
+
+algae_am_v3 <- delta_sp_df %>% 
+  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  filter(quarter == "Q3") %>% 
+  # filter out naples extended dates
+  filter(!(site == "napl" & time_since_end == 4)) %>% 
+  # group_by(sp_code) %>% 
+  # summarize(mean_delta = mean(delta_continual, na.rm = TRUE),
+  #           mean_tse = mean(time_since_end),
+  #           se_delta = se(delta_continual),
+  #           mean_continual = mean(continual, na.rm = TRUE),
+  #           se_continual = se(continual)) %>%
+  # ungroup() %>% 
+  ggplot(aes(x = time_since_end, y = continual, col = sp_code)) +
+  stat_summary(fun = "mean", geom = "line") +
+  stat_summary(fun.data = "mean_se", geom = "errorbar") +
+  labs(x = "Time since end of removal", y = "Mean biomass",
+       caption = "annual mean",
+       title = "Macroalgae") +
+  # scale_x_continuous(limits = c(-7.5, 3)) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16)) 
+algae_am_v3
+```
+
+## c. epilithic inverts
+
+### during/after comparison
+```{r}
+# during/after comparison
+delta_sp_df %>% 
+  filter(sp_code %in% invert_spp) %>% 
+  drop_na(comp_2yrs) %>% 
+  # filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
+  # mutate(sp_code = fct_relevel(sp_code, "TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>%
+  # filter(comp_2yrs %in% c("during", "after")) %>% 
+  ggplot() +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  # geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
+  stat_summary(aes(x = comp_2yrs, y = delta_continual, col = comp_2yrs), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
+  stat_summary(aes(x = comp_2yrs, y = delta_continual, col = comp_2yrs, shape = comp_2yrs), fun = mean, geom = "point", size = 4) +
+  labs(x = "Species",
+       y = "\U0394 biomass (treatment - control)",
+       col = "", shape = "") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16),
+        legend.position = "none") +
+  facet_wrap(~sp_code, scales = "free")
+
+ggsave(here::here("figures", "sda_invert_panel.jpg"), height = 30, width = 30, dpi = 200)
+```
+
+### during/after tile 
+
+```{r}
+sda_epi_tile <- delta_sp_df %>% 
+  left_join(., guilds, by = c("sp_code" = "sp.code")) %>% 
+  filter(new_group == "epilithic.sessile.invert") %>% 
+  drop_na(comp_2yrs) %>% 
+  group_by(sp_code, comp_2yrs) %>% 
+  summarize(mean_deltas = mean(delta_continual)) %>% 
+  ungroup() %>% 
+  mutate(fill = case_when(
+    mean_deltas > 0 ~ "> control",
+    mean_deltas < 0 ~ "< control",
+    mean_deltas == 0 ~ "no difference"
+  )) %>% 
+  # filter(comp_2yrs != "start") %>% 
+  arrange(comp_2yrs, mean_deltas) %>% 
+  mutate(sp_code = fct_inorder(sp_code)) %>% 
+  # mutate(fill = fct_relevel(fill, "increase", "no_change", "decrease")) %>% 
+  ggplot() +
+  geom_tile(aes(x = comp_2yrs, y = sp_code, fill = fill), alpha = 0.8, color = "#FFFFFF", width = 0.9, height = 0.9) +
+  scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+  labs(x = " ",
+       y = " ",
+       fill = " ",
+       title = "Epilithic invertebrates") +
+  theme_bw() +
+  theme(legend.position = "right",
+        panel.grid = element_line(color = "white"), 
+        axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 12),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.text = element_text(size = 16)) +
+  coord_fixed()
+
+sda_epi_tile
+
+plots_together_tile <- sda_algae_tile | sda_epi_tile &
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 20))
+plots_together_tile
+
+
+ggsave(here::here("figures", paste("algae_invert_tile-", todays_date, ".jpg", sep = "")), 
+       plot = plots_together_tile, 
+       height = 12, width = 9, dpi = 150)
+```
+
+
+### timeseries of deltas
+
+```{r}
+# timeseries of deltas
+delta_sp_df %>% 
+  filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
+  ggplot(aes(x = time_since_end, y = delta_continual, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = -20, ymax = 20), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = delta_continual, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = delta_continual, col = sp_code), fun = mean, geom = "point", size = 1) +
+  labs(x = "Time since end of removal",
+       y = "\U0394 biomass (treatment - control)",
+       col = "", shape = "",
+       title = "\U0394 epilithic inverts") +
+  theme_bw() +
+  guides(col = guide_legend(nrow = 4)) +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.15, 0.2))
+
+```
+
+### timeseries of raw biomass
+```{r}
+delta_sp_df %>% 
+  filter(sp_code %in% c("TEAU", "URLO", "ANSP")) %>% 
+  ggplot(aes(x = time_since_end, y = continual, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 20), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = continual, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = continual, col = sp_code), fun = mean, geom = "point", size = 1) +
+  labs(x = "Time since end of removal",
+       y = "biomass (dry g/m2)",
+       col = "", shape = "",
+       title = "Continual removal plots") +
+  theme_bw() +
+  guides(col = guide_legend(nrow = 4)) +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.12, 0.8))
 
 delta_sp_df %>% 
   filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
-  mutate(sp_code = fct_relevel(sp_code, "TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>%
-  filter(comp_2yrs %in% c("during", "after")) %>% 
-  ggplot() +
+  ggplot(aes(x = time_since_end, y = control, col = sp_code)) +
   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-  geom_jitter(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), alpha = 0.4) +
-  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates), fun.data = mean_se, geom = "errorbar", size = 1, width = 0.2) +
-  stat_summary(aes(x = exp_dates, y = delta_continual, col = exp_dates, shape = exp_dates), fun = mean, geom = "point", size = 4) +
-  labs(x = "Species",
-       y = "\U0394 biomass (treatment - control)",
-       col = "", shape = "") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 20), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = control, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = control, col = sp_code), fun = mean, geom = "point", size = 1) +
+  labs(x = "Time since end of removal",
+       y = "biomass (dry g/m2)",
+       col = "", shape = "",
+       title = "Control plots") +
+  theme_bw() +
+  guides(col = guide_legend(nrow = 4)) +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.15, 0.85))
+```
+
+
+
+### delta timeseries with annual means
+
+```{r}
+# delta timeseries with annual means
+epi_inverts_am <- delta_sp_df %>% 
+  filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
+  group_by(sp_code, kelp_year) %>% 
+  summarize(mean_delta = mean(delta_continual, na.rm = TRUE), 
+            mean_tse = mean(time_since_end),
+            se_delta = se(delta_continual),
+            mean_continual = mean(continual, na.rm = TRUE),
+            se_continual = se(continual)) %>% 
+  ungroup() %>% 
+  group_by(sp_code) %>% 
+  mutate(sp_label = case_when(
+    mean_tse == min(mean_tse) ~ sp_code,
+    FALSE ~ ""
+  )) %>% 
+  ggplot(aes(x = mean_tse, y = mean_continual, col = sp_code)) +
+  geom_line(size = 1) +
+  geom_errorbar(aes(ymin = mean_continual - se_continual, ymax = mean_continual + se_continual), alpha = 0.4) +
+  labs(x = "Time since end of removal", y = "Mean biomass",
+       caption = "summarized by kelp year across sites",
+       title = "Epilithic invertebrates") +
+  geom_text_repel(aes(x = mean_tse, y = mean_continual, label = sp_label), 
+                  direction = "y", size = 5) +
+  scale_x_continuous(limits = c(-7.5, 3)) +
   theme_bw() +
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 18),
         legend.text = element_text(size = 16),
-        legend.position = "none") +
-  facet_wrap(~sp_code, scales = "free", nrow = 2)
+        legend.position = "none") 
+epi_inverts_am
+```
 
+## d. endolithic invertebrates
+
+### during/after comparison
+
+```{r}
+# during/after comparison
 delta_sp_df %>% 
   filter(sp_code %in% c("CHOV", "PACA")) %>% 
   mutate(sp_code = fct_relevel(sp_code, "CHOV", "PACA")) %>%
@@ -747,17 +1081,152 @@ delta_sp_df %>%
         legend.text = element_text(size = 16),
         legend.position = "none") +
   facet_wrap(~sp_code, nrow = 1, scales = "free")
-
 ```
 
-# 6. proportion biomass
+### timeseries of deltas
+```{r}
+# timeseries of deltas
+delta_sp_df %>% 
+  filter(sp_code %in% c("CHOV", "PACA")) %>% 
+  # filter(site == "carp") %>% 
+  ggplot(aes(x = time_since_end, y = delta_continual, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = -310, ymax = 200, group = site_full), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = delta_continual, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = delta_continual, col = sp_code), fun = mean, geom = "point", size = 1) +
+  labs(x = "Time since end of removal",
+       y = "\U0394 biomass (treatment - control)",
+       col = "", shape = "",
+       title = "\U0394 endolithic inverts") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.35, 0.9)) +
+  facet_wrap(~site_full, scales = "free_y")
+```
+
+### timeseries raw biomass
+```{r}
+delta_sp_df %>% 
+  filter(sp_code %in% c("CHOV", "PACA")) %>% 
+  ggplot(aes(x = time_since_end, y = continual, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 300),
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = continual, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = continual, col = sp_code), fun = mean, geom = "point", size = 1) +
+  labs(x = "Time since end of removal",
+       y = "biomass (dry g/m2)",
+       col = "", shape = "",
+       title = "Continual removal plots") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = "right") +
+  facet_wrap(~site_full, scales = "free_y")
+
+delta_sp_df %>% 
+  filter(sp_code %in% c("CHOV", "PACA")) %>% 
+  ggplot(aes(x = time_since_end, y = control, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 200),
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(x = time_since_end, y = control, col = sp_code), fun = mean, geom = "line", size = 1) +
+  stat_summary(aes(x = time_since_end, y = control, col = sp_code), fun = mean, geom = "point", size = 1) +
+  labs(x = "Time since end of removal",
+       y = "biomass (dry g/m2)",
+       col = "", shape = "",
+       title = "Control plots") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = "right") +
+  facet_wrap(~site_full, scales = "free_y")
+```
+
+
+### delta timeseries with annual means
+
+```{r}
+# delta timeseries with annual means
+endo_inverts_am <- delta_sp_df %>% 
+  filter(sp_code %in% c("CHOV", "PACA")) %>% 
+  group_by(sp_code, kelp_year) %>% 
+  summarize(mean_delta = mean(delta_continual, na.rm = TRUE), 
+            mean_tse = mean(time_since_end),
+            se_delta = se(delta_continual),
+            mean_continual = mean(continual, na.rm = TRUE),
+            se_continual = se(continual)) %>% 
+  ungroup() %>% 
+  group_by(sp_code) %>% 
+  mutate(sp_label = case_when(
+    mean_tse == min(mean_tse) ~ sp_code,
+    FALSE ~ ""
+  )) %>% 
+  ggplot(aes(x = mean_tse, y = mean_continual, col = sp_code)) +
+  geom_line(size = 1) +
+  geom_errorbar(aes(ymin = mean_continual - se_continual, ymax = mean_continual + se_continual), alpha = 0.4) +
+  labs(x = "Time since end of removal", y = "Mean biomass",
+       caption = "summarized by kelp year across sites", 
+       title = "Endolithic invertebrates") +
+  geom_text_repel(aes(x = mean_tse, y = mean_continual, label = sp_label), 
+                  direction = "y", size = 5) +
+  scale_x_continuous(limits = c(-7.5, 3)) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 16),
+        legend.position = "none") 
+endo_inverts_am
+```
+
+### plots together
+
+```{r}
+plots_together_am <- algae_am / epi_inverts_am / endo_inverts_am &
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 20))
+plots_together_am
+
+ggsave(here::here("figures", paste("algae_invert_annual_means-", todays_date, ".jpg", sep = "")), 
+       plot = plots_together_am, 
+       height = 14, width = 16, dpi = 150)
+
+# biomass %>% 
+#   select(sp_code, scientific_name, common_name, new_group) %>% 
+#   filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R", "TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO", "CHOV", "PACA")) %>% 
+#   unique() %>% 
+#   mutate(sp_code = fct_relevel(sp_code, "PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R", "TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO", "CHOV", "PACA")) %>% 
+#   gt(
+#     groupname_col = "new_group"
+#   ) 
+```
+
+
+# 6. proportion algae
+
+## a. continual only
 
 ```{r}
 prop_algae_biomass <- comm_df %>% 
   filter(new_group == "algae") %>% 
   # filter(sample_ID == "CARP_2000-09-08") %>% 
   filter(sp_code != "MAPY") %>% 
-  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
+  select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
   filter(dry_gm2 > 0) %>% 
   # create a new column where total biomass for the species for the whole site is calculated
   group_by(site, treatment, date) %>%
@@ -771,45 +1240,316 @@ prop_algae_biomass <- comm_df %>%
   select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
   unique() %>% 
   group_by(sample_ID) %>% 
-  mutate(total_percent_dry = sum(percent_sp_dry))
+  mutate(total_percent_dry = sum(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  group_by(sp_code) %>% 
+  mutate(label = case_when(
+    date == min(date) ~ sp_code,
+    FALSE ~ ""
+  ))
 
-test <- prop_algae_biomass %>% 
-              filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R") &
-                       comp_2yrs == "start" &
-                       treatment == "continual") %>% 
-              group_by(sp_code) %>% 
-  summarize(mean = mean(percent_sp_dry))
+prop_algae_ts <- prop_algae_biomass %>% 
+  # drop_na(comp_2yrs) %>% 
+  # filter(sp_code == "PTCA") %>% 
+  filter(sp_code %in% c("CYOS", "EGME", "PTCA")) %>% 
+  # filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>%
+  ungroup() %>% 
+  # mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  filter(treatment == "continual") %>% 
+  ggplot(aes(x = time_since_end, y = percent_sp_dry, col = sp_code)) +
+  # stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 2) +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 1), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 2.5, alpha = 0.8) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "point", col = "white") +
+  annotate("text", x = -8.2, y = 0.12, color = "#E69512", label = "CYOS", size = 6) +
+  annotate("text", x = -8.2, y = 0.45, color = "#4C4976", label = "PTCA", size = 6) +
+  annotate("text", x = -8.2, y = 0.03, color = "#D3105C", label = "EGME", size = 6) +
+  scale_x_continuous(limits = c(-8.3, 4.8)) +
+  scale_color_manual(values = c("#E69512", "#D3105C","#4C4976")) +
+  # stat_summary(aes(group = sp_code), fun.data = "mean_se", geom = "errorbar", alpha = 0.4) +
+  labs(x = "Time since end of removal",
+       y = "Percent biomass",
+       title = "Algae",
+       col = "") +
+  # guides(col = guide_legend(ncol = 2)) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = "none") 
+prop_algae_ts
 
 prop_algae_biomass %>% 
-  drop_na(comp_2yrs) %>% 
-  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>% 
-  filter(treatment == "continual") %>% 
-  ggplot(aes(x = comp_2yrs, y = percent_sp_dry, col = sp_code)) +
-  # geom_jitter(alpha = 0.4) +
-  stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 3) +
+  # drop_na(comp_2yrs) %>% 
+  # filter(sp_code == "PTCA") %>% 
+  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>%
+  ungroup() %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  filter(treatment == "control") %>% 
+  ggplot(aes(x = time_since_end, y = percent_sp_dry, col = sp_code)) +
+  # stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 2) +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 1), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
   stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 1) +
-  geom_text_repel(data = test, 
-            aes(group = sp_code, x = 0.8, y = mean, label = sp_code),
-            size = 6) +
-  labs(x = "",
+  # stat_summary(aes(group = sp_code), fun.data = "mean_se", geom = "errorbar", alpha = 0.4) +
+  labs(x = "Time since end of removal",
+       y = "Percent biomass",
+       title = "Control plots",
+       col = "") +
+  guides(col = guide_legend(ncol = 2)) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.12, 0.85))
+
+prop_algae_biomass %>% 
+  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>%
+  # mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  filter(treatment == "continual") %>% 
+  filter(site_full == "Mohawk (MOHK)") %>% 
+  # calculate mean percent biomass across species per
+  group_by(year, sp_code) %>% 
+  mutate(mean_prop = mean(percent_sp_dry, na.rm = TRUE),
+         se_prop = se(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  select(year, sp_code, mean_prop) %>% 
+  unique() %>% 
+  mutate(label = case_when(
+    year == min(year) ~ sp_code,
+    FALSE ~ ""
+  )) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>%   
+  ggplot(aes(x = year, y = mean_prop, col = sp_code)) +
+  geom_rect(aes(xmin = 2013, xmax = 2015, ymin = 0, ymax = 0.6), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  geom_rect(aes(xmin = 2016, xmax = 2017, ymin = 0, ymax = 0.6), 
+            alpha = 0.1, fill = "lightblue", inherit.aes = FALSE) +
+  geom_point() +
+  geom_line() +
+  expand_limits(x = c(2009.3, 2022)) +
+  scale_x_continuous(n.breaks = 12, labels = c("", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022")) +
+  labs(x = "Year",
        y = "Percent biomass",
        title = "Macroalgae") +
+  geom_text_repel(aes(x = 2009.4, label = label), direction = "y") +
   theme_bw() +
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 18),
         legend.position = "none",
-        plot.title = element_text(size = 20))
+        plot.title = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+prop_algae_biomass %>% 
+  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>%
+  # mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  filter(treatment == "continual") %>% 
+  # filter(site_full == "Mohawk (MOHK)") %>% 
+  # calculate mean percent biomass across species per
+  group_by(year, sp_code) %>% 
+  mutate(mean_prop = mean(percent_sp_dry, na.rm = TRUE),
+         se_prop = se(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  select(year, sp_code, mean_prop) %>% 
+  unique() %>% 
+  mutate(label = case_when(
+    year == min(year) ~ sp_code,
+    FALSE ~ ""
+  )) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>%   
+  ggplot(aes(x = year, y = mean_prop, col = sp_code)) +
+  geom_rect(aes(xmin = 2013, xmax = 2015, ymin = 0, ymax = 0.6), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  geom_rect(aes(xmin = 2016, xmax = 2017, ymin = 0, ymax = 0.6), 
+            alpha = 0.1, fill = "lightblue", inherit.aes = FALSE) +
+  geom_point() +
+  geom_line() +
+  expand_limits(x = c(2009.3, 2022)) +
+  scale_x_continuous(n.breaks = 12, labels = c("", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022")) +
+  labs(x = "Year",
+       y = "Percent biomass",
+       title = "Continual removal plots") +
+  geom_text_repel(aes(x = 2009.4, label = label), direction = "y") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.position = "none",
+        plot.title = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## b. delta continual algae biomass
+
+```{r}
+delta_prop_algae_biomass <- comm_df %>% 
+  filter(new_group == "algae") %>% 
+  # filter(sample_ID == "CARP_2000-09-08") %>% 
+  filter(sp_code != "MAPY") %>% 
+  select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
+  filter(dry_gm2 > 0) %>% 
+  # create a new column where total biomass for the species for the whole site is calculated
+  group_by(site, treatment, date) %>%
+  mutate(total_dry = sum(dry_gm2)) %>%
+  ungroup() %>%
+  # create a new column where percent of total biomass per survey for each species is calculated
+  mutate(percent_sp_dry = dry_gm2/total_dry) %>% 
+  # replace NaNs with 0 (which happens when there's nothing in the survey)
+  # mutate_at(vars("percent_sp_dry", "percent_sp_wet"), list(~ ifelse(. = NaN, 0, .))) %>%
+  # double check to make sure the percents worked out...
+  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
+  unique() %>% 
+  group_by(sample_ID) %>% 
+  mutate(total_percent_dry = sum(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  select(-sample_ID, -total_percent_dry, -total_dry, -dry_gm2) %>% 
+  pivot_wider(names_from = treatment, values_from = percent_sp_dry) %>% 
+  mutate(control = replace_na(control, 0),
+         continual = replace_na(continual, 0)) %>% 
+  mutate(delta_prop = continual - control)
+
+delta_prop_algae_biomass %>% 
+  # drop_na(comp_2yrs) %>% 
+  # filter(sp_code == "PTCA") %>% 
+  filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>%
+  mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  # filter(treatment == "continual") %>% 
+  ggplot(aes(x = time_since_end, y = delta_prop, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = -0.6, ymax = 0.6), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  # geom_jitter(alpha = 0.4) +
+  # stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 2, alpha = 0.8) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 1) +
+  # stat_summary(aes(group = sp_code), fun.data = "mean_se", geom = "errorbar", alpha = 0.4) +
+  # geom_text_repel(data = test, 
+  #           aes(group = sp_code, x = -8, y = mean, label = sp_code),
+  #           size = 6) +
+  labs(x = "Time since end of removal",
+       y = "\U0394 percent biomass (treatment - control)",
+       title = "Macroalgae", col = "") +
+  theme_bw() +
+  guides(col = guide_legend(ncol = 2)) +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.8, 0.85))
+
 
 ```
 
+## c. basic line plot
+
+```{r}
+prop_algae_biomass_sda <- comm_df %>% 
+  filter(new_group == "algae") %>% 
+  # filter(sample_ID == "CARP_2000-09-08") %>% 
+  filter(sp_code != "MAPY") %>% 
+  select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
+  filter(dry_gm2 > 0) %>% 
+  # create a new column where total biomass for the species for the whole site is calculated
+  group_by(site, treatment, date) %>%
+  mutate(total_dry = sum(dry_gm2)) %>%
+  ungroup() %>%
+  # create a new column where percent of total biomass per survey for each species is calculated
+  mutate(percent_sp_dry = dry_gm2/total_dry) %>% 
+  # replace NaNs with 0 (which happens when there's nothing in the survey)
+  # mutate_at(vars("percent_sp_dry", "percent_sp_wet"), list(~ ifelse(. = NaN, 0, .))) %>%
+  # double check to make sure the percents worked out...
+  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
+  unique() %>% 
+  group_by(sample_ID) %>% 
+  mutate(total_percent_dry = sum(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  drop_na(comp_2yrs) %>% 
+  group_by(sp_code, comp_2yrs) %>% 
+  summarize(mean_prop = mean(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  group_by(sp_code, comp_2yrs) %>% 
+  mutate(color = case_when(
+    mean_prop > 0.05 ~ sp_code
+  ))
+  # pivot_wider(names_from = comp_2yrs, values_from = mean_prop) %>% 
+  # select(sp_code, start, during, after) %>% 
+  # replace_na(list(start = 0, during = 0, after = 0)) %>% 
+  # # column_to_rownames("sp_code") %>% 
+  # make_long(sp_code, start, during, after)
+
+ggplot(prop_algae_biomass_sda, aes(x = comp_2yrs, y = mean_prop)) +
+  # geom_point(aes(col = sp_code)) +
+  geom_line(aes(group = sp_code, col = color)) +
+  geom_text_repel(aes(x = comp_2yrs, y = mean_prop, label = color, color = color))
+```
+
+## d. sankey plot
+
+```{r}
+prop_algae_biomass_sda_sankey <- delta_sp_df %>% 
+  filter(sp_code %in% algae_spp) %>% 
+  drop_na(comp_2yrs) %>% 
+  group_by(sp_code, comp_2yrs) %>% 
+  summarize(mean_deltas = mean(delta_continual)) %>% 
+  ungroup() %>% 
+  mutate(diff = case_when(
+    mean_deltas > 0 ~ "> control",
+    mean_deltas < 0 ~ "< control",
+    mean_deltas == 0 ~ "no difference"
+  )) %>% 
+  mutate(diff = fct_relevel(diff, "> control", "no difference", "< control")) %>% 
+  select(-mean_deltas) %>% 
+  pivot_wider(names_from = comp_2yrs, values_from = diff) %>%
+  select(sp_code, start, during, after) %>% 
+  mutate(color = case_when(
+    sp_code %in% c("PTCA", "CYOS", "CC", "R", "EGME", "DL") ~ sp_code,
+    TRUE ~ " "
+  )) %>% 
+  mutate(color = fct_relevel(color," ", "PTCA", "CYOS", "CC", "R", "EGME", "DL"))
+
+algae_sankey <- ggplot(prop_algae_biomass_sda_sankey, 
+       aes(axis1 = start, axis2 = during, axis3 = after)) +
+  scale_x_discrete(limits = c("start", "during", "after"), expand = c(.05, .05)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  geom_alluvium(aes(fill = color), alpha = 0.8) +
+  scale_fill_manual(values = c("#F0F0F0", "#E69512", "#D3105C", "#3B4F8E", 
+                               "#3A5D3D", "#4C4976", "#6C91BD")) +
+  # scale_fill_viridis(option = "viridis", discrete = TRUE) +
+  geom_stratum(color = "grey") +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 4) +
+  labs(fill = "Species code",
+       title = "Algae") +
+  theme_bw() +
+  theme(legend.position = "right",
+        panel.grid = element_line(color = "white"), 
+        axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16))
+algae_sankey
+```
+
+
 # 7. proportion epilithic invert biomass
+
+## a. continual only
 
 ```{r}
 prop_epi_inverts_biomass <- comm_df %>% 
   filter(new_group == "epi_inverts") %>% 
   # filter(sample_ID == "CARP_2000-09-08") %>% 
-  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
+  select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
   filter(dry_gm2 > 0) %>% 
   # create a new column where total biomass for the species for the whole site is calculated
   group_by(site, treatment, date) %>%
@@ -831,29 +1571,263 @@ test <- prop_epi_inverts_biomass %>%
   group_by(sp_code) %>% 
   summarize(mean = mean(percent_sp_dry))
 
-prop_epi_inverts_biomass %>% 
-  drop_na(comp_2yrs) %>% 
-  filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
+prop_epi_inverts_ts <- prop_epi_inverts_biomass %>% 
+  # drop_na(comp_2yrs) %>% 
+  filter(sp_code %in% c("ANSP", "TEAU", "URLO")) %>% 
+  # filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
   filter(treatment == "continual") %>% 
-  ggplot(aes(x = comp_2yrs, y = percent_sp_dry, col = sp_code)) +
+  ggplot(aes(x = time_since_end, y = percent_sp_dry, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 1), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
   # geom_jitter(alpha = 0.4) +
-  stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 3) +
-  stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 1) +
-  geom_text_repel(data = test, 
-            aes(group = sp_code, x = 0.8, y = mean, label = sp_code),
-            size = 6) +
-  labs(x = "",
+  stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 2.5) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "point", col = "white") +
+  annotate("text", x = -8.2, y = 0.4, color = "#84A6A2", label = "ANSP", size = 6) +
+  annotate("text", x = -8.2, y = 0.2, color = "#BE5A47", label = "TEAU", size = 6) +
+  annotate("text", x = -8.2, y = 0.12, color = "#604A76", label = "URLO", size = 6) +
+  scale_x_continuous(limits = c(-8.3, 4.8)) +
+  scale_color_manual(values = c("#84A6A2", "#BE5A47", "#604A76")) +
+  # geom_text_repel(data = test, 
+  #           aes(group = sp_code, x = -8, y = mean, label = sp_code),
+  #           size = 6) +
+  labs(x = "Time since end of removal",
        y = "Percent biomass",
-       title = "Sessile epilithic inverts") +
+       title = "Epilithic inverts",
+       col = "") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = "none")
+prop_epi_inverts_ts
+
+prop_epi_inverts_biomass %>% 
+  filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
+  filter(treatment == "control") %>% 
+  # calculate mean percent biomass across species per
+  group_by(year, sp_code) %>% 
+  mutate(mean_prop = mean(percent_sp_dry, na.rm = TRUE),
+         se_prop = se(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  select(year, sp_code, mean_prop) %>% 
+  unique() %>% 
+  mutate(label = case_when(
+    year == min(year) ~ sp_code,
+    FALSE ~ ""
+  )) %>% 
+  ggplot(aes(x = year, y = mean_prop, col = sp_code)) +
+  geom_rect(aes(xmin = 2013, xmax = 2015, ymin = 0, ymax = 0.8), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  geom_rect(aes(xmin = 2016, xmax = 2017, ymin = 0, ymax = 0.8), 
+            alpha = 0.1, fill = "lightblue", inherit.aes = FALSE) +
+  geom_point() +
+  geom_line() +
+  expand_limits(x = c(2009.3, 2022)) +
+  scale_x_continuous(n.breaks = 12, labels = c("", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022")) +
+  labs(x = "Year",
+       y = "Percent biomass",
+       title = "Control plots") +
+  geom_text_repel(aes(x = 2009.4, label = label), direction = "y") +
   theme_bw() +
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 18),
         legend.position = "none",
+        plot.title = element_text(size = 20),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+## b. delta continual 
+
+```{r}
+delta_prop_epi_inverts_biomass <- comm_df %>% 
+  filter(new_group == "epi_inverts") %>% 
+  # filter(sample_ID == "CARP_2000-09-08") %>% 
+  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
+  filter(dry_gm2 > 0) %>% 
+  # create a new column where total biomass for the species for the whole site is calculated
+  group_by(site, treatment, date) %>%
+  mutate(total_dry = sum(dry_gm2)) %>%
+  ungroup() %>%
+  # create a new column where percent of total biomass per survey for each species is calculated
+  mutate(percent_sp_dry = dry_gm2/total_dry) %>% 
+  # replace NaNs with 0 (which happens when there's nothing in the survey)
+  # mutate_at(vars("percent_sp_dry", "percent_sp_wet"), list(~ ifelse(. = NaN, 0, .))) %>%
+  # double check to make sure the percents worked out...
+  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
+  unique() %>% 
+  group_by(sample_ID) %>% 
+  mutate(total_percent_dry = sum(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  select(-sample_ID, -total_percent_dry, -total_dry, -dry_gm2) %>% 
+  pivot_wider(names_from = treatment, values_from = percent_sp_dry) %>% 
+  mutate(control = replace_na(control, 0),
+         continual = replace_na(continual, 0)) %>% 
+  mutate(delta_prop = continual - control)
+
+delta_prop_epi_inverts_biomass %>% 
+  # drop_na(comp_2yrs) %>% 
+  # filter(sp_code == "PTCA") %>% 
+  filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>%
+  # filter(treatment == "continual") %>% 
+  ggplot(aes(x = time_since_end, y = delta_prop, col = sp_code)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_vline(aes(xintercept = 0)) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = -0.4, ymax = 0.6), alpha = 0.3, fill = "lightgrey") +
+  # geom_jitter(alpha = 0.4) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 3, alpha = 0.8) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "line") +
+  # geom_text_repel(data = test, 
+  #           aes(group = sp_code, x = -8, y = mean, label = sp_code),
+  #           size = 6) +
+  labs(x = "Time since end of removal",
+       y = "delta percent biomass",
+       title = "Eplithic invertebrates") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.position = "bottom",
         plot.title = element_text(size = 20))
 ```
 
-# 8. delta biomass for fg groups
+## c. sankey plot
+
+```{r}
+prop_epi_biomass_sda_sankey <- delta_sp_df %>% 
+  left_join(., guilds, by = c("sp_code" = "sp.code")) %>% 
+  filter(new_group == "epilithic.sessile.invert") %>% 
+  drop_na(comp_2yrs) %>% 
+  group_by(sp_code, comp_2yrs) %>% 
+  summarize(mean_deltas = mean(delta_continual)) %>% 
+  ungroup() %>% 
+  mutate(diff = case_when(
+    mean_deltas > 0 ~ "> control",
+    mean_deltas < 0 ~ "< control",
+    mean_deltas == 0 ~ "no difference"
+  )) %>% 
+  mutate(diff = fct_relevel(diff, "> control", "no difference", "< control")) %>% 
+  select(-mean_deltas) %>% 
+  pivot_wider(names_from = comp_2yrs, values_from = diff) %>%
+  select(sp_code, start, during, after) %>% 
+  mutate(color = case_when(
+    sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO") ~ sp_code,
+    TRUE ~ " "
+  )) %>% 
+  mutate(color = fct_relevel(color, " ", "TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO"))
+
+epi_sankey <- ggplot(prop_epi_biomass_sda_sankey, 
+       aes(axis1 = start, axis2 = during, axis3 = after)) +
+  scale_x_discrete(limits = c("start", "during", "after"), expand = c(.05, .05)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  geom_alluvium(aes(fill = color), alpha = 0.8) +
+  scale_fill_manual(values = c("#F0F0F0",
+                               "#84A6A2", "#4A5352", "#151E2F",
+                               "#D7C8C6", "#BE5A47", "#604A76", "#575b78", "#307e8a")) +
+  # scale_fill_viridis(option = "viridis", discrete = TRUE) +
+  geom_stratum(color = "grey") +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 4) +
+  labs(fill = "Species code",
+       title = "Epilithic invertebrates") +
+  theme_bw() +
+  theme(legend.position = "right",
+        panel.grid = element_line(color = "white"), 
+        axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16))
+epi_sankey
+```
+
+## prop plots together
+
+```{r}
+plots_together_prop <- prop_algae_ts / prop_epi_inverts_ts &
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 20))
+plots_together_prop
+
+
+ggsave(here::here("figures", paste("algae_invert_proportion-", todays_date, ".jpg", sep = "")), 
+       plot = plots_together_prop, 
+       height = 8, width = 9, dpi = 150)
+```
+
+## sankey plots together
+
+```{r}
+plots_together_sankey <- algae_sankey / epi_sankey &
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 20))
+plots_together_sankey
+
+ggsave(here::here("figures", paste("algae_invert_sankey-", todays_date, ".jpg", sep = "")), 
+       plot = plots_together_sankey, 
+       height = 9, width = 9, dpi = 150)
+```
+
+
+
+# 8. proportion endolithic inverts
+
+## a. continual only
+
+```{r}
+prop_endo_inverts_biomass <- comm_df %>% 
+  filter(new_group == "endo_inverts") %>% 
+  # filter(sample_ID == "CARP_2000-09-08") %>% 
+  select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
+  filter(dry_gm2 > 0) %>% 
+  # create a new column where total biomass for the species for the whole site is calculated
+  group_by(site, treatment, date) %>%
+  mutate(total_dry = sum(dry_gm2)) %>%
+  ungroup() %>%
+  # create a new column where percent of total biomass per survey for each species is calculated
+  mutate(percent_sp_dry = dry_gm2/total_dry) %>% 
+  # replace NaNs with 0 (which happens when there's nothing in the survey)
+  # mutate_at(vars("percent_sp_dry", "percent_sp_wet"), list(~ ifelse(. = NaN, 0, .))) %>%
+  # double check to make sure the percents worked out...
+  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
+  unique() %>% 
+  group_by(sample_ID) %>% 
+  mutate(total_percent_dry = sum(percent_sp_dry)) %>% 
+  ungroup() %>% 
+  complete(site_full, treatment, sp_code,  time_since_end, fill = list(percent_sp_dry = 0))
+
+prop_endo_inverts_ts <- prop_endo_inverts_biomass %>% 
+  filter(treatment == "continual") %>% 
+  ggplot(aes(x = time_since_end, y = percent_sp_dry, col = sp_code)) +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 1), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  # geom_jitter(alpha = 0.4) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 2.5) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "point", col = "white") +
+  # geom_text_repel(data = test, 
+  #           aes(group = sp_code, x = -8, y = mean, label = sp_code),
+  #           size = 6) +
+  labs(x = "Time since end of removal",
+       y = "Percent biomass",
+       title = "Endolithic inverts",
+       col = "") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18),
+        legend.position = c(0.12, 0.85)) +
+  facet_wrap(~site_full)
+prop_endo_inverts_ts
+```
+
+# 9. delta biomass for fg groups
 
 ```{r}
 fg_deltas <- delta_fg_df %>% 
@@ -876,4 +1850,394 @@ fg_deltas <- delta_fg_df %>%
        y = "Raw biomass")
 fg_deltas
 ```
+
+# 10. log response ratio
+new 2022-05-19
+
+## a. data frames
+```{r}
+# annual
+lrr_df_annual <- biomass %>% 
+  filter(sp_code != "MAPY") %>% 
+  # dplyr::select(-sp_code) %>% 
+  # # make a new column for after dates
+  after_dates_column() %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column() %>% 
+  dplyr::select(site, year, month, treatment, date, exp_dates, sp_code, dry_gm2) %>% 
+  pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
+  dplyr::select(-continual) %>% 
+  mutate(delta_annual = annual - control) %>% 
+  drop_na(delta_annual) %>% 
+  mutate(exp_dates = case_when(
+    # after for annual removal:
+    site == "aque" & date >= aque_after_date_annual ~ "after",
+    site == "napl" & date >= napl_after_date_annual ~ "after",
+    site == "ivee" & date >= ivee_after_date_annual ~ "after",
+    site == "mohk" & date >= mohk_after_date_annual ~ "after",
+    site == "carp" & date >= carp_after_date_annual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  # create a column for quarter
+  mutate(quarter = case_when(
+    month <= 3 ~ "Q1",
+    month <= 6 ~ "Q2",
+    month <= 9 ~ "Q3",
+    TRUE ~ "Q4"
+  )) %>% 
+  # calculate time since start of experiment
+  mutate(time_yrs = case_when(
+    # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
+    site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
+    # IVEE control and annual started in 2011
+    site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
+    site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
+    site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
+    site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
+  )) %>% 
+  group_by(site) %>% 
+  mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+  ungroup() %>% 
+  # calculate time since end of experiment
+  group_by(site, exp_dates) %>% 
+  # if "after", then simple: the time in years - the minimum time in years
+  # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
+  mutate(time_since_end = case_when(
+    exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+    exp_dates == "after" ~ time_yrs - min(time_yrs)
+  )) %>% 
+  ungroup() %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename(site_full = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  # create a new column for "kelp year"
+  mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
+  mutate(kelp_year = case_when(
+    quarter %in% c("Q2", "Q3", "Q4") ~ year,
+    quarter == "Q1" ~ year - 1
+  )) %>% 
+  mutate(kelp_year = paste("kelp_", kelp_year, "-", kelp_year + 1, sep = "")) %>% 
+  # create a column for the points to compare for "2 year interval"
+  mutate(comp_2yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+  # create a column for the points to compare for "3 year interval"
+  mutate(comp_3yrs = case_when(
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
+    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+    site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+    kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+  )) %>% 
+  mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+  dplyr::select(-delta_annual) %>% 
+  filter(year < 2017) %>% 
+  pivot_longer(cols = control:annual, names_to = "treatment", values_to = "dry_gm2") %>% 
+  group_by(treatment, exp_dates, sp_code) %>% 
+  summarize(mean_biomass = mean(dry_gm2, na.rm = TRUE),
+            sample_n = length(dry_gm2),
+            se_biomass = sd(dry_gm2, na.rm = TRUE)/sqrt(sample_n)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = c(mean_biomass, se_biomass, sample_n)) %>%
+  drop_na(sp_code) %>% 
+  group_by(exp_dates, sp_code) %>% 
+  # log response ratio, degrees of freedom, tscore, margin error with 95% confidence interval
+  mutate(# log response ratio
+    lrr_annual = log2(mean_biomass_annual/mean_biomass_control),
+    # degrees of freedom
+    df_annual = sample_n_annual - 1,
+    # tscore
+    tscore_annual = qt(p = 0.5/2, df = df_annual, lower.tail = FALSE),
+    # margin error
+    me_annual = tscore_annual*se_biomass_annual
+  ) %>% 
+  ungroup() %>% 
+  # attach the spp_names df to get scientific name, taxon info, etc.
+  left_join(., spp_names, by = "sp_code")
+
+delta_sp_df %>% 
+  filter(sp_code == "UV") %>% 
+dplyr::select(-delta_continual) %>% 
+  pivot_longer(cols = control:continual, names_to = "treatment", values_to = "dry_gm2") %>% 
+  group_by(treatment, exp_dates, sp_code) %>% 
+  summarize(mean_biomass = mean(dry_gm2, na.rm = TRUE),
+            sample_n = length(dry_gm2),
+            se_biomass = sd(dry_gm2, na.rm = TRUE)/sqrt(sample_n)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = c(mean_biomass, se_biomass, sample_n)) %>%
+  drop_na(sp_code) %>% 
+  group_by(exp_dates, sp_code) %>% 
+  # log response ratio, degrees of freedom, tscore, margin error with 95% confidence interval
+  mutate(# log response ratio
+    lrr_continual = log2(mean_biomass_continual/mean_biomass_control),
+    # degrees of freedom
+    df_continual = sample_n_continual - 1,
+    # tscore
+    tscore_continual = qt(p = 0.5/2, df = df_continual, lower.tail = FALSE),
+    # margin error
+    me_continual = tscore_continual*se_biomass_continual
+  ) %>% 
+  ungroup() %>% 
+  View()
+
+# continual
+lrr_df_continual <- delta_sp_df %>% 
+  # dplyr::select(site, exp_dates, sp_code, dry_gm2) %>%
+  dplyr::select(-delta_continual) %>% 
+  pivot_longer(cols = control:continual, names_to = "treatment", values_to = "dry_gm2") %>% 
+  group_by(treatment, exp_dates, sp_code) %>% 
+  summarize(mean_biomass = mean(dry_gm2, na.rm = TRUE),
+            sample_n = length(dry_gm2),
+            se_biomass = sd(dry_gm2, na.rm = TRUE)/sqrt(sample_n)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = c(mean_biomass, se_biomass, sample_n)) %>%
+  drop_na(sp_code) %>% 
+  group_by(exp_dates, sp_code) %>% 
+  # log response ratio, degrees of freedom, tscore, margin error with 95% confidence interval
+  mutate(# log response ratio
+    lrr_continual = log2(mean_biomass_continual/mean_biomass_control),
+    # degrees of freedom
+    df_continual = sample_n_continual - 1,
+    # tscore
+    tscore_continual = qt(p = 0.5/2, df = df_continual, lower.tail = FALSE),
+    # margin error
+    me_continual = tscore_continual*se_biomass_continual
+  ) %>% 
+  ungroup() %>% 
+  # attach the spp_names df to get scientific name, taxon info, etc.
+  left_join(., spp_names, by = "sp_code") %>% 
+  mutate(across(where(is.numeric), ~na_if(., Inf)), 
+    across(where(is.numeric), ~na_if(., -Inf)),
+    across(where(is.numeric), ~na_if(., NaN)))
+
+lrr_df_continual_comp2yrs <- delta_sp_df %>% 
+  # dplyr::select(site, exp_dates, sp_code, dry_gm2) %>%
+  dplyr::select(-delta_continual) %>% 
+  pivot_longer(cols = control:continual, names_to = "treatment", values_to = "dry_gm2") %>% 
+  drop_na(comp_2yrs) %>% 
+  group_by(treatment, comp_2yrs, sp_code) %>% 
+  summarize(mean_biomass = mean(dry_gm2, na.rm = TRUE),
+            sample_n = length(dry_gm2),
+            se_biomass = sd(dry_gm2, na.rm = TRUE)/sqrt(sample_n)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = c(mean_biomass, se_biomass, sample_n)) %>%
+  drop_na(sp_code) %>% 
+  group_by(comp_2yrs, sp_code) %>% 
+  # log response ratio, degrees of freedom, tscore, margin error with 95% confidence interval
+  mutate(# log response ratio
+    lrr_continual = log2(mean_biomass_continual/mean_biomass_control),
+    # degrees of freedom
+    df_continual = sample_n_continual - 1,
+    # tscore
+    tscore_continual = qt(p = 0.5/2, df = df_continual, lower.tail = FALSE),
+    # margin error
+    me_continual = tscore_continual*se_biomass_continual
+  ) %>% 
+  ungroup() %>% 
+  # attach the spp_names df to get scientific name, taxon info, etc.
+  left_join(., spp_names, by = "sp_code") %>% 
+  mutate(across(where(is.numeric), ~na_if(., Inf)), 
+    across(where(is.numeric), ~na_if(., -Inf)),
+    across(where(is.numeric), ~na_if(., NaN)))
+```
+
+## b. plots
+
+### i. algae
+
+```{r}
+algae_2018 <- c("EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")
+
+lrr_understory_annual <- lrr_df_annual %>% 
+  filter(sp_code %in% algae_2018) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")) %>%
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2, color = "grey") +
+  geom_point(aes(x = sp_code, y = lrr_annual), size = 5) +
+  geom_linerange(aes(x = sp_code, y = lrr_annual, ymin = lrr_annual - me_annual, ymax = lrr_annual + me_annual), size = 1) +
+  labs(x = "Species", y = "Log response ratio",
+       title = "Understory algae: annual") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size = 16),
+        plot.title = element_text(size = 20), 
+        panel.grid = element_blank()) +
+  facet_wrap(~exp_dates) 
+lrr_understory_annual
+# ggsave(here::here("figures/fg-recovery", paste("lrr_understory_annual_", todays_date, ".jpg", sep = "")), lrr_understory_annual, width = 8, height = 6)
+
+lrr_understory_continual <- lrr_df_continual %>% 
+  # filter(sp_code %in% algae_2018) %>% 
+  # mutate(sp_code = fct_relevel(sp_code, "EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")) %>%
+  filter(exp_dates == "during" & group == "algae") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2, color = "grey") +
+  geom_point(aes(x = reorder(sp_code, -lrr_continual), y = lrr_continual), size = 5) +
+  geom_linerange(aes(x = sp_code, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
+  labs(x = "Species", y = "Log response ratio",
+       title = "Understory algae: continual") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size = 16),
+        plot.title = element_text(size = 20), 
+        panel.grid = element_blank()) +
+  facet_wrap(~exp_dates) 
+lrr_understory_continual
+# ggsave(here::here("figures/fg-recovery", paste("lrr_understory_continual_", todays_date, ".jpg", sep = "")), lrr_understory_continual, width = 12, height = 6)
+
+lrr_df_continual_comp2yrs %>% 
+  # filter(sp_code == "EGME") %>% 
+  filter(group == "algae") %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2, color = "grey") +
+  geom_point(aes(x = comp_2yrs, y = lrr_continual), size = 5) +
+  geom_linerange(aes(x = comp_2yrs, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
+  labs(x = "period", y = "Log response ratio",
+       title = "Understory algae: continual") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size = 16),
+        plot.title = element_text(size = 20), 
+        panel.grid = element_blank()) +
+  facet_wrap(~sp_code)
+  ggsave(here::here("figures/fg-recovery", paste("lrr_understory_continual_spp_during", todays_date, ".jpg", sep = "")), width = 25, height = 25)
+```
+
+### ii. epilithic inverts
+```{r}
+epi_inv_2018 <- c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")
+
+lrr_epi_inv_annual <- lrr_df_annual %>% 
+  filter(sp_code %in% epi_inv_2018) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>%
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2, color = "grey") +
+  geom_point(aes(x = sp_code, y = lrr_annual), size = 5) +
+  geom_linerange(aes(x = sp_code, y = lrr_annual, ymin = lrr_annual - me_annual, ymax = lrr_annual + me_annual), size = 1) +
+  labs(x = "Species", y = "Log response ratio",
+       title = "Epilithic inverts: annual") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size = 16),
+        plot.title = element_text(size = 20), 
+        panel.grid = element_blank()) +
+  facet_wrap(~exp_dates) 
+lrr_epi_inv_annual
+# ggsave(here::here("figures/fg-recovery", paste("lrr_epi_inv_annual", todays_date, ".jpg", sep = "")), lrr_epi_inv_annual, width = 8, height = 6)
+
+lrr_epi_inv_continual <- lrr_df_continual %>% 
+  filter(sp_code %in% epi_inv_2018) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>%
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2, color = "grey") +
+  geom_point(aes(x = sp_code, y = lrr_continual), size = 5) +
+  geom_linerange(aes(x = sp_code, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
+  labs(x = "Species", y = "Log response ratio",
+       title = "Epilithic inverts: continual") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size = 16),
+        plot.title = element_text(size = 20), 
+        panel.grid = element_blank()) +
+  facet_wrap(~exp_dates) 
+lrr_epi_inv_continual
+# ggsave(here::here("figures/fg-recovery", paste("lrr_epi_inv_continual", todays_date, ".jpg", sep = "")), lrr_epi_inv_continual, width = 8, height = 6)
+```
+
+### iii. endolithic inverts
+
+```{r}
+end_inv_2018 <- c("CHOV", "PACA")
+
+lrr_end_inv_annual <- lrr_df_annual %>% 
+  filter(sp_code %in% end_inv_2018) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CHOV", "PACA")) %>%
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2, color = "grey") +
+  geom_point(aes(x = sp_code, y = lrr_annual), size = 5) +
+  # geom_linerange(aes(x = sp_code, y = lrr_annual, ymin = lrr_annual - me_annual, ymax = lrr_annual + me_annual), size = 1) +
+  labs(x = "Species", y = "Log response ratio",
+       title = "Endolithic inverts: annual") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size = 16),
+        plot.title = element_text(size = 20), 
+        panel.grid = element_blank()) +
+  facet_wrap(~exp_dates) 
+lrr_end_inv_annual
+# ggsave(here::here("figures/fg-recovery", paste("lrr_end_inv_annual", todays_date, ".jpg", sep = "")), lrr_end_inv_annual, width = 8, height = 6)
+
+lrr_end_inv_continual <- lrr_df_continual %>% 
+  filter(sp_code %in% end_inv_2018) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "CHOV", "PACA")) %>%
+  ggplot() +
+  geom_hline(yintercept = 0, lty = 2, color = "grey") +
+  geom_point(aes(x = sp_code, y = lrr_continual), size = 5) +
+  # geom_linerange(aes(x = sp_code, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
+  labs(x = "Species", y = "Log response ratio",
+       title = "Endolithic inverts: continual") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 20),
+        strip.text = element_text(size = 16),
+        plot.title = element_text(size = 20), 
+        panel.grid = element_blank()) +
+  facet_wrap(~exp_dates) 
+lrr_end_inv_continual
+# ggsave(here::here("figures/fg-recovery", paste("lrr_end_inv_continual", todays_date, ".jpg", sep = "")), lrr_end_inv_continual, width = 8, height = 6)
+```
+
+
+# 11. algae vs inverts
+
+```{r}
+left_join(delta_algae_continual, delta_invert_continual, by = "sample_ID") %>% 
+  left_join(., delta_clam_continual, by = "sample_ID") %>% 
+  mutate(sum_inverts = continual_inverts + continual_clams) %>% 
+  filter(exp_dates == "during") %>% 
+  ggplot(aes(x = continual_algae, y = continual_inverts)) +
+  geom_point(aes(fill = site.x, shape = site.x), size = 3, alpha = 0.9) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  # scale_y_continuous(limits = c(0, 7000)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14), 
+        legend.position = "none", 
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(x = expression(algae~biomass~(g/m^{"2"})),
+       y = expression(epilithic~invertebrate~biomass~(g/m^{"2"})))
+```
+
+
+
+
+
+
 
