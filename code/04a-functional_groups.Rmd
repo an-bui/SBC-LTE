@@ -16,7 +16,19 @@ source(here::here("code", "00-set_up.R"))
 # Set up data frame
 
 ```{r}
-fg_recovery <- biomass %>% 
+fg_recovery_annual <- biomass %>% 
+  # make a new column for after dates
+  after_dates_column() %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column() %>% 
+  new_group_column() %>% 
+  dplyr::select(site, year, month, treatment, date, exp_dates, dry_gm2) %>% 
+  group_by(site, exp_dates, year, month, treatment, date) %>% 
+  summarize(total_dry = sum(dry_gm2)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = treatment, values_from = total_dry) %>% 
+  mutate(delta_annual = annual - control,
+         delta_continual = continual - control) 
   # create a column for quarter
   mutate(quarter = case_when(
     month <= 3 ~ "Q1",
@@ -147,8 +159,8 @@ ggplot(fg_recovery %>% filter(sp_code == "MAPY"), aes(x = treatment, y = dry_gm2
         strip.text = element_text(size = 14), 
         plot.title = element_text(size = 20), 
         legend.position = "none") +
-  facet_wrap(~exp_dates) +
-  ggsave(here::here("figures/fg-recovery", paste("biomass_MAPY_", todays_date, ".jpg", sep = "")))
+  facet_wrap(~exp_dates)
+  # ggsave(here::here("figures/fg-recovery", paste("biomass_MAPY_", todays_date, ".jpg", sep = "")))
 
 ggplot(fg_recovery %>% filter(sp_code != "MAPY" & group == "algae"), aes(x = treatment, y = dry_gm2)) +
   stat_summary(aes(group = treatment), fun.data = "mean_cl_boot", geom = "errorbar", width = 0.5, size = 1, na.rm = TRUE) +
@@ -230,7 +242,7 @@ df2 <- fg_recovery %>%
   summarize(mean_biomass = mean(dry_gm2, na.rm = TRUE)) %>% 
   pivot_wider(names_from = treatment, values_from = mean_biomass) %>% 
   mutate(lrr_annual = log2(mean(annual)/mean(control)),
-         lrr_continual = log2(mean(continual)/mean(control)),
+         lrr_continual = log2(mean(continual, na.rm = TRUE)/mean(control, na.rm = TRUE)),
          group_mobility = paste(group, mobility, sep = "_"))
 
 ggplot(df2) +
@@ -247,8 +259,8 @@ ggplot(df2) +
         legend.position = "none") +
   labs(x = "Groups", y = "Log response ratio",
        title = "Annual log response ratio") +
-  facet_wrap(~exp_dates) + 
-  ggsave(here::here("figures/fg-recovery", paste("annual-log-response-ratio_", todays_date, ".jpg", sep = "")))
+  facet_wrap(~exp_dates) 
+  # ggsave(here::here("figures/fg-recovery", paste("annual-log-response-ratio_", todays_date, ".jpg", sep = "")))
 
 ggplot(df2) +
   geom_hline(yintercept = 0, lty = 2, col = "grey") +
@@ -264,14 +276,15 @@ ggplot(df2) +
         legend.position = "none") +
   labs(x = "Groups", y = "Log response ratio",
        title = "Continual log response ratio") +
-  facet_wrap(~exp_dates) + 
-  ggsave(here::here("figures/fg-recovery", paste("continual-log-response-ratio_", todays_date, ".jpg", sep = "")))
+  facet_wrap(~exp_dates) 
+  # ggsave(here::here("figures/fg-recovery", paste("continual-log-response-ratio_", todays_date, ".jpg", sep = "")))
   
 ```
 
 ```{r}
 spp_recovery <- fg_recovery %>% 
   filter(sp_code != "MAPY") %>% 
+  filter(year < 2017) %>% 
   dplyr::select(site, treatment, exp_dates, sp_code, dry_gm2) %>%
   group_by(treatment, exp_dates, sp_code) %>% 
   summarize(mean_biomass = mean(dry_gm2, na.rm = TRUE),
@@ -298,12 +311,14 @@ spp_recovery <- fg_recovery %>%
   # attach the spp_names df to get scientific name, taxon info, etc.
   left_join(., spp_names, by = "sp_code")
 
+LRRd(spp_recovery$mean_biomass_continual, spp_recovery$mean_biomass_control)
+
 algae_2018 <- c("EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")
 
 
 lrr_understory_annual <- spp_recovery %>% 
-  filter(sp_code %in% algae_selection) %>% 
-  mutate(sp_code = fct_relevel(sp_code, "PTCA", "DL", "CYOS", "CC", "R", "EC", "POLA", "RAT", "CO", "EGME", "BO", "AU")) %>%
+  filter(sp_code %in% algae_2018) %>% 
+  mutate(sp_code = fct_relevel(sp_code, "EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")) %>%
   ggplot() +
   geom_hline(yintercept = 0, lty = 2, color = "grey") +
   geom_point(aes(x = sp_code, y = lrr_annual), size = 5) +
@@ -333,7 +348,8 @@ lrr_understory_continual <- spp_recovery %>%
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 20),
         strip.text = element_text(size = 16),
-        plot.title = element_text(size = 20)) +
+        plot.title = element_text(size = 20), 
+        panel.grid = element_blank()) +
   facet_wrap(~exp_dates) 
 # ggsave(here::here("figures/fg-recovery", paste("lrr_understory_continual_", todays_date, ".jpg", sep = "")), lrr_understory_continual, width = 8, height = 6)
 
@@ -446,6 +462,7 @@ lrr_epi_inv_continual <- spp_recovery %>%
   geom_hline(yintercept = 0, lty = 2, color = "grey") +
   geom_point(aes(x = sp_code, y = lrr_continual), size = 5) +
   geom_linerange(aes(x = sp_code, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
+  scale_y_continuous(limits = c(-12, 12)) +
   labs(x = "Species", y = "Log response ratio",
        title = "Epilithic sessile inverts: continual") +
   theme_bw() +
@@ -453,7 +470,8 @@ lrr_epi_inv_continual <- spp_recovery %>%
         axis.text = element_text(size = 16),
         axis.title = element_text(size = 20),
         strip.text = element_text(size = 16),
-        plot.title = element_text(size = 20)) +
+        plot.title = element_text(size = 20),
+        panel.grid = element_blank()) +
   facet_wrap(~exp_dates) 
 # ggsave(here::here("figures/fg-recovery", paste("lrr_epi_inv_continual", todays_date, ".jpg", sep = "")), lrr_epi_inv_continual, width = 8, height = 6)
 
@@ -483,7 +501,7 @@ lrr_end_inv_continual <- spp_recovery %>%
   ggplot() +
   geom_hline(yintercept = 0, lty = 2, color = "grey") +
   geom_point(aes(x = sp_code, y = lrr_continual), size = 5) +
-  # geom_linerange(aes(x = sp_code, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
+  geom_linerange(aes(x = sp_code, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
   labs(x = "Species", y = "Log response ratio",
        title = "Endolithic sessile inverts: continual") +
   theme_bw() +
