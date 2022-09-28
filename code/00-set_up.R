@@ -22,7 +22,7 @@ library(vegan)
 library(vegclust)
 library(ecotraj)
 library(FD)
-library(BiodiversityR)
+# library(BiodiversityR)
 library(minpack.lm) # Fitting non-linear models
 library(nls2) # Fitting non-linear models
 library(AICcmodavg) # calculate second order AIC (AICc)
@@ -364,8 +364,8 @@ comparison_column_continual <- function(df) {
       kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
     )) %>% 
     mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
-    # create a new sample ID that is site, year, quarter
-    unite("sample_ID", site, year, quarter, remove = FALSE)
+    # create a new sample ID that is site, date, quarter
+    unite("sample_ID", site, date, quarter, remove = FALSE)
 }
 
 # 4. data -----------------------------------------------------------------
