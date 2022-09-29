@@ -30,7 +30,7 @@ algae_biomass <- biomass %>%
 delta_algae_biomass <- algae_biomass %>% 
   dplyr::select(site, year, month, treatment, date, exp_dates, dry_gm2) %>% 
   group_by(site, exp_dates, year, month, treatment, date) %>% 
-  summarize(total_dry = sum(dry_gm2)) %>% 
+  summarize(total_dry = sum(dry_gm2, na.rm = TRUE)) %>% 
   ungroup() %>% 
   pivot_wider(names_from = treatment, values_from = total_dry) %>% 
   mutate(delta_annual = annual - control,
@@ -54,11 +54,13 @@ delta_algae_continual <- delta_algae_biomass %>%
   kelp_year_column() %>% 
   comparison_column_continual() %>% 
   # create a new sample ID that is site, year, quarter
-  unite("sample_ID", site, year, quarter, remove = FALSE) %>% 
+  unite("sample_ID", site, date, quarter, remove = FALSE) %>% 
+  # create new column that is the column to join with 
+  # unite("join_ID", site, date, remove = FALSE) %>% 
   rename("control_algae" = control,
          "continual_algae" = continual,
          "delta_continual_algae" = delta_continual) %>% 
-  left_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
+  full_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID")
 ```
 
 # 2. algae
@@ -149,6 +151,7 @@ test_glmm <- glmer(delta_continual_algae ~ delta_continual + (1|year) + (1|site)
                                 data = delta_algae_continual, family = quasi(link = "log"))
 summary(delta_algae_vs_kelp_lmer)
 plot(simulateResiduals(delta_algae_vs_kelp_lmer))
+check_model(delta_algae_vs_kelp_lmer)
 delta_algae_vs_kelp_lmer %>% 
   tbl_regression()
 MuMIn::r.squaredGLMM(delta_algae_vs_kelp_lmer)
@@ -266,29 +269,41 @@ delta_algae_continual %>%
 ## c. delta algae as a function of time since end of experiment
 ```{r}
 algae_continual_after <- delta_algae_continual %>% 
-  filter(exp_dates == "after")
+  filter(exp_dates == "after") 
+  # influential point - remove?
+  # filter(sample_ID != "mohk_2017-08-11_Q3")
 
-linear_model_algae_lme <- lme(delta_continual_algae ~ time_since_end, random = ~ 1|site, data = algae_continual_after, na.action = na.pass)
-summary(linear_model_algae_lme)
-
-algae_time <- linear_model_algae_lme %>% 
-  tbl_regression() %>% 
-  bold_p(t = 0.05)
-
+# model
 linear_model_algae_lmer <- lmer(delta_continual_algae ~ time_since_end + (1|site), data = algae_continual_after, na.action = na.pass)
+
+# check
 plot(simulateResiduals(linear_model_algae_lmer))
+check_model(linear_model_algae_lmer)
+
+# summary
 summary(linear_model_algae_lmer)
+
+# R2
 MuMIn::r.squaredGLMM(linear_model_algae_lmer)
 
-AICc(linear_model_algae_lme, linear_model_algae_lmer)
+# table
+algae_after <- linear_model_algae_lmer %>% 
+  tbl_regression(intercept = TRUE) %>% 
+  bold_p(t = 0.05)
+algae_after
 
 linear_model_algae_lmer_during <- lmer(delta_continual_algae ~ time_since_end + (1|site), data = delta_algae_continual %>% filter(exp_dates == "during"), na.action = na.pass)
-linear_model_algae_lme_during <- lme(delta_continual_algae ~ time_since_end, random = ~ 1|site, data = delta_algae_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+
 summary(linear_model_algae_lmer_during)
-summary(linear_model_algae_lme_during)
-algae_time_during <- linear_model_algae_lme_during %>% 
-  tbl_regression() %>% 
+
+algae_during <- linear_model_algae_lmer_during %>% 
+  tbl_regression(intercept = TRUE) %>% 
   bold_p(t = 0.05)
+algae_during
+
+algae_tables <- tbl_merge(tbls = list(algae_during, algae_after),
+                          tab_spanner = c("**Removal**", "**Recovery**"))
+
 MuMIn::r.squaredGLMM(linear_model_algae_lmer_during)
 # ggeffects
 predicted_algae_after <- ggpredict(linear_model_algae_lmer, terms = ~ time_since_end, type = "fixed")
@@ -339,12 +354,37 @@ raw_algae_time <- ggplot(delta_algae_continual, aes(x = time_since_end, y = cont
 
 ## d. start-during-after
 
+### i. anova
+
 ```{r}
-sda_algae_biomass <- ggplot(delta_algae_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_continual_algae, group = 1)) +
+# anova with random effect
+algae_anova <- lmer(delta_continual_algae ~ comp_2yrs + (1|site), data = delta_algae_continual %>% drop_na(comp_2yrs))
+# summary with p value
+summary(algae_anova)
+anova(algae_anova)
+# table
+algae_anova %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+# least squares comparison
+difflsmeans(algae_anova, test.effs = "Group", ddf = "Kenward-Roger")
+# extract predicted values
+algae_anova_df <- ggpredict(algae_anova, terms = "comp_2yrs", type = "fixed")
+
+# plot
+sda_algae_biomass <- ggplot(algae_anova_df) +
+  # horizontal line at 0
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
-  stat_summary(geom = "line", fun = "mean") +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
-  stat_summary(fun = mean, geom = "point", size = 6) +
+  # points and error bars
+  geom_point(aes(x = x, y = predicted), size = 6) +
+  geom_errorbar(aes(x = x, ymin = predicted - std.error, ymax = predicted + std.error), width = 0.2) +
+  # path between time periods
+  geom_line(aes(x = x, y = predicted, group = 1)) +
+  # add in post-hoc comparisons
+  annotate("text", x = 1, y = 125, label = "a", size = 14) +
+  annotate("text", x = 2, y = 125, label = "b", size = 14) +
+  annotate("text", x = 3, y = 125, label = "a", size = 14) +
+  # aesthetics
   theme_bw() +
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -353,9 +393,11 @@ sda_algae_biomass <- ggplot(delta_algae_continual %>% drop_na(comp_2yrs), aes(x 
         legend.title = element_text(size = 16),
         plot.margin = margin(0, 0, 0, 0),
         panel.grid.minor = element_line(color = "white")) +
-  labs(x = "Time period", y = "\U0394 algae biomass")
+  labs(x = "Time period", 
+       y = expression(Predicted~"\U0394"~algae~biomass~(dry~g/m^{"2"})))
 sda_algae_biomass
 ```
+
 
 ## e. algae vs kelp timeseries
 
@@ -775,31 +817,38 @@ delta_invert_continual %>%
 invert_continual_after <- delta_invert_continual %>% 
   filter(exp_dates == "after")
 
-linear_model_invert_lme <- lme(delta_continual_inverts ~ time_since_end, random = ~ 1|site, data = invert_continual_after, na.action = na.pass)
-summary(linear_model_invert_lme)
-# no effect of time since end
-
-epi_invert_time <- linear_model_invert_lme %>% 
-  tbl_regression() %>% 
-  bold_p(t = 0.05)
-
+# model
 linear_model_invert_lmer <- lmer(delta_continual_inverts ~ time_since_end + (1|site), data = invert_continual_after, na.action = na.pass)
+
+# check
 plot(simulateResiduals(linear_model_invert_lmer))
 summary(linear_model_invert_lmer)
+
+# R2
 MuMIn::r.squaredGLMM(linear_model_invert_lmer)
 
+# summary table
+epi_invert_after <- linear_model_invert_lmer %>% 
+  tbl_regression(intercept = TRUE) %>% 
+  bold_p(t = 0.05)
+epi_invert_after
 
-AICc(linear_model_invert_lme, linear_model_invert_lmer)
-
+# model
 linear_model_invert_lmer_during <- lmer(delta_continual_inverts ~ time_since_end + (1|site), data = delta_invert_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+
+# summary
 summary(linear_model_invert_lmer_during) 
-linear_model_invert_lme_during <- lme(delta_continual_inverts ~ time_since_end, random = ~ 1|site, data = delta_invert_continual %>% filter(exp_dates == "during"), na.action = na.pass)
-summary(linear_model_invert_lme_during)
+
+# R2
 MuMIn::r.squaredGLMM(linear_model_invert_lmer_during)
 
-epi_invert_time_during <- linear_model_invert_lme_during %>% 
-  tbl_regression() %>% 
+# summary table
+epi_invert_during <- linear_model_invert_lmer_during %>% 
+  tbl_regression(intercept = TRUE) %>% 
   bold_p(t = 0.05)
+
+epi_invert_tables <- tbl_merge(tbls = list(epi_invert_during, epi_invert_after))
+
 # ggeffects
 predicted_invert_after <- ggpredict(linear_model_invert_lmer, terms = ~ time_since_end, type = "fixed")
 predicted_invert_during <- ggpredict(linear_model_invert_lmer_during, terms = ~ time_since_end, type = "fixed")
@@ -868,12 +917,32 @@ ggplot(delta_invert_continual) +
 
 ### start-during-after
 
+#### i. anova
+
 ```{r}
-sda_invert_biomass <- ggplot(delta_invert_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_continual_inverts, group = 1)) +
+# anova with random effect
+invert_anova <- lmer(delta_continual_inverts ~ comp_2yrs + (1|site), data = delta_invert_continual %>% drop_na(comp_2yrs))
+# summary with p value
+summary(invert_anova)
+# least squares comparison
+difflsmeans(invert_anova, test.effs = "Group", ddf = "Kenward-Roger")
+# extract predicted values
+invert_anova_df <- ggpredict(invert_anova, terms = "comp_2yrs", type = "fixed")
+
+# plot
+sda_invert_biomass <- ggplot(invert_anova_df) +
+  # horizontal line at 0
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
-  stat_summary(geom = "line", fun = "mean") +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
-  stat_summary(fun = mean, geom = "point", size = 6) +
+  # points and error bars
+  geom_point(aes(x = x, y = predicted), size = 6) +
+  geom_errorbar(aes(x = x, ymin = predicted - std.error, ymax = predicted + std.error), width = 0.2) +
+  # path between time periods
+  geom_line(aes(x = x, y = predicted, group = 1)) +
+  # add in post-hoc comparisons
+  annotate("text", x = 1, y = 20, label = "a", size = 14) +
+  annotate("text", x = 2, y = 20, label = "b", size = 14) +
+  annotate("text", x = 3, y = 20, label = "b", size = 14) +
+  # aesthetics
   theme_bw() +
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -882,7 +951,8 @@ sda_invert_biomass <- ggplot(delta_invert_continual %>% drop_na(comp_2yrs), aes(
         legend.title = element_text(size = 16),
         plot.margin = margin(0, 0, 0, 0),
         panel.grid.minor = element_line(color = "white")) +
-  labs(x = "Time period", y = "\U0394 epilithic invert biomass")
+  labs(x = "Time period", 
+       y = expression(Predicted~"\U0394"~epilithic~invert~biomass~(dry~g/m^{"2"})))
 sda_invert_biomass
 ```
 
@@ -1093,27 +1163,41 @@ delta_clam_continual <- delta_clam_biomass %>%
 clam_continual_after <- delta_clam_continual %>% 
   filter(exp_dates == "after")
 
-linear_model_clam_lme <- lme(delta_continual_clams ~ time_since_end, random = ~ 1|site, data = clam_continual_after, na.action = na.pass)
-summary(linear_model_clam_lme)
-# no effect of time since end
-
-clam_time <- linear_model_clam_lme %>% 
-  tbl_regression() %>% 
-  bold_p(t = 0.05)
-
+# model
 linear_model_clam_lmer <- lmer(delta_continual_clams ~ time_since_end + (1|site), data = clam_continual_after, na.action = na.pass)
+
+# check
 plot(simulateResiduals(linear_model_clam_lmer))
+
+# summary
 summary(linear_model_clam_lmer)
+
+# R2
 MuMIn::r.squaredGLMM(linear_model_clam_lmer)
 
-linear_model_clam_lmer_during <- lmer(delta_continual_clams ~ time_since_end + (1|site), data = delta_clam_continual %>% filter(exp_dates == "during"), na.action = na.pass)
-linear_model_clam_lme_during <- lme(delta_continual_clams ~ time_since_end, random = ~ 1|site, data = delta_clam_continual %>% filter(exp_dates == "during"), na.action = na.pass)
-summary(linear_model_clam_lme_during)
-summary(linear_model_clam_lmer_during)
-clam_time_during <- linear_model_clam_lme_during %>% 
-  tbl_regression() %>% 
+# summary table
+clam_after <- linear_model_clam_lmer %>% 
+  tbl_regression(intercept = TRUE) %>% 
   bold_p(t = 0.05)
+
+# model
+linear_model_clam_lmer_during <- lmer(delta_continual_clams ~ time_since_end + (1|site), data = delta_clam_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+
+# check
+plot(simulateResiduals(linear_model_clam_lmer_during))
+
+# summmary
+summary(linear_model_clam_lmer_during)
+
+# R2
 MuMIn::r.squaredGLMM(linear_model_clam_lmer_during)
+
+# summary table
+clam_during <- linear_model_clam_lmer_during %>% 
+  tbl_regression(intercept = TRUE) %>% 
+  bold_p(t = 0.05)
+
+clam_tables <- tbl_merge(tbls = list(clam_during, clam_after))
 
 # ggeffects
 predicted_clam_after <- ggpredict(linear_model_clam_lmer, terms = ~ time_since_end, type = "fixed")
@@ -1157,19 +1241,30 @@ raw_clam_time <- ggplot(delta_clam_continual) +
         legend.position = "none", 
         plot.margin = margin(0, 0, 0, 0)) +
   labs(x = "Time since end of removal", y = expression(endolithic~invertebrate~biomass~(g/m^{"2"})))
-
-tbl_merge(tbls = list(algae_time_during, epi_invert_time_during, clam_time_during),
-          tab_spanner = c("Algae", "Epi", "Endo"))
 ```
 
 ### start-during-after
 
+#### i. anova
+
 ```{r}
-sda_clam_biomass <- ggplot(delta_clam_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_continual_clams, group = 1)) +
+# anova with random effect
+clam_anova <- lmer(delta_continual_clams ~ comp_2yrs + (1|site), data = delta_clam_continual %>% drop_na(comp_2yrs))
+# summary with p value
+summary(clam_anova)
+# extract predicted values
+clam_anova_df <- ggpredict(clam_anova, terms = "comp_2yrs", type = "fixed")
+
+# plot
+sda_clam_biomass <- ggplot(clam_anova_df) +
+  # horizontal line at 0
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
-  stat_summary(geom = "line", fun = "mean") +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
-  stat_summary(fun = mean, geom = "point", size = 6) +
+  # points and error bars
+  geom_point(aes(x = x, y = predicted), size = 6) +
+  geom_errorbar(aes(x = x, ymin = predicted - std.error, ymax = predicted + std.error), width = 0.2) +
+  # path between time periods
+  geom_line(aes(x = x, y = predicted, group = 1)) +
+  # aesthetics
   theme_bw() +
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -1178,10 +1273,10 @@ sda_clam_biomass <- ggplot(delta_clam_continual %>% drop_na(comp_2yrs), aes(x = 
         legend.title = element_text(size = 16),
         plot.margin = margin(0, 0, 0, 0),
         panel.grid.minor = element_line(color = "white")) +
-  labs(x = "Time period", y = "\U0394 endolithic invert biomass")
+  labs(x = "Time period", 
+       y = expression(Predicted~"\U0394"~endolithic~invert~biomass~(dry~g/m^{"2"})))
 sda_clam_biomass
 ```
-
 
 ### clams vs kelp
 
@@ -1269,6 +1364,18 @@ ggplot(delta_clam_continual) +
 ## e. potential manuscript plots
 
 ```{r}
+# table
+group_summary_tables <- tbl_stack(
+  tbls = list(algae_tables, epi_invert_tables, clam_tables),
+  group_header = c("Algae", "Epilithic invertebrates", "Endolithic invertebrates"),
+  quiet = TRUE) %>% 
+  as_gt()
+group_summary_tables
+
+# file name for export: group-summaries_date
+
+# gt::gtsave(group_summary_tables, file = here::here("tables", paste("group-summaries_", todays_date, ".png", sep = "")))
+
 fig3 <- (sda_algae_biomass + algae_time) /
         (sda_invert_biomass + invert_time) /
         (sda_clam_biomass + clam_time) +

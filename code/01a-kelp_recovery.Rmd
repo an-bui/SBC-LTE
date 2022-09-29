@@ -178,7 +178,7 @@ delta_continual_plot
 
 ```{r}
 ggplot(delta_continual) +
-  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.5, size = 2.5) +
+  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.5, size = 2.5, linetype = 4) +
   geom_point(aes(x = time_since_end, y = control, shape = site, col = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
   geom_line(aes(x = time_since_end, y = continual, col = site), size = 2.5) +
   geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
@@ -194,12 +194,22 @@ ggplot(delta_continual) +
   labs(x = "Time since end of experiment", 
        y = expression(Kelp~biomass~(dry~g/m^{"2"}))) +
   facet_wrap(~site, scales = "free_y") 
+
+# average raw biomass after 3.7 years
+delta_continual %>% 
+  filter(comp_2yrs == "after" & quarter == "Q3") %>% 
+  summarize(mean_cont = mean(continual),
+            se_cont = se(continual),
+            mean_control = mean(control),
+            se_control = se(control))
 ```
 
 
 # 3.  Start-during-after
 
 ## a. site 2 year comparison
+
+### i. visualization
 
 ```{r}
 ggplot(delta_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_continual)) +
@@ -218,22 +228,47 @@ ggplot(delta_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_cont
   labs(x = "Time period", y = "\U0394 biomass (treatment - control)",
        title = "continual removal, 2 year comparison") +
   facet_wrap(~site_full)
-
-summary(aov(delta_continual ~ comp_2yrs, data = delta_continual))
-TukeyHSD(aov(delta_continual ~ comp_2yrs, data = delta_continual))
-
-summary(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "aque"))))
-TukeyHSD(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "aque"))))
-
-summary(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "napl"))))
-TukeyHSD(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "napl"))))
-
-summary(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "mohk"))))
-TukeyHSD(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "mohk"))))
-
-summary(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "carp"))))
-TukeyHSD(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "carp"))))
 ```
+
+### ii. anova
+
+```{r}
+# anova with random effect
+kelp_anova <- lmer(delta_continual ~ comp_2yrs + (1|site), data = delta_continual %>% drop_na(comp_2yrs))
+# summary with p value
+summary(kelp_anova)
+# least squares comparison
+difflsmeans(kelp_anova, test.effs = "Group", ddf = "Kenward-Roger")
+# extract predicted values
+kelp_anova_df <- ggpredict(kelp_anova, terms = "comp_2yrs", type = "fixed")
+
+# plot
+sda_kelp_biomass <- ggplot(kelp_anova_df) +
+  # horizontal line at 0
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
+  # points and error bars
+  geom_point(aes(x = x, y = predicted), size = 6) +
+  geom_errorbar(aes(x = x, ymin = predicted - std.error, ymax = predicted + std.error), width = 0.2) +
+  # path between time periods
+  geom_line(aes(x = x, y = predicted, group = 1)) +
+  # add in post-hoc comparisons
+  annotate("text", x = 1, y = 180, label = "a", size = 14) +
+  annotate("text", x = 2, y = 180, label = "a", size = 14) +
+  annotate("text", x = 3, y = 180, label = "b", size = 14) +
+  # aesthetics
+  theme_bw() +
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        legend.title = element_text(size = 16),
+        plot.margin = margin(0, 0, 0, 0),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time period", 
+       y = expression(Predicted~"\U0394"~kelp~biomass~(dry~g/m^{"2"})))
+sda_kelp_biomass
+```
+
 
 ## b. site 3 year comparison
 
@@ -254,43 +289,7 @@ ggplot(delta_continual %>% drop_na(comp_3yrs), aes(x = comp_3yrs, y = delta_cont
   labs(x = "Time period", y = "\U0394 biomass (treatment - control)",
        title = "continual removal, 3 year comparison") +
   facet_wrap(~site_full)
-
-summary(aov(delta_continual ~ comp_3yrs, data = delta_continual))
-TukeyHSD(aov(delta_continual ~ comp_3yrs, data = delta_continual))
-
-summary(aov(delta_continual ~ comp_3yrs, data = (delta_continual %>% filter(site == "aque"))))
-TukeyHSD(aov(delta_continual ~ comp_3yrs, data = (delta_continual %>% filter(site == "aque"))))
-
-summary(aov(delta_continual ~ comp_3yrs, data = (delta_continual %>% filter(site == "napl"))))
-TukeyHSD(aov(delta_continual ~ comp_3yrs, data = (delta_continual %>% filter(site == "napl"))))
-
-summary(aov(delta_continual ~ comp_3yrs, data = (delta_continual %>% filter(site == "mohk"))))
-TukeyHSD(aov(delta_continual ~ comp_3yrs, data = (delta_continual %>% filter(site == "mohk"))))
-
-summary(aov(delta_continual ~ comp_3yrs, data = (delta_continual %>% filter(site == "carp"))))
-TukeyHSD(aov(delta_continual ~ comp_3yrs, data = (delta_continual %>% filter(site == "carp"))))
 ```
-
-## c. all sites 2 year comparison
-
-```{r}
-sda_kelp_biomass <- ggplot(delta_continual %>% drop_na(comp_2yrs), aes(x = comp_2yrs, y = delta_continual, group = 1)) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
-  stat_summary(geom = "line", fun = "mean") +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
-  stat_summary(fun = mean, geom = "point", size = 6) +
-  theme_bw() +
-  theme(axis.title = element_text(size = 18),
-        plot.title = element_text(size = 18),
-        axis.text = element_text(size = 16),
-        legend.text = element_text(size = 16), 
-        legend.title = element_text(size = 16),
-        plot.margin = margin(0, 0, 0, 0),
-        panel.grid.minor = element_line(color = "white")) +
-  labs(x = "Time period", y = "\U0394 kelp biomass (treatment - control)")
-sda_kelp_biomass
-```
-
 
 
 # 4. during-after
@@ -312,13 +311,17 @@ ggplot() +
 ```
 
 # 5. annual kelp biomass
+
+## a. line by season
+
 ```{r}
 biomass_by_season_annual <- delta_annual %>% 
   season_column() %>% 
-  filter(exp_dates == "during") %>% 
+  filter(exp_dates == "during" & site != "ivee") %>% 
   ggplot(aes(x = season, y = annual)) +
   stat_summary(aes(group = site, color = site), fun.data = mean_se, geom = "errorbar", alpha = 0.5, width = 0.2) +
   stat_summary(aes(group = site, color = site), fun = mean, geom = "line", size = 1.5) +
+  # geom_point(aes(color = site)) +
   scale_color_manual(values = color_palette_site_annual) +
   theme_bw() +
   labs(x = "Season", 
@@ -338,6 +341,45 @@ annual_kelp_summary <- delta_annual %>%
   summarize(mean_kelp = mean(annual),
             se_kelp = se(annual))
 
+biomass_by_season_annual_v2 <- delta_annual %>% 
+  season_column() %>% 
+  filter(exp_dates == "during" & site != "ivee") %>% 
+  ggplot(aes(x = season, y = annual)) +
+  stat_summary(aes(group = 1), fun.data = mean_se, geom = "errorbar", width = 0.2, size = 1) +
+  stat_summary(aes(group = 1), fun = mean, geom = "line", size = 1.5) +
+  # geom_jitter(aes(x = season, y = annual, color = site)) +
+  # scale_color_manual(values = color_palette_site_annual) +
+  theme_bw() +
+  labs(x = "Season", 
+       y = expression(Mean~kelp~biomass~(dry~g/m^{"2"})),
+       color = "Site") +
+  theme(legend.position = c(0.1, 0.8),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        panel.grid.minor.y = element_line(color = "white"))
+biomass_by_season_annual_v2
+
+ggsave(here::here("figures", paste("fig1_summary_", todays_date, ".jpg", sep = "")), height = 12, width = 8, dpi = 150)
+
+biomass_by_season_annual_boxplot <- delta_annual %>% 
+  season_column() %>% 
+  filter(exp_dates == "during") %>% 
+  ggplot(aes(x = season, y = annual)) +
+  geom_boxplot() +
+  geom_jitter() +
+  # scale_color_manual(values = color_palette_site_annual) +
+  theme_bw() +
+  labs(x = "Season", 
+       y = expression(Kelp~biomass~(dry~g/m^{"2"})),
+       color = "Site") +
+  theme(legend.position = c(0.1, 0.8),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        panel.grid.minor.y = element_line(color = "white"))
+biomass_by_season_annual_boxplot
+
 delta_annual %>%
   # filter(site == "ivee") %>%
   mutate(season = case_when(
@@ -353,24 +395,77 @@ delta_annual %>%
   ggplot(aes(x = season, y = annual)) +
   # stat_summary(aes(color = kelp_year, group = kelp_year), fun.data = mean_se, geom = "errorbar", alpha = 0.5, width = 0.2) +
   # geom_point(aes(shape = site, color = kelp_year), size = 2) +
-  stat_summary(aes(color = kelp_year, group = kelp_year), fun = mean, geom = "line", size = 2, alpha = 0.7) +
+  stat_summary(aes(group = 1), fun.data = mean_se, geom = "errorbar", width = 0.2, size = 1) +
+  stat_summary(aes(group = 1), fun = mean, geom = "line", size = 1.5) +
+  stat_summary(aes(color = kelp_year, group = kelp_year), fun = mean, geom = "point", size = 2, alpha = 0.9) +
   scale_color_manual(values = c("#BBD1FA", "#A2B9E4", "#89A1CE", "#7089B8",
                                 "#5771A2", "#3E598C", "#254176", "#0D2A61", "darkblue", "navy", "black")) +
   theme_bw() +
   labs(x = "Season",
-       y = "Kelp biomass") +
+       y = expression(Mean~kelp~biomass~(dry~g/m^{"2"}))) +
   theme(axis.text = element_text(size = 14),
         axis.title = element_text(size = 16),
-        panel.grid = element_blank()) +
-  facet_wrap(~site, ncol = 1, scales = "free_y")
+        panel.grid = element_blank()) 
+  # facet_wrap(~site, ncol = 1, scales = "free_y")
 
 ggsave(here::here("figures", paste("fig1_all-sites_", todays_date, ".jpg", sep = "")), height = 12, width = 8, dpi = 150)
 ```
 
+## b. histogram
+
+```{r}
+df <- delta_annual %>% 
+  # assign seasons to quarters
+  season_column() %>% 
+  # filter spring and fall during experimental removal
+  filter(season %in% c("spring", "fall")) %>% 
+  filter(exp_dates == "during") %>% 
+  # deal with multiple sampling points in a season by taking mean
+  group_by(site, year, kelp_year, season) %>% 
+  summarize(mean_kelp = mean(annual),
+            se_kelp = se(annual)) %>% 
+  ungroup() %>% 
+  # create ID column with site and year
+  unite("site_year", site, year, sep = "_", remove = FALSE) %>% 
+  pivot_wider(names_from = season, values_from = c(mean_kelp, se_kelp)) %>% 
+  # calculate difference between fall and spring biomass
+  mutate(diff = mean_kelp_fall - mean_kelp_spring) %>% 
+  filter(site != "ivee") %>% 
+  mutate(site = fct_relevel(site, c("aque", "napl", "mohk", "carp")))
+
+# color by kelp year
+ggplot(data = df) +
+  geom_histogram(aes(x = diff, fill = kelp_year), binwidth = 100, color = "black") +
+  scale_fill_manual(values = c("kelp_2008-2009" = "#BBD1FA", 
+                               "kelp_2009-2010" = "#A2B9E4", 
+                               "kelp_2010-2011" = "#89A1CE", 
+                               "kelp_2011-2012" = "#7089B8",
+                               "kelp_2012-2013" = "#5771A2", 
+                               "kelp_2013-2014" = "#3E598C", 
+                               "kelp_2014-2015" = "#254176", 
+                               "kelp_2015-2016" = "#0D2A61", 
+                               "kelp_2016-2017" = "darkblue", 
+                               "kelp_2017-2018" = "navy")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 9.5), breaks = seq(0, 9, 3)) +
+  theme_bw() +
+  # facet_wrap(~kelp_year)
+  labs(x = expression("\U0394"~kelp~biomass~(fall~-~spring)~(dry~g/m^{"2"})), 
+       y = "Frequency",
+       fill = "Kelp year") +
+  theme(legend.position = c(0.8, 0.7),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        panel.grid.minor.y = element_line(color = "white"))
+```
+
+
 
 # 6. linear models 
 
-## a. annual with seasonal data
+## a. annual removal
+
+### i. seasonal data
 ```{r}
 annual_after <- delta_annual %>% 
   filter(exp_dates == "after")
@@ -438,7 +533,7 @@ ggplot() +
        title = "\U0394 annual", caption = "emmeans")
 ```
 
-## b. annual with "annualized" data
+### ii. "annualized" data
 
 ```{r}
 annual_means <- delta_annual %>% 
@@ -525,7 +620,7 @@ ggplot() +
        caption = "emmeans")
 ```
 
-## c.  annual with "annualized" data for site quality
+### iii. "annualized" data for site quality
 ```{r}
 annual_means <- delta_annual %>% 
   group_by(site, kelp_year) %>% 
@@ -590,7 +685,7 @@ annual_kelp_sitequality_emmeans <-ggplot() +
        caption = "emmeans")
 ```
 
-## d. annual with "annualized" data for the section
+### iv. "annualized" data for the section
 
 ```{r}
 annual_means_section <- delta_annual_section %>% 
@@ -719,60 +814,71 @@ ggplot() +
        caption = "emmeans")
 ```
 
-## e. continual with site only
+## b. continual removal
+
+### i. seasonal data
+
+#### during removal
 
 ```{r}
-continual_after <- delta_continual %>% 
-  filter(exp_dates == "after")
-
-linear_model_kelp_lme <- lme(delta_continual ~ time_since_end, random = ~ 1|time_since_end/site, 
-                        data = continual_after, na.action = na.pass)
-linear_model_kelp_lme_ri <- lme(delta_continual ~ time_since_end, random = ~ 1|site, 
-                        data = continual_after, na.action = na.pass)
-summary(linear_model_kelp_lme)
-confint(linear_model_kelp_lme, oldNames=FALSE)
-plot(simulateResiduals(linear_model_kelp_lme_ri))
-AICc(linear_model_kelp_lme, linear_model_kelp_lme_ri)
-linear_model_kelp_lme_ri %>% 
-  tbl_regression %>% 
-  bold_p(t = 0.05)
-
-linear_model_kelp_lmer <- lmer(delta_continual ~ time_since_end + (1|site), 
-                         data = continual_after, na.action = na.pass)
-linear_model_kelp_lmer_ri <- lmer(delta_continual ~ time_since_end + (1|site), 
-                         data = continual_after, na.action = na.pass)
-plot(simulateResiduals(linear_model_kelp_lmer))
-check_model(linear_model_kelp_lmer)
-MuMIn::r.squaredGLMM(linear_model_kelp_lmer)
-summary(linear_model_kelp_lmer)
-
-AICc(linear_model_kelp_lme, linear_model_kelp_lme_ri, linear_model_kelp_lmer, linear_model_kelp_lmer_ri)
-
-kelp_tbl <- linear_model_kelp_lme_ri %>% 
-  tbl_regression() %>% 
-  bold_p(t = 0.05)
-
-AICc(linear_model_kelp_lme, linear_model_kelp_lmer)
-
-linear_model_kelp_during_lme <- lme(delta_continual ~ time_since_end, 
-                                    random = ~ 1|time_since_end/site, 
-                                    data = delta_continual)
-summary(linear_model_kelp_during_lme)
-
+# lmer
 linear_model_kelp_during_lmer <- lmer(delta_continual ~ time_since_end + (1|site), 
                                      data = delta_continual %>% filter(exp_dates == "during"), na.action = na.pass)
+
+# diagnostics
 plot(linear_model_kelp_during_lmer)
 plot(simulateResiduals(linear_model_kelp_during_lmer))
 check_model(linear_model_kelp_during_lmer)
 summary(linear_model_kelp_during_lmer)
-linear_model_during_seasonal_v2 <- lmer(delta_continual ~ time_since_end + (1 + time_since_end|site),
-                                     data = delta_continual %>% filter(exp_dates == "during"), na.action = na.pass)
-AICc(linear_model_kelp_during_lmer, linear_model_during_seasonal_v2)
-# AICc(linear_model_during_seasonal, linear_model_during_seasonal_v2)
-MuMIn::r.squaredGLMM(linear_model_kelp_during_lme)
+linear_model_kelp_during_lmer %>% 
+  tbl_regression()
+
+# ggeffects predictions
+predicted_kelp_during_overall <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "fixed")
+predicted_kelp_during_aque <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
+predicted_kelp_during_napl <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "napl"))
+predicted_kelp_during_mohk <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "mohk"))
+predicted_kelp_during_carp <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
+```
+
+#### recovery period
+
+```{r}
+# basic filtering
+continual_after <- delta_continual %>% 
+  filter(exp_dates == "after")
+
+# lmer
+linear_model_kelp_lmer <- lmer(delta_continual ~ time_since_end + (1|site), 
+                         data = continual_after, na.action = na.pass)
+
+# diagnostics
+plot(simulateResiduals(linear_model_kelp_lmer))
+check_model(linear_model_kelp_lmer)
+
+# summary
+MuMIn::r.squaredGLMM(linear_model_kelp_lmer)
+summary(linear_model_kelp_lmer)
+linear_model_kelp_lmer %>% 
+  tbl_regression()
+
+# random intercept
+linear_model_kelp_lmer_ri <- lmer(delta_continual ~ time_since_end + (1|site), 
+                         data = continual_after, na.action = na.pass)
+
+# diagnostics
+plot(simulateResiduals(linear_model_kelp_lmer_ri))
+
+# competing models
+# compare random slope to random intercept
+AICc(linear_model_kelp_lmer, linear_model_kelp_lmer_ri)
+
+# model summary tables
+kelp_tbl <- linear_model_kelp_lmer_ri %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
 
 # ggeffects
-# after
 predicted_kelp_after_overall <- ggpredict(linear_model_kelp_lmer, terms = "time_since_end", type = "fixed")
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [6.4:6.9 by = 0.001]", type = "fixed")
 predicted_kelp_after_aque <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
@@ -783,13 +889,6 @@ predicted_kelp_after_mohk <- ggpredict(linear_model_kelp_lmer, terms = ~ time_si
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [4.5:4.6 by = 0.01]", type = "random", condition = c(site = "mohk"))
 predicted_kelp_after_carp <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.4:3.5 by = 0.01]", type = "random", condition = c(site = "carp"))
-
-# during
-predicted_kelp_during_overall <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "fixed")
-predicted_kelp_during_aque <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
-predicted_kelp_during_napl <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "napl"))
-predicted_kelp_during_mohk <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "mohk"))
-predicted_kelp_during_carp <- ggpredict(linear_model_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
 
 overall <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
@@ -922,36 +1021,23 @@ ggsave(here::here("figures", paste("delta_continual-", todays_date, ".jpg", sep 
 ggsave(here::here("figures", paste("delta_continual_sites-", todays_date, ".jpg", sep = "")), plot = plots_together_sites, height = 8, width = 16, dpi = 150)
 ```
 
-## f. continual with site quality
+### ii. site quality
 
 ```{r}
-linear_model_kelp_lme <- lme(delta_continual ~ time_since_end + quality + time_since_end*quality, 
-                        random = ~ 1|site, 
-                        data = continual_after, na.action = na.pass)
-summary(linear_model_kelp_lme)
-linear_model_kelp_lme %>% 
-  tbl_regression() %>% 
-  bold_p(t = 0.05)
-
 linear_model_kelp_lmer <- lmer(delta_continual ~ time_since_end + quality + time_since_end*quality + (1|site), 
                          data = continual_after, na.action = na.pass)
 plot(simulateResiduals(linear_model_kelp_lmer))
 summary(linear_model_kelp_lmer)
+linear_model_kelp_lmer %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
 
 AICc(linear_model_kelp_lme, linear_model_kelp_lmer)
 
 
-linear_model_kelp_during_lme <- lme(delta_continual ~ time_since_end + quality + time_since_end*quality, 
-                                    random = ~ 1|site, 
-                                    data = delta_continual %>% filter(exp_dates == "during"))
-summary(linear_model_kelp_during_lme)
-
 linear_model_kelp_during_lmer <- lmer(delta_continual ~ time_since_end + quality + time_since_end*quality + (1|site), 
                                      data = delta_continual %>% filter(exp_dates == "during"), na.action = na.pass)
 plot(simulateResiduals(linear_model_kelp_during_lmer))
-# linear_model_during_seasonal_v2 <- lmer(delta_continual ~ time_since_end + (1 + time_since_end|site), 
-#                                      data = delta_continual %>% filter(exp_dates == "during"), na.action = na.pass)
-# AICc(linear_model_during_seasonal, linear_model_during_seasonal_v2)
 
 
 # ggeffects
@@ -1066,8 +1152,7 @@ plots_together
 ggsave(here::here("figures", paste("delta_continual_quality-", todays_date, ".jpg", sep = "")), plot = plots_together, height = 8, width = 16, dpi = 150)
 ```
 
-
-## g. continual (raw biomass)
+## c. continual raw biomass
 
 ```{r}
 linear_model_kelp_raw_lme <- lme(continual ~ time_since_end, 
@@ -1411,12 +1496,18 @@ plots_together
 ggsave(here::here("figures", paste("raw_control-", todays_date, ".jpg", sep = "")), plot = plots_together, height = 8, width = 16, dpi = 150)
 ```
 
-# 7. potential manuscript plots
+
+# 8. potential manuscript plots
 
 ## a. annual removal kelp biomass
 
 ```{r}
-ggsave(here::here("figures", paste("fig1_", todays_date, ".jpg", sep = "")), plot = biomass_by_season_annual, height = 6, width = 8, dpi = 150)
+biomass_by_season_annual_v2
+
+ggsave(here::here("figures", paste("fig1_", todays_date, ".jpg", sep = "")), plot = biomass_by_season_annual_v2, height = 8, width = 8, dpi = 150)
+
+biomass_by_season_annual_boxplot
+ggsave(here::here("figures", paste("fig1_supp_", todays_date, ".jpg", sep = "")), plot = biomass_by_season_annual_boxplot, height = 8, width = 8, dpi = 150)
 ```
 
 ## b. continual removal kelp biomass
@@ -1453,7 +1544,10 @@ fig2 <- sda_kelp_biomass + overall_ms +
   theme(plot.tag = element_text(size = 24))
 fig2
 
-ggsave(here::here("figures", paste("fig2_", todays_date, ".jpg", sep = "")), plot = fig2, height = 8, width = 16, dpi = 150)
+fig2_v2 <- overall_ms 
+fig2_v2
+
+ggsave(here::here("figures", paste("fig2_", todays_date, ".jpg", sep = "")), plot = fig2_v2, height = 8, width = 16, dpi = 150)
 ```
 
 
