@@ -28,7 +28,7 @@ library(nls2) # Fitting non-linear models
 library(AICcmodavg) # calculate second order AIC (AICc)
 library(MuMIn)
 library(boot)
-library(lme4)
+library(lmerTest) # also loads `lme4`
 library(nlme)
 library(DHARMa)
 library(performance)
