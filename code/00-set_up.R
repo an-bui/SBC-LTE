@@ -29,6 +29,7 @@ library(AICcmodavg) # calculate second order AIC (AICc)
 library(MuMIn)
 library(boot)
 library(lmerTest) # also loads `lme4`
+library(glmmTMB)
 library(nlme)
 library(DHARMa)
 library(performance)
@@ -115,17 +116,17 @@ after_dates_column <- function(df) {
     mutate(after_dates = case_when(
       site == "aque" & treatment == "annual" ~ aque_after_date_annual,
       site == "aque" & treatment == "continual" ~ aque_after_date_continual,
-      site == "aque" & treatment == "control" ~ aque_after_date_annual,
+      site == "aque" & treatment == "control" ~ aque_after_date_continual,
       site == "napl" & treatment == "annual" ~ napl_after_date_annual,
       site == "napl" & treatment == "continual" ~ napl_after_date_continual,
-      site == "napl" & treatment == "control" ~ napl_after_date_annual,
+      site == "napl" & treatment == "control" ~ napl_after_date_continual,
       site == "ivee" & treatment == "annual" ~ ivee_after_date_annual,
       site == "mohk" & treatment == "annual" ~ mohk_after_date_annual,
       site == "mohk" & treatment == "continual" ~ mohk_after_date_continual,
-      site == "mohk" & treatment == "control" ~ mohk_after_date_annual,
+      site == "mohk" & treatment == "control" ~ mohk_after_date_continual,
       site == "carp" & treatment == "annual" ~ carp_after_date_annual,
       site == "carp" & treatment == "continual" ~ carp_after_date_continual,
-      site == "carp" & treatment == "control" ~ carp_after_date_annual
+      site == "carp" & treatment == "control" ~ carp_after_date_continual
     ))
 }
 
@@ -508,10 +509,29 @@ all_groups <- biomass %>%
   unique()
 
 # data frame of algae species
-algae_spp <- biomass %>% 
+algae_spp_names <- biomass %>% 
   filter(group == "algae") %>% 
-  select(sp_code, scientific_name, common_name) %>% 
-  unique()
+  dplyr::select(sp_code, scientific_name, common_name, taxon_phylum, taxon_class, taxon_order, taxon_family) %>% 
+  unique() %>% 
+  # fill in missing orders with phyla
+  mutate(tax_group = case_when(
+    taxon_order == -99999  ~ paste("Unidentified ", taxon_phylum, sep = ""),
+    taxon_order = TRUE ~ taxon_order
+  ))
+
+algae_orders <- unique(algae_spp_names$tax_group)
+
+epi_spp_names <- biomass %>% 
+  filter(new_group == "epilithic.sessile.invert") %>% 
+  dplyr::select(sp_code, scientific_name, common_name, taxon_phylum, taxon_class, taxon_order, taxon_family) %>% 
+  unique() %>% 
+  # fill in missing classes with phyla
+  mutate(tax_group = case_when(
+    taxon_class == -99999  ~ paste("Unidentified ", taxon_phylum, sep = ""),
+    taxon_class = TRUE ~ taxon_class
+  ))
+
+epi_classes <- unique(epi_spp_names$tax_group)
 
 # most abundant algae
 common_algae <- c("PH", "PTCA", # Pterygophora californica 
@@ -634,33 +654,33 @@ shape_palette <- c("annual" = annual_shape,
 
 # ⟞ c. site full names ----------------------------------------------------
 
-aque_full <- "Arroyo Quemado (AQUE)"
-napl_full <- "Naples (NAPL)"
-ivee_full <- "Isla Vista (IVEE)"
-mohk_full <- "Mohawk (MOHK)"
-carp_full <- "Carpinteria (CARP)"
+aque_full <- "Arroyo Quemado"
+napl_full <- "Naples"
+ivee_full <- "Isla Vista"
+mohk_full <- "Mohawk"
+carp_full <- "Carpinteria"
 
-sites_full_levels <- c("Arroyo Quemado (AQUE)", 
-                       "Naples (NAPL)", 
-                       "Isla Vista (IVEE)", 
-                       "Mohawk (MOHK)", 
-                       "Carpinteria (CARP)")
+sites_full_levels <- c("Arroyo Quemado", 
+                       "Naples", 
+                       "Isla Vista", 
+                       "Mohawk", 
+                       "Carpinteria")
 
-sites_full <- setNames(c("Arroyo Quemado (AQUE)",
-                         "Naples (NAPL)",
-                         "Isla Vista (IVEE)",
-                         "Mohawk (MOHK)",
-                         "Carpinteria (CARP)"),
+sites_full <- setNames(c("Arroyo Quemado",
+                         "Naples",
+                         "Isla Vista",
+                         "Mohawk",
+                         "Carpinteria"),
                        c("aque",
                          "napl",
                          "ivee",
                          "mohk",
                          "carp"))
 
-sites_continual_full <- setNames(c("Arroyo Quemado (AQUE)",
-                         "Naples (NAPL)",
-                         "Mohawk (MOHK)",
-                         "Carpinteria (CARP)"),
+sites_continual_full <- setNames(c("Arroyo Quemado",
+                         "Naples",
+                         "Mohawk",
+                         "Carpinteria"),
                        c("aque",
                          "napl",
                          "mohk",
