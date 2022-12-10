@@ -8,6 +8,7 @@ library(janitor)
 library(lubridate)
 library(patchwork)
 library(calecopal)
+library(PNWColors)
 library(ggrepel)
 library(plotly)
 library(fuzzyjoin)
@@ -16,6 +17,8 @@ library(rlang)
 library(multcompView)
 library(ggeffects)
 library(ggnewscale)
+library(scales)
+library(ggpubr)
 
 # analysis
 library(vegan)
@@ -605,11 +608,11 @@ todays_date <- Sys.Date()
 
 # ⟞ a. site colors and shapes --------------------------------------------
 
-aque_col <- "#FDD989"
-carp_col <- "#516238"
-ivee_col <- "#4CA2B0"
-mohk_col <- "#985E5C"
-napl_col <- "#D98A63"
+aque_col <- '#0f85a0'
+napl_col <- '#dd4124'
+ivee_col <- '#ed8b00'
+mohk_col <- '#edd746'
+carp_col <- '#00496f'
 
 color_palette_site <- c("aque" = aque_col, 
                         "napl" = napl_col, 
@@ -652,7 +655,15 @@ shape_palette <- c("annual" = annual_shape,
                    "continual" = continual_shape, 
                    "control" = control_shape)
 
-# ⟞ c. site full names ----------------------------------------------------
+
+# ⟞ d. start-during-after colors ------------------------------------------
+
+start_col <- "#FFBF00"
+during_col <- "#54662C"
+after_col <- "#114C54"
+
+
+# ⟞ e. site full names ----------------------------------------------------
 
 aque_full <- "Arroyo Quemado"
 napl_full <- "Naples"
