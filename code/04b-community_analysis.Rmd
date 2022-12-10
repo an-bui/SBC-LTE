@@ -20,23 +20,30 @@ Getting a community matrix and its metadata together.
 ```{r}
 comm_df <- biomass %>% 
   filter(sp_code != "MAPY") %>% 
-  # make a new column for after dates
-  after_dates_column() %>% 
-  # make a new column for during and after and set factor levels
-  exp_dates_column() %>% 
-  # make a new column for group
   new_group_column() %>% 
-  dplyr::select(site, year, month, treatment, date, exp_dates, new_group, sp_code, dry_gm2) %>% 
+  dplyr::select(site, year, month, treatment, date, new_group, sp_code, dry_gm2) %>% 
   pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
   dplyr::select(-annual) %>% 
   mutate(delta_continual = continual - control) %>% 
   drop_na(delta_continual) %>% 
+  # take out years where continual removal hadn't happened yet
+  drop_na(delta_continual) %>% 
+  mutate(exp_dates = case_when(
+    # after for continual removal:
+    site == "aque" & date >= aque_after_date_continual ~ "after",
+    site == "napl" & date >= napl_after_date_continual ~ "after",
+    site == "mohk" & date >= mohk_after_date_continual ~ "after",
+    site == "carp" & date >= carp_after_date_continual ~ "after",
+    # everything else is "during" the experiment
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
   time_since_columns_continual() %>% 
   kelp_year_column() %>% 
   comparison_column_continual() %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename(site_full = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
   full_join(., site_quality, by = "site") %>% 
   dplyr::select(-delta_continual) %>% 
   pivot_longer(cols = c(control, continual), names_to = "treatment", values_to = "dry_gm2") %>% 
@@ -45,14 +52,15 @@ comm_df <- biomass %>%
   filter(site != "ivee")
 
 comm_meta_continual <- comm_df %>% 
-  select(sample_ID:exp_dates, quarter:treatment) %>% 
+  select(sample_ID:exp_dates, quarter:treatment, -sp_code, -new_group) %>% 
+  filter(treatment == "continual") %>% 
   drop_na(comp_2yrs) %>% 
   # weird point?
   filter(sample_ID != "mohk_control_2020-08-12") %>% 
   unique()
 
 comm_meta_control <- comm_df %>% 
-  select(sample_ID:exp_dates, quarter:treatment) %>% 
+  select(sample_ID:exp_dates, quarter:treatment, -sp_code, -new_group) %>% 
   filter(treatment == "control") %>% 
   drop_na(comp_2yrs) %>% 
   # weird point?
@@ -87,202 +95,248 @@ comm_mat_continual_epi_inverts <- comm_df %>%
   column_to_rownames("sample_ID") %>% 
   replace(is.na(.), 0)
 
+comm_mat_control_epi_inverts <- comm_df %>% 
+  filter(new_group == "epi_inverts") %>% 
+  filter(sample_ID %in% comm_meta_control$sample_ID) %>% 
+  select(sample_ID, sp_code, dry_gm2) %>% 
+  pivot_wider(names_from = sp_code, values_from = dry_gm2) %>% 
+  # make the sample_ID column row names
+  column_to_rownames("sample_ID") %>% 
+  replace(is.na(.), 0)
+
 ```
 
-# 2. Bray-Curtis
+# 2. Bray-Curtis 
 
-## a. all
+## a. algae: removal plots
 ```{r}
-bc_continual_dist <- vegdist(comm_mat_continual_algae, "jacc")
-bc_continual_nmds <- metaMDS(comm_mat_continual_algae, "jacc")
+bc_continual_dist <- vegdist(comm_mat_continual_algae, "bray")
+bc_continual_nmds <- metaMDS(comm_mat_continual_algae, "bray")
 stressplot(bc_continual_nmds)
 
 bc_continual_plotdf <- scores(bc_continual_nmds, display = "sites") %>%
     as_tibble() %>% 
     bind_cols(comm_meta_continual, .)
 
-bc_continual_species <- scores(bc_continual_nmds, display = "species") %>% 
-  as.data.frame() %>% 
-  rownames_to_column("scientific_name")
-
-simper(comm_mat_continual_algae, comm_meta_continual$treatment)
+simper_algae <- simper(comm_mat_continual_algae, comm_meta_continual$treatment)
+simper_algae
 # PTCA, CYOS, DL, CC, EC, R, CO
 
-adonis(comm_mat_continual_algae ~ comp_2yrs*treatment, data = comm_meta_continual)
-anova(betadisper(bc_continual_dist, comm_meta_continual$comp_2yrs))
+bc_continual_species <- scores(bc_continual_nmds, display = "species") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("sp_code") %>% 
+  filter(sp_code %in% c("PTCA", "CYOS", "DL", "CC", "EC", "R", "CO")) %>% 
+  left_join(., spp_names, by = "sp_code")
+
+adonis2(comm_mat_continual_algae ~ comp_2yrs, data = comm_meta_continual)
+
+algae_betadisper <- betadisper(bc_continual_dist, comm_meta_continual$comp_2yrs)
+anova(algae_betadisper)
 # not significantly different in dispersion
-
-ggplot(bc_continual_plotdf %>% filter(treatment == "continual"), aes(x = NMDS1, y = NMDS2)) +
-  coord_cartesian() +
-  geom_point(aes(col = comp_2yrs, shape = site_full), size = 3) +
-  # scale_shape_manual(values = shape_palette_site) +
-  # scale_alpha_manual(values = c("continual" = 1, "control" = 0.3)) +
-  theme_bw() +
-  labs(shape = "Site", col = "Experimental period") +
-  theme(panel.grid = element_line(color = "white"))
- 
-
-# aque_comm <- ggplot() +
-#   coord_cartesian() +
-#   # points in experiment period
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "aque" & exp_dates == "during"), 
-#              aes(x = NMDS1, y = NMDS2, shape = treatment), color = "grey", size = 2, alpha = 0.5) +
-#   # points in after period
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "aque" & exp_dates == "after" & treatment == "continual"), 
-#              aes(x = NMDS1, y = NMDS2, color = year), size = 2) +
-#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
-#   new_scale_color() +
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "aque" & exp_dates == "after" & treatment == "control"), 
-#              aes(x = NMDS1, y = NMDS2, color = year), size = 2, shape = 17) +
-#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
-#   new_scale_color() +
-#   # arrows for after in control
-#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "aque" & treatment == "control"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
-#                                                                                                                        yend = c(tail(NMDS2, n = -1), NA),
-#                                                                                                                        color = year),
-#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
-#                size = 0.5) +
-#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
-#   new_scale_color() +
-#   # arrows for after in continual removal
-#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "aque" & treatment == "continual"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
-#                                                                                                                       yend = c(tail(NMDS2, n = -1), NA),
-#                                                                                                                       color = year),
-#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
-#                size = 0.5) +
-#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
-#   new_scale_color() +
-#   
-#   # geom_text(data = bc_continual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
-#   theme_bw() +
-#   theme(panel.grid = element_line(color = "white")) +
-#   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-#   geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
-#   labs(title = "AQUE")
-# 
-# napl_comm <- ggplot() +
-#   coord_cartesian() +
-#   # points in experiment period
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "napl" & exp_dates == "during"), 
-#              aes(x = NMDS1, y = NMDS2, shape = treatment), color = "grey", size = 2, alpha = 0.5) +
-#   # points in after period
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "napl" & exp_dates == "after" & treatment == "continual"), 
-#              aes(x = NMDS1, y = NMDS2, color = year), size = 2) +
-#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
-#   new_scale_color() +
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "napl" & exp_dates == "after" & treatment == "control"), 
-#              aes(x = NMDS1, y = NMDS2, color = year), size = 2, shape = 17) +
-#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
-#   new_scale_color() +
-#   # arrows for after in control
-#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "napl" & treatment == "control"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
-#                                                                                                                        yend = c(tail(NMDS2, n = -1), NA),
-#                                                                                                                        color = year),
-#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
-#                size = 0.5) +
-#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
-#   new_scale_color() +
-#   # arrows for after in continual removal
-#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "napl" & treatment == "continual"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
-#                                                                                                                       yend = c(tail(NMDS2, n = -1), NA),
-#                                                                                                                       color = year),
-#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
-#                size = 0.5) +
-#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
-#   new_scale_color() +
-#   
-#   # geom_text(data = bc_continual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
-#   theme_bw() +
-#   theme(panel.grid = element_line(color = "white"),
-#         legend.position = "none") +
-#   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-#   geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
-#   labs(title = "NAPL")
-# 
-# mohk_comm <- ggplot() +
-#   coord_cartesian() +
-#   # points in experiment period
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "mohk" & exp_dates == "during"), 
-#              aes(x = NMDS1, y = NMDS2, shape = treatment), color = "grey", size = 2, alpha = 0.5) +
-#   # points in after period
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "mohk" & exp_dates == "after" & treatment == "continual"), 
-#              aes(x = NMDS1, y = NMDS2, color = year), size = 2) +
-#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
-#   new_scale_color() +
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "mohk" & exp_dates == "after" & treatment == "control"), 
-#              aes(x = NMDS1, y = NMDS2, color = year), size = 2, shape = 17) +
-#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
-#   new_scale_color() +
-#   # arrows for after in control
-#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "mohk" & treatment == "control"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
-#                                                                                                                        yend = c(tail(NMDS2, n = -1), NA),
-#                                                                                                                        color = year),
-#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
-#                size = 0.5) +
-#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
-#   new_scale_color() +
-#   # arrows for after in continual removal
-#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "mohk" & treatment == "continual"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
-#                                                                                                                       yend = c(tail(NMDS2, n = -1), NA),
-#                                                                                                                       color = year),
-#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
-#                size = 0.5) +
-#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
-#   new_scale_color() +
-#   
-#   # geom_text(data = bc_continual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
-#   theme_bw() +
-#   theme(panel.grid = element_line(color = "white"),
-#         legend.position = "none") +
-#   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-#   geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
-#   labs(title = "MOHK")
-# 
-# carp_comm <- ggplot() +
-#   coord_cartesian() +
-#   # points in experiment period
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "carp" & exp_dates == "during"), 
-#              aes(x = NMDS1, y = NMDS2, shape = treatment), color = "grey", size = 2, alpha = 0.5) +
-#   # points in after period
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "carp" & exp_dates == "after" & treatment == "continual"), 
-#              aes(x = NMDS1, y = NMDS2, color = year), size = 2) +
-#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
-#   new_scale_color() +
-#   geom_point(data = bc_continual_plotdf %>% filter(site == "carp" & exp_dates == "after" & treatment == "control"), 
-#              aes(x = NMDS1, y = NMDS2, color = year), size = 2, shape = 17) +
-#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
-#   new_scale_color() +
-#   # arrows for after in control
-#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "carp" & treatment == "control"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
-#                                                                                                                        yend = c(tail(NMDS2, n = -1), NA),
-#                                                                                                                        color = year),
-#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
-#                size = 0.5) +
-#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
-#   new_scale_color() +
-#   # arrows for after in continual removal
-#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "carp" & treatment == "continual"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
-#                                                                                                                       yend = c(tail(NMDS2, n = -1), NA),
-#                                                                                                                       color = year),
-#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
-#                size = 0.5) +
-#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
-#   new_scale_color() +
-#   
-#   # geom_text(data = bc_continual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
-#   theme_bw() +
-#   theme(panel.grid = element_line(color = "white"),
-#         legend.position = "none") +
-#   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
-#   geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
-#   labs(title = "CARP")
-# 
-# plots_together <- (aque_comm + napl_comm)/(mohk_comm + carp_comm + plot_spacer()) +
-#   plot_layout(guides = "collect")
-# plots_together
 ```
 
-## b. control only
+### i. centroids
+```{r}
+# centroids
+algae_scores <- scores(bc_continual_nmds, display = c("sites"))
+
+algae_centroids <- aggregate(algae_scores ~ comp_2yrs*site_full, data = comm_meta_continual, FUN = "mean")
+
+aque_centroids_contin <- algae_centroids %>% 
+  filter(site_full == "Arroyo Quemado")
+napl_centroids_contin <- algae_centroids %>% 
+  filter(site_full == "Naples")
+mohk_centroids_contin <- algae_centroids %>% 
+  filter(site_full == "Mohawk")
+carp_centroids_contin <- algae_centroids %>% 
+  filter(site_full == "Carpinteria")
+
+# aque_centroids_cont <- algae_centroids %>% 
+#   filter(site_full == "Arroyo Quemado" & treatment == "control")
+# napl_centroids_cont <- algae_centroids %>% 
+#   filter(site_full == "Naples" & treatment == "control")
+# mohk_centroids_cont <- algae_centroids %>% 
+#   filter(site_full == "Mohawk" & treatment == "control")
+# carp_centroids_cont <- algae_centroids %>% 
+#   filter(site_full == "Carpinteria" & treatment == "control")
+
+aque_continual_plotdf <- bc_continual_plotdf %>% 
+  filter(site_full == "Arroyo Quemado")
+napl_continual_plotdf <- bc_continual_plotdf %>% 
+  filter(site_full == "Naples")
+mohk_continual_plotdf <- bc_continual_plotdf %>% 
+  filter(site_full == "Mohawk")
+carp_continual_plotdf <- bc_continual_plotdf %>% 
+  filter(site_full == "Carpinteria")
+
+# aque_control_plotdf <- bc_continual_plotdf %>% 
+#   filter(site_full == "Arroyo Quemado" & treatment == "control")
+# napl_control_plotdf <- bc_continual_plotdf %>% 
+#   filter(site_full == "Naples" & treatment == "control")
+# mohk_control_plotdf <- bc_continual_plotdf %>% 
+#   filter(site_full == "Mohawk" & treatment == "control")
+# carp_control_plotdf <- bc_continual_plotdf %>% 
+#   filter(site_full == "Carpinteria" & treatment == "control")
+```
+
+### ii. sda plot
+```{r}
+algae_sda_nmds_plot <- ggplot(bc_continual_plotdf, aes(x = NMDS1, y = NMDS2)) +
+  # make sure plot is square (ratio comes from axis limits)
+  coord_fixed(3.75/2.75) +
+  # x and y axes at 0
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  # site points
+  geom_point(aes(shape = site_full, fill = comp_2yrs), size = 4, alpha = 0.9) +
+  # ellipse
+  stat_ellipse(aes(color = comp_2yrs), size = 1) +
+  # colors and linetypes
+  scale_alpha_manual(values = c("continual" = 1), guide = "none") +
+  scale_color_manual(values = c(start_col, during_col, after_col), guide = "none") +
+  scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
+  scale_linetype_manual(values = c("continual" = 1)) +
+  scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
+  # arrows for species from SIMPER
+  geom_text_repel(data = bc_continual_species, 
+                  aes(x = NMDS1, y = NMDS2, 
+                      label = stringr::str_wrap(scientific_name, 10, width = 40)),
+                  color = "#C70000", lineheight = 0.8) +
+  geom_segment(data = bc_continual_species,
+               aes(x = 0, y = 0,
+                   xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.5, "cm")), 
+               color = "#C70000", size = 1) +
+  # plot aesthetics
+  theme_classic() +
+  scale_x_continuous(limits = c(-1.75, 2)) +
+  scale_y_continuous(limits = c(-1.25, 1.5), breaks = seq(-1, 1.5, by = 1)) +
+  theme(axis.title = element_text(size = 22),
+        axis.text = element_text(size = 20),
+        legend.text = element_text(size = 20), 
+        legend.title = element_text(size = 20),
+        legend.position = "none") +
+  # ellipse labels. clown shit
+  annotate("text", x = -1.2, y = -0.75, label = "Start of", size = 10, col = start_col) +
+  annotate("text", x = -1.2, y = -0.9, label = "removal", size = 10, col = start_col) +
+  annotate("text", x = 1.7, y = 0.85, label = "End of", size = 10, col = during_col) +
+  annotate("text", x = 1.7, y = 0.7, label = "removal", size = 10, col = during_col) +
+  annotate("text", x = -1.4, y = 1.05, label = "Recovery", size = 10, col = after_col) +
+  annotate("text", x = -1.4, y = 0.9, label = "period", size = 10, col = after_col) +
+  # stress annotation
+  annotate("text", x = -1.6, y = -1.25, label = "Stress = 0.2", size = 5)
+algae_sda_nmds_plot
+```
+
+### iii. year centroids
+
+```{r}
+comm_meta_continual <- comm_df %>% 
+  select(sample_ID:exp_dates, quarter:treatment, -sp_code, -new_group) %>% 
+  # drop_na(comp_2yrs) %>% 
+  # weird point?
+  filter(sample_ID != "mohk_control_2020-08-12") %>% 
+  unique()
+
+comm_mat_continual_algae <- comm_df %>% 
+  filter(new_group == "algae") %>% 
+  filter(sample_ID %in% comm_meta_continual$sample_ID) %>% 
+  select(sample_ID, sp_code, dry_gm2) %>% 
+  pivot_wider(names_from = sp_code, values_from = dry_gm2) %>% 
+  # make the sample_ID column row names
+  column_to_rownames("sample_ID") %>% 
+  replace(is.na(.), 0)
+
+bc_continual_dist <- vegdist(comm_mat_continual_algae, "bray")
+bc_continual_nmds <- metaMDS(comm_mat_continual_algae, "bray")
+
+bc_continual_plotdf <- scores(bc_continual_nmds, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(comm_meta_continual, .)
+
+adonis2(comm_mat_continual_algae ~ kelp_year, data = comm_meta_continual)
+
+algae_betadisper <- betadisper(bc_continual_dist, comm_meta_continual$kelp_year)
+anova(algae_betadisper)
+
+algae_scores <- scores(bc_continual_nmds, display = "sites", "species")
+algae_year_centroids <- aggregate(algae_scores ~ site_full*treatment*kelp_year, data = comm_meta_continual, FUN = "mean")
+
+aque_centroids_contin <- algae_year_centroids %>% 
+  filter(site_full == "Arroyo Quemado" & treatment == "continual")
+napl_centroids_contin <- algae_year_centroids %>% 
+  filter(site_full == "Naples" & treatment == "continual")
+mohk_centroids_contin <- algae_year_centroids %>% 
+  filter(site_full == "Mohawk" & treatment == "continual")
+carp_centroids_contin <- algae_year_centroids %>% 
+  filter(site_full == "Carpinteria" & treatment == "continual")
+
+aque_centroids_cont <- algae_year_centroids %>% 
+  filter(site_full == "Arroyo Quemado" & treatment == "control")
+napl_centroids_cont <- algae_year_centroids %>% 
+  filter(site_full == "Naples" & treatment == "control")
+mohk_centroids_cont <- algae_year_centroids %>% 
+  filter(site_full == "Mohawk" & treatment == "control")
+carp_centroids_cont <- algae_year_centroids %>% 
+  filter(site_full == "Carpinteria" & treatment == "control")
+
+ggplot(aque_centroids_contin, aes(x = NMDS1, y = NMDS2, alpha = treatment)) +
+  geom_segment(aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1, color = aque_col) +
+  geom_segment(data = napl_centroids_contin, 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1, color = napl_col) +
+  geom_segment(data = mohk_centroids_contin, 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1, color = mohk_col) +
+  geom_segment(data = carp_centroids_contin, 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1, color = carp_col) +
+  geom_segment(data = aque_centroids_cont,
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1, color = aque_col) +
+  geom_segment(data = napl_centroids_cont, 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1, color = napl_col) +
+  geom_segment(data = mohk_centroids_cont, 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1, color = mohk_col) +
+  geom_segment(data = carp_centroids_cont, 
+               aes(x = NMDS1, y = NMDS2, 
+                   xend = c(tail(NMDS1, n = -1), NA), 
+                   yend = c(tail(NMDS2, n = -1), NA)),
+               arrow = arrow(length = unit(0.3, "cm")),
+               size = 1, color = carp_col) +
+  scale_alpha_manual(values = c("continual" = 1, "control" = 0.6)) +
+  coord_cartesian() +
+  theme_classic()
+
+  
+```
+
+
+## b. algae: control only
 
 ```{r}
 bc_control_dist <- vegdist(comm_mat_control_algae, "bray")
@@ -297,18 +351,188 @@ bc_control_species <- scores(bc_control_nmds, display = "species") %>%
   as.data.frame() %>% 
   rownames_to_column("scientific_name")
 
-adonis(comm_mat_control_algae ~ comp_2yrs, data = comm_meta_control)
+adonis2(comm_mat_control_algae ~ comp_2yrs, data = comm_meta_control)
 anova(betadisper(bc_control_dist, comm_meta_control$comp_2yrs))
-# not significantly different in dispersion
+# differences in dispersion
 
-ggplot(data = bc_control_plotdf, aes(x = NMDS1, y = NMDS2, col = comp_2yrs)) +
-  coord_cartesian() +
-  geom_point(aes(shape = site),
-             size = 2) +
-  stat_ellipse() +
-  labs(title = "Control plots only", 
-       caption = "Control plots are significantly different by time period")
+algae_control_sda_nmds_plot <- ggplot(bc_control_plotdf, aes(x = NMDS1, y = NMDS2, fill = comp_2yrs)) +
+  coord_fixed(3.75/2.5) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(aes(shape = site_full, fill = comp_2yrs), size = 4, alpha = 0.9) +
+  stat_ellipse(aes(color = comp_2yrs), size = 1, lty = 2) +
+  # scale_alpha_manual(values = c("control" = 0.5, "continual" = 1), guide = "none") +
+  scale_color_manual(values = c(start_col, during_col, after_col), guide = "none") +
+  scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
+  scale_linetype_manual(values = c("control" = 2, "continual" = 1)) +
+  scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
+  theme_classic() +
+  scale_x_continuous(limits = c(-1.75, 2)) +
+  scale_y_continuous(limits = c(-1, 1.5), breaks = seq(-1, 1.5, by = 1)) +
+  theme(axis.title = element_text(size = 22),
+        axis.text = element_text(size = 20),
+        legend.text = element_text(size = 20), 
+        legend.title = element_text(size = 20),
+        # plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none") +
+  annotate("text", x = -1.5, y = -0.75, label = "Start of", size = 10, col = start_col) +
+  annotate("text", x = -1.5, y = -0.85, label = "removal", size = 10, col = start_col) +
+  annotate("text", x = 1.7, y = 0.85, label = "End of", size = 10, col = during_col) +
+  annotate("text", x = 1.7, y = 0.75, label = "removal", size = 10, col = during_col) +
+  annotate("text", x = -1.4, y = 1.05, label = "Recovery", size = 10, col = after_col) +
+  annotate("text", x = -1.4, y = 0.95, label = "period", size = 10, col = after_col) +
+  annotate("text", x = -1.6, y = -1, label = "Stress = 0.2", size = 5)
+algae_control_sda_nmds_plot
 ```
+
+## c. inverts: removal plots
+
+```{r}
+bc_inverts_continual_dist <- vegdist(comm_mat_continual_epi_inverts, "bray")
+bc_inverts_continual_nmds <- metaMDS(comm_mat_continual_epi_inverts, "bray")
+stressplot(bc_inverts_continual_nmds)
+
+bc_inverts_continual_plotdf <- scores(bc_inverts_continual_nmds, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(comm_meta_continual, .)
+
+simper_inverts <- simper(comm_mat_continual_epi_inverts, comm_meta_continual$treatment)
+summary(simper_inverts)
+# MUCA, ANSP, TEAU, STMO, CRGI, URLO, CUSP
+
+bc_inverts_continual_species <- scores(bc_inverts_continual_nmds, display = "species") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("sp_code") %>% 
+  filter(sp_code %in% c("MUCA", "ANSP", "TEAU", "STMO", "CRGI", "URLO", "CUSP")) %>% 
+  left_join(., spp_names, by = "sp_code")
+
+adonis2(comm_mat_continual_epi_inverts ~ comp_2yrs, data = comm_meta_continual)
+
+inverts_betadisper <- betadisper(bc_inverts_continual_dist, comm_meta_continual$comp_2yrs)
+anova(inverts_betadisper)
+# significantly different in dispersion
+```
+
+### i. centroids
+
+no centroids, I've decided
+
+### ii. sda plot
+```{r}
+inverts_sda_nmds_plot <- ggplot(bc_inverts_continual_plotdf, aes(x = NMDS1, y = NMDS2)) +
+  coord_fixed(3/3.25) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(aes(shape = site_full, fill = comp_2yrs), size = 4, alpha = 0.9) +
+  stat_ellipse(aes(color = comp_2yrs), size = 1) +
+  # scale_alpha_manual(values = c("control" = 0.5, "continual" = 1), guide = "none") +
+  scale_color_manual(values = c(start_col, during_col, after_col), guide = "none") +
+  scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
+  scale_linetype_manual(values = c("control" = 2, "continual" = 1)) +
+  scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
+  # arrows for species from SIMPER
+  geom_text_repel(data = bc_inverts_continual_species, 
+                  aes(x = NMDS1, y = NMDS2, label = stringr::str_wrap(scientific_name, 10, width = 30)),
+                  color = "#C70000", lineheight = 0.8) +
+  geom_segment(data = bc_inverts_continual_species,
+               aes(x = 0, y = 0,
+                   xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.5, "cm")), 
+               color = "#C70000", size = 1) +
+  theme_classic() +
+  scale_x_continuous(limits = c(-1.5, 1.5)) +
+  scale_y_continuous(limits = c(-1.75, 1.5), breaks = seq(-2, 2, by = 1)) +
+  theme(axis.title = element_text(size = 22),
+        axis.text = element_text(size = 20),
+        legend.text = element_text(size = 20), 
+        legend.title = element_text(size = 20)) +
+  labs(shape = "Site") +
+  annotate("text", x = -0.5, y = -1.1, label = "Start of", size = 10, col = start_col) +
+  annotate("text", x = -0.5, y = -1.25, label = "removal", size = 10, col = start_col) +
+  annotate("text", x = 0.8, y = -1.3, label = "End of", size = 10, col = during_col) +
+  annotate("text", x = 0.8, y = -1.45, label = "removal", size = 10, col = during_col) +
+  annotate("text", x = 1.3, y = -0.3, label = "Recovery", size = 10, col = after_col) +
+  annotate("text", x = 1.3, y = -0.45, label = "period", size = 10, col = after_col) +
+  annotate("text", x = -1.4, y = -1.75, label = "Stress = 0.3", size = 5)
+inverts_sda_nmds_plot
+```
+
+## d. inverts: control
+
+```{r}
+bc_inverts_control_dist <- vegdist(comm_mat_control_epi_inverts, "bray")
+bc_inverts_control_nmds <- metaMDS(comm_mat_control_epi_inverts, "bray")
+stressplot(bc_inverts_control_nmds)
+
+bc_inverts_control_plotdf <- scores(bc_inverts_control_nmds, display = "sites") %>%
+    as_tibble() %>% 
+    bind_cols(comm_meta_control, .)
+
+bc_inverts_control_species <- scores(bc_inverts_control_nmds, display = "species") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("scientific_name")
+
+simper_inverts <- simper(comm_mat_control_epi_inverts, comm_meta_control$treatment)
+summary(simper_inverts)
+# MUCA, ANSP, TEAU, STMO, CRGI, URLO, CUSP
+
+adonis2(comm_mat_control_epi_inverts ~ comp_2yrs, data = comm_meta_control)
+
+inverts_betadisper <- betadisper(bc_inverts_control_dist, comm_meta_control$comp_2yrs)
+anova(inverts_betadisper)
+# significantly different in dispersion
+
+inverts_control_sda_nmds_plot <- ggplot(bc_inverts_control_plotdf, aes(x = NMDS1, y = NMDS2, fill = comp_2yrs)) +
+  coord_fixed(3/3.25) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(aes(shape = site_full, fill = comp_2yrs), size = 4, alpha = 0.9) +
+  stat_ellipse(aes(color = comp_2yrs), size = 1, lty = 2) +
+  # scale_alpha_manual(values = c("control" = 0.5, "continual" = 1), guide = "none") +
+  scale_color_manual(values = c(start_col, during_col, after_col), guide = "none") +
+  scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
+  scale_linetype_manual(values = c("control" = 2, "continual" = 1)) +
+  scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
+  theme_classic() +
+  scale_x_continuous(limits = c(-1.5, 1.5)) +
+  scale_y_continuous(limits = c(-1.75, 1.5), breaks = seq(-2, 2, by = 1)) +
+  theme(axis.title = element_text(size = 22),
+        axis.text = element_text(size = 20),
+        legend.text = element_text(size = 20), 
+        legend.title = element_text(size = 20)) +
+  labs(shape = "Site") +
+  annotate("text", x = -1, y = -1.3, label = "Start of", size = 10, col = start_col) +
+  annotate("text", x = -1, y = -1.45, label = "removal", size = 10, col = start_col) +
+  annotate("text", x = 0.7, y = -1.35, label = "End of", size = 10, col = during_col) +
+  annotate("text", x = 0.7, y = -1.5, label = "removal", size = 10, col = during_col) +
+  annotate("text", x = 1.2, y = 0.4, label = "Recovery", size = 10, col = after_col) +
+  annotate("text", x = 1.2, y = 0.25, label = "period", size = 10, col = after_col) +
+  annotate("text", x = -1.4, y = -1.75, label = "Stress = 0.2", size = 5)
+inverts_control_sda_nmds_plot
+```
+
+
+## e. potential manuscript figures
+
+```{r}
+fig4 <- (algae_sda_nmds_plot | inverts_sda_nmds_plot) +
+  plot_layout(widths = c(1, 1)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 30))
+
+fig4
+
+ggsave(here::here("figures", paste("fig4_", todays_date, ".jpg", sep = "")), plot = fig4, height = 9.5, width = 22, dpi = 150)
+
+supp_control <- (algae_control_sda_nmds_plot | inverts_control_sda_nmds_plot) +
+  plot_layout(widths = c(1, 1)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 30))
+supp_control
+
+ggsave(here::here("figures", paste("fig4_supp_", todays_date, ".jpg", sep = "")), plot = supp_control, height = 9.5, width = 22, dpi = 150)
+```
+
 
 # 3. rank abundances
 
@@ -609,7 +833,7 @@ delta_sp_df <- biomass %>%
   comparison_column_continual() %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename(site_full = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
   full_join(., site_quality, by = "site")
 ```
 
@@ -647,7 +871,100 @@ ggsave(here::here("figures", "sda_algae_panel.jpg"), height = 20, width = 20, dp
 ### during/after tile or table
 
 ```{r}
-sda_algae_tile <- delta_sp_df %>% 
+sda_algae_df <- delta_sp_df %>% 
+  filter(sp_code %in% algae_spp) %>% 
+  drop_na(comp_2yrs) %>% 
+  group_by(sp_code, comp_2yrs) %>% 
+  summarize(mean_deltas = mean(delta_continual),
+            mean_continual = mean(continual)) %>% 
+  ungroup() %>% 
+  mutate(fill = case_when(
+    round(mean_deltas, 3) > 0 ~ "> control",
+    round(mean_deltas, 3) < 0 ~ "< control",
+    round(mean_deltas, 3) == 0 ~ "no difference"
+  )) %>% 
+  mutate(fill = fct_relevel(fill, "> control", "no difference", "< control")) %>% 
+  arrange(sp_code) %>% 
+  mutate(facet_col = case_when(
+    comp_2yrs == "start" & fill == "> control" ~ "facet1",
+    comp_2yrs == "start" & fill == "no difference" ~ "facet2",
+    comp_2yrs == "start" & fill == "< control" ~ "facet3"
+  )) %>% 
+  fill(facet_col, .direction = "down") %>% 
+  left_join(., algae_spp_names, by = "sp_code")
+```
+
+```{r}
+sda_algae_greater <- sda_algae_df %>% 
+  filter(facet_col == "facet1") %>% 
+  arrange(desc(scientific_name)) %>% 
+  mutate(scientific_name = fct_inorder(scientific_name)) %>% 
+  ggplot() +
+  # geom_raster(aes(x = comp_2yrs, y = sp_code, fill = fill), color = "#FFFFFF") +
+  geom_tile(aes(x = comp_2yrs, y = scientific_name, fill = fill), color = "#FFFFFF", width = 1, height = 1) +
+  geom_text(aes(x = comp_2yrs, y = scientific_name, label = signif(mean_continual, 2)), size = 3) +
+  scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0), labels = function(x) str_wrap(x, width = 30)) +
+  theme_bw() +
+  labs(x = " ",
+       y = " ",
+       fill = " ") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 0.75)) 
+sda_algae_greater
+
+sda_algae_nodiff <- sda_algae_df %>% 
+  filter(facet_col == "facet2") %>% 
+  arrange(desc(scientific_name)) %>% 
+  mutate(scientific_name = fct_inorder(scientific_name)) %>% 
+  ggplot() +
+  # geom_raster(aes(x = comp_2yrs, y = sp_code, fill = fill), color = "#FFFFFF") +
+  geom_tile(aes(x = comp_2yrs, y = scientific_name, fill = fill), color = "#FFFFFF", width = 1, height = 1) +
+  geom_text(aes(x = comp_2yrs, y = scientific_name, label = signif(mean_deltas, 2)), size = 3) +
+  scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  theme_bw() +
+  labs(x = " ",
+       y = " ",
+       fill = " ") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 0.75)) 
+sda_algae_nodiff
+
+sda_algae_lesser <- sda_algae_df %>% 
+  filter(facet_col == "facet3") %>% 
+  arrange(desc(scientific_name)) %>% 
+  mutate(scientific_name = fct_inorder(scientific_name)) %>% 
+  ggplot() +
+  # geom_raster(aes(x = comp_2yrs, y = sp_code, fill = fill), color = "#FFFFFF") +
+  geom_tile(aes(x = comp_2yrs, y = scientific_name, fill = fill), color = "#FFFFFF", width = 1, height = 1) +
+  geom_text(aes(x = comp_2yrs, y = scientific_name, label = round(mean_continual, 2)), size = 3) +
+  scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  theme_bw() +
+  labs(x = " ",
+       y = " ",
+       fill = " ") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 0.75)) 
+sda_algae_lesser
+
+sda_algae_tile <- sda_algae_greater + sda_algae_nodiff + sda_algae_lesser
+
+sda_algae_tile
+```
+
+
+### during/after histogram
+
+```{r}
+sda_algae_hist <- delta_sp_df %>% 
   filter(sp_code %in% algae_spp) %>% 
   drop_na(comp_2yrs) %>% 
   group_by(sp_code, comp_2yrs) %>% 
@@ -658,28 +975,25 @@ sda_algae_tile <- delta_sp_df %>%
     mean_deltas < 0 ~ "< control",
     mean_deltas == 0 ~ "no difference"
   )) %>% 
-  # filter(comp_2yrs != "start") %>% 
-  arrange(comp_2yrs, mean_deltas) %>% 
-  mutate(sp_code = fct_inorder(sp_code)) %>% 
-  # mutate(fill = fct_relevel(fill, "increase", "no_change", "decrease")) %>% 
+  mutate(fill = fct_relevel(fill, "> control", "no difference", "< control")) %>% 
   ggplot() +
-  geom_tile(aes(x = comp_2yrs, y = sp_code, fill = fill), alpha = 0.8, color = "#FFFFFF", width = 0.9, height = 0.9) +
+  geom_histogram(aes(x = comp_2yrs, fill = fill), position = "dodge", stat = "count") +
   scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
-  labs(x = " ",
-       y = " ",
-       fill = " ",
-       title = "Algae") +
+  # aesthetics
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 32)) +
   theme_bw() +
-  theme(legend.position = "none",
-        panel.grid = element_line(color = "white"), 
-        axis.title = element_text(size = 18),
+  theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
-        axis.text = element_text(size = 12),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.text = element_text(size = 16)) +
-  coord_fixed()
-
-sda_algae_tile
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        legend.title = element_text(size = 16),
+        legend.position = c(0.15, 0.9),
+        plot.margin = margin(0, 0, 0, 0),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time period", 
+       y = "Number of species",
+       fill = "\U0394 biomass",
+       title = "Algae")
 ```
 
 
@@ -896,7 +1210,109 @@ ggsave(here::here("figures", "sda_invert_panel.jpg"), height = 30, width = 30, d
 ### during/after tile 
 
 ```{r}
-sda_epi_tile <- delta_sp_df %>% 
+sda_epi_df <- delta_sp_df %>% 
+  left_join(., guilds, by = c("sp_code" = "sp.code")) %>% 
+  filter(new_group == "epilithic.sessile.invert") %>% 
+  drop_na(comp_2yrs) %>% 
+  group_by(sp_code, comp_2yrs) %>% 
+  summarize(mean_deltas = mean(delta_continual),
+            mean_continual = mean(continual)) %>% 
+  ungroup() %>% 
+  mutate(fill = case_when(
+    round(mean_deltas, 3) > 0 ~ "> control",
+    round(mean_deltas, 3) < 0 ~ "< control",
+    round(mean_deltas, 3) == 0 ~ "no difference"
+  )) %>% 
+  mutate(fill = fct_relevel(fill, "> control", "no difference", "< control")) %>% 
+  mutate(facet_col = case_when(
+    comp_2yrs == "start" & fill == "> control" ~ "facet1",
+    sp_code %in% c("HC", "HPAC", "MT") ~ "facet1",
+    comp_2yrs == "start" & fill == "no difference" ~ "facet2",
+    sp_code %in% c("PHSP", "AS", "BOW", "BA", "BN", "BCAL",
+                   "CESP", "COST", "CHPR", "CL", "CY", "CRGI",
+                   "CROC", "CUSP", "DC", "ARUD") ~ "facet2", 
+    comp_2yrs == "start" & fill == "< control" ~ "facet3"
+  )) %>% 
+  fill(facet_col, .direction = "down") %>% 
+  left_join(., epi_spp_names, by = "sp_code")
+
+sda_epi_facet1 <- sda_epi_df %>% 
+  filter(facet_col %in% c("facet1")) %>% 
+  arrange(comp_2yrs, desc(fill), desc(scientific_name)) %>%
+  mutate(scientific_name = fct_inorder(scientific_name)) %>% 
+  ggplot() +
+  geom_tile(aes(x = comp_2yrs, y = scientific_name, fill = fill), color = "#FFFFFF", width = 1, height = 1) +
+  geom_text(aes(x = comp_2yrs, y = scientific_name, label = signif(mean_continual, 2)), size = 3) +
+  scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0), labels = function(x) str_wrap(x, width = 40)) +
+  theme_bw() +
+  labs(x = " ",
+       y = " ",
+       fill = " ") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 0.75)) 
+sda_epi_facet1
+
+sda_epi_facet2 <- sda_epi_df %>% 
+  filter(facet_col == "facet2") %>% 
+  arrange(comp_2yrs, desc(fill), desc(scientific_name)) %>%
+  mutate(scientific_name = fct_inorder(scientific_name)) %>% 
+  ggplot() +
+  # geom_raster(aes(x = comp_2yrs, y = sp_code, fill = fill), color = "#FFFFFF") +
+  geom_tile(aes(x = comp_2yrs, y = scientific_name, fill = fill), color = "#FFFFFF", width = 1, height = 1) +
+  geom_text(aes(x = comp_2yrs, y = scientific_name, label = signif(mean_continual, 2)), size = 3) +
+  scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  theme_bw() +
+  labs(x = " ",
+       y = " ",
+       fill = " ") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 0.75)) 
+sda_epi_facet2
+
+sda_epi_facet3 <- sda_epi_df %>% 
+  filter(facet_col == "facet3") %>% 
+  arrange(desc(scientific_name)) %>% 
+  mutate(scientific_name = fct_inorder(scientific_name)) %>% 
+  ggplot() +
+  # geom_raster(aes(x = comp_2yrs, y = sp_code, fill = fill), color = "#FFFFFF") +
+  geom_tile(aes(x = comp_2yrs, y = scientific_name, fill = fill), color = "#FFFFFF", width = 1, height = 1) +
+  geom_text(aes(x = comp_2yrs, y = scientific_name, label = signif(mean_continual, 2)), size = 3) +
+  scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  theme_bw() +
+  labs(x = " ",
+       y = " ",
+       fill = " ") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 0.75)) 
+sda_epi_facet3
+
+sda_epi_tile <- sda_epi_facet1 + sda_epi_facet2 + sda_epi_facet3
+
+sda_epi_tile
+
+plots_together_tile <- sda_algae_tile / sda_epi_tile &
+  plot_annotation(tag_levels = list(c("A", "", "", "B", "", ""))) &
+  theme(plot.tag = element_text(size = 20))
+plots_together_tile
+
+
+ggsave(here::here("figures", paste("algae_invert_tile-", todays_date, ".jpg", sep = "")), 
+       plot = plots_together_tile, 
+       height = 12, width = 14, dpi = 150)
+```
+
+### during/after histogram
+```{r}
+sda_invert_hist <- delta_sp_df %>% 
   left_join(., guilds, by = c("sp_code" = "sp.code")) %>% 
   filter(new_group == "epilithic.sessile.invert") %>% 
   drop_na(comp_2yrs) %>% 
@@ -908,38 +1324,31 @@ sda_epi_tile <- delta_sp_df %>%
     mean_deltas < 0 ~ "< control",
     mean_deltas == 0 ~ "no difference"
   )) %>% 
-  # filter(comp_2yrs != "start") %>% 
-  arrange(comp_2yrs, mean_deltas) %>% 
-  mutate(sp_code = fct_inorder(sp_code)) %>% 
-  # mutate(fill = fct_relevel(fill, "increase", "no_change", "decrease")) %>% 
+  mutate(fill = fct_relevel(fill, "> control", "no difference", "< control")) %>% 
   ggplot() +
-  geom_tile(aes(x = comp_2yrs, y = sp_code, fill = fill), alpha = 0.8, color = "#FFFFFF", width = 0.9, height = 0.9) +
+  geom_histogram(aes(x = comp_2yrs, fill = fill), position = "dodge", stat = "count") +
   scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
-  labs(x = " ",
-       y = " ",
-       fill = " ",
-       title = "Epilithic invertebrates") +
+  # aesthetics
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 40)) +
   theme_bw() +
-  theme(legend.position = "right",
-        panel.grid = element_line(color = "white"), 
-        axis.title = element_text(size = 18),
+  theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
-        axis.text = element_text(size = 12),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.text = element_text(size = 16)) +
-  coord_fixed()
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        legend.title = element_text(size = 16),
+        legend.position = "none",
+        plot.margin = margin(0, 0, 0, 0),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time period", 
+       y = "Number of species",
+       fill = "\U0394 biomass",
+       title = "Epilithic invertebrates")
 
-sda_epi_tile
+plots_together <- sda_algae_hist + sda_invert_hist &
+    plot_annotation(tag_levels = "A") &
+    theme(plot.tag = element_text(size = 20))
 
-plots_together_tile <- sda_algae_tile | sda_epi_tile &
-  plot_annotation(tag_levels = "A") &
-  theme(plot.tag = element_text(size = 20))
-plots_together_tile
-
-
-ggsave(here::here("figures", paste("algae_invert_tile-", todays_date, ".jpg", sep = "")), 
-       plot = plots_together_tile, 
-       height = 12, width = 9, dpi = 150)
+ggsave(here::here("figures", paste("sda_hist_", todays_date, ".jpg", sep = "")), plot = plots_together, height = 8, width = 16, dpi = 150)
 ```
 
 
@@ -1056,7 +1465,171 @@ epi_inverts_am <- delta_sp_df %>%
 epi_inverts_am
 ```
 
-## d. endolithic invertebrates
+## d. tiles by tax group
+
+### function
+```{r}
+taxon_tile_function <- function(taxon, group = c("algae", "epi")) {
+  df <- if(taxon %in% algae_orders & group == "algae") {
+    sda_algae_df
+  } else if(taxon %in% epi_classes & group == "epi") {
+    sda_epi_df
+  } else {
+    warning("The inputs provided (", order, " and ", group, ") are not as expected. Double check spelling.")
+    return(NA)
+  }
+  
+  df %>% 
+    filter(tax_group == {{ taxon }}) %>% 
+    arrange(comp_2yrs, desc(fill), desc(scientific_name)) %>% 
+    mutate(scientific_name = fct_inorder(scientific_name)) %>% 
+    ggplot() +
+    # geom_raster(aes(x = comp_2yrs, y = sp_code, fill = fill), color = "#FFFFFF") +
+    geom_tile(aes(x = comp_2yrs, y = scientific_name, fill = fill), color = "#FFFFFF", width = 1, height = 1) +
+    geom_text(aes(x = comp_2yrs, y = scientific_name, label = round(mean_continual, 2)), size = 3.5) +
+    scale_fill_manual(values = c("> control" = "#eb5a1c", "no difference" = "#accaf2", "< control" = "#498c49")) +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_discrete(expand = c(0, 0), labels = function(x) str_wrap(x, width = 20)) +
+    theme_bw() +
+    labs(x = " ",
+         y = " ",
+         fill = " ",
+         title = str_wrap(taxon, 10)) +
+    coord_fixed() +
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = 45, hjust = 0.75)) 
+}
+
+# test
+taxon_tile_function("Bryopsidales", "epi")
+```
+
+### algae
+
+```{r}
+sda_algae_coral <- taxon_tile_function("Corallinales", "algae")
+sda_algae_ceram <- taxon_tile_function("Ceramiales", "algae")
+sda_algae_lamin <- taxon_tile_function("Laminariales", "algae")
+sda_algae_rhodo <- taxon_tile_function("Unidentified Rhodophyta", "algae")
+sda_algae_gigar <- taxon_tile_function("Gigartinales", "algae")
+sda_algae_clado <- taxon_tile_function("Cladophorales", "algae")
+sda_algae_bryop <- taxon_tile_function("Bryopsidales", "algae")
+sda_algae_ectoc <- taxon_tile_function("Ectocarpales", "algae")
+sda_algae_fucal <- taxon_tile_function("Fucales", "algae")
+sda_algae_desma <- taxon_tile_function("Desmarestiales", "algae")
+sda_algae_dicty <- taxon_tile_function("Dictyotales", "algae")
+sda_algae_hilde <- taxon_tile_function("Hildenbrandiales", "algae")
+sda_algae_rhody <- taxon_tile_function("Rhodymeniales", "algae")
+sda_algae_chlor <- taxon_tile_function("Unidentified Chlorophyta", "algae")
+sda_algae_gelid <- taxon_tile_function("Gelidiales", "algae")
+sda_algae_graci <- taxon_tile_function("Gracilariales", "algae")
+sda_algae_palma <- taxon_tile_function("Palmariales", "algae")
+sda_algae_halym <- taxon_tile_function("Halymeniales", "algae")
+sda_algae_nemal <- taxon_tile_function("Nemaliales", "algae")
+sda_algae_ochro <- taxon_tile_function("Unidentified Ochrophyta", "algae")
+sda_algae_ulval <- taxon_tile_function("Ulvales", "algae")
+
+# chlorophyta
+sda_algae_ulval
+sda_algae_bryop
+sda_algae_clado
+sda_algae_chlor
+
+# rhodophyta
+sda_algae_rhody
+sda_algae_halym
+sda_algae_graci
+sda_algae_ceram
+sda_algae_gelid
+sda_algae_gigar
+sda_algae_nemal
+sda_algae_coral
+sda_algae_palma
+sda_algae_hilde
+sda_algae_rhodo
+
+# ochrophyta
+sda_algae_ectoc
+sda_algae_lamin
+sda_algae_fucal
+sda_algae_desma
+sda_algae_dicty
+sda_algae_ochro
+
+sda_algae_by_tax <- ((sda_algae_ulval / sda_algae_bryop / sda_algae_clado / sda_algae_chlor / sda_algae_rhody / sda_algae_halym) | 
+  (sda_algae_graci / sda_algae_ceram / sda_algae_gelid) |
+  (sda_algae_gigar / sda_algae_nemal / sda_algae_coral) | 
+  (sda_algae_palma / sda_algae_hilde / sda_algae_rhodo / sda_algae_ectoc / sda_algae_lamin) |
+  (sda_algae_fucal / sda_algae_desma / sda_algae_dicty / sda_algae_ochro))
+sda_algae_by_tax 
+
+ggsave(here::here("figures", paste("sda_algae_by_tax-", todays_date, ".jpg", sep = "")), 
+       plot = sda_algae_by_tax,  
+       height = 14, width = 20, dpi = 150)
+
+```
+
+### epi inverts
+```{r}
+sda_epi_hydro <- taxon_tile_function("Hydrozoa", "epi")
+sda_epi_antho <- taxon_tile_function("Anthozoa", "epi")
+sda_epi_ascid <- taxon_tile_function("Ascidiacea", "epi")
+sda_epi_malac <- taxon_tile_function("Malacostraca", "epi")
+sda_epi_hexan <- taxon_tile_function("Hexanauplia", "epi")
+sda_epi_gymno <- taxon_tile_function("Gymnolaemata", "epi")
+sda_epi_polyc <- taxon_tile_function("Polychaeta", "epi")
+sda_epi_bival <- taxon_tile_function("Bivalvia", "epi")
+sda_epi_steno <- taxon_tile_function("Stenolaemata", "epi")
+sda_epi_holot <- taxon_tile_function("Holothuroidea", "epi")
+sda_epi_demos <- taxon_tile_function("Demospongiae", "epi")
+sda_epi_calca <- taxon_tile_function("Calcarea", "epi")
+sda_epi_gastr <- taxon_tile_function("Gastropoda", "epi")
+sda_epi_entop <- taxon_tile_function("Unidentified Entoprocta", "epi")
+sda_epi_bryoz <- taxon_tile_function("Unidentified Bryozoa", "epi")
+
+# porifera
+sda_epi_demos
+sda_epi_calca
+
+# cnidaria
+sda_epi_hydro
+sda_epi_antho
+
+# mollusca
+sda_epi_gastr
+sda_epi_bival
+
+# annelida
+sda_epi_polyc
+
+# arthropoda
+sda_epi_malac
+sda_epi_hexan
+
+# Bryozoa
+sda_epi_steno
+sda_epi_gymno
+sda_epi_bryoz
+
+# entoprocta
+sda_epi_entop
+
+# echinodermata
+sda_epi_holot
+
+# chordata
+sda_epi_ascid
+
+sda_epi_by_tax <- (((sda_epi_demos / sda_epi_calca / sda_epi_hydro) | (sda_epi_antho)) | (sda_epi_gastr / sda_epi_bival / sda_epi_polyc) | (sda_epi_malac / sda_epi_hexan / sda_epi_gymno) | (sda_epi_steno / sda_epi_bryoz / sda_epi_entop / sda_epi_holot) | sda_epi_ascid) 
+sda_epi_by_tax
+
+ggsave(here::here("figures", paste("sda_epi_by_tax-", todays_date, ".jpg", sep = "")), 
+       plot = sda_epi_by_tax,  
+       height = 10, width = 20, dpi = 150)
+```
+
+
+## e. endolithic invertebrates
 
 ### during/after comparison
 
@@ -1226,7 +1799,7 @@ prop_algae_biomass <- comm_df %>%
   filter(new_group == "algae") %>% 
   # filter(sample_ID == "CARP_2000-09-08") %>% 
   filter(sp_code != "MAPY") %>% 
-  select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
+  dplyr::select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
   filter(dry_gm2 > 0) %>% 
   # create a new column where total biomass for the species for the whole site is calculated
   group_by(site, treatment, date) %>%
@@ -1237,7 +1810,7 @@ prop_algae_biomass <- comm_df %>%
   # replace NaNs with 0 (which happens when there's nothing in the survey)
   # mutate_at(vars("percent_sp_dry", "percent_sp_wet"), list(~ ifelse(. = NaN, 0, .))) %>%
   # double check to make sure the percents worked out...
-  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
+  dplyr::select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
   unique() %>% 
   group_by(sample_ID) %>% 
   mutate(total_percent_dry = sum(percent_sp_dry)) %>% 
@@ -1283,6 +1856,36 @@ prop_algae_ts <- prop_algae_biomass %>%
         plot.title = element_text(size = 18),
         legend.position = "none") 
 prop_algae_ts
+
+prop_algae_biomass %>% 
+  # drop_na(comp_2yrs) %>% 
+  # filter(sp_code == "PTCA") %>% 
+  filter(sp_code %in% c("CO", "BO", "CAL")) %>% 
+  # filter(sp_code %in% c("PTCA", "CO", "CC", "EGME", "CYOS", "DL", "R")) %>%
+  ungroup() %>% 
+  # mutate(sp_code = fct_relevel(sp_code, "CYOS", "EGME", "PTCA", "CC", "DL", "R", "CO")) %>% 
+  filter(treatment %in% c("control")) %>% 
+  ggplot(aes(x = time_since_end, y = percent_sp_dry, col = sp_code)) +
+  # stat_summary(aes(group = sp_code), fun = mean, geom = "point", size = 2) +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_rect(aes(xmin = -4, xmax = -2.5, ymin = 0, ymax = 1), 
+            alpha = 0.1, fill = "#fae1e1", inherit.aes = FALSE) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "line", size = 2.5, alpha = 0.8) +
+  stat_summary(aes(group = sp_code), fun = mean, geom = "point", col = "white") +
+  scale_x_continuous(limits = c(-8.3, 4.8)) +
+  # stat_summary(aes(group = sp_code), fun.data = "mean_se", geom = "errorbar", alpha = 0.4) +
+  labs(x = "Time since end of removal",
+       y = "Percent biomass",
+       title = "Algae",
+       col = "") +
+  # guides(col = guide_legend(ncol = 2)) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size = 18)) 
 
 prop_algae_biomass %>% 
   # drop_na(comp_2yrs) %>% 
@@ -1549,7 +2152,7 @@ algae_sankey
 prop_epi_inverts_biomass <- comm_df %>% 
   filter(new_group == "epi_inverts") %>% 
   # filter(sample_ID == "CARP_2000-09-08") %>% 
-  select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
+  dplyr::select(site, sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2) %>% 
   filter(dry_gm2 > 0) %>% 
   # create a new column where total biomass for the species for the whole site is calculated
   group_by(site, treatment, date) %>%
@@ -1560,7 +2163,7 @@ prop_epi_inverts_biomass <- comm_df %>%
   # replace NaNs with 0 (which happens when there's nothing in the survey)
   # mutate_at(vars("percent_sp_dry", "percent_sp_wet"), list(~ ifelse(. = NaN, 0, .))) %>%
   # double check to make sure the percents worked out...
-  select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
+  dplyr::select(sample_ID:exp_dates, quarter:treatment, sp_code, dry_gm2, percent_sp_dry, total_dry) %>% 
   unique() %>% 
   group_by(sample_ID) %>% 
   mutate(total_percent_dry = sum(percent_sp_dry))
@@ -1573,7 +2176,7 @@ test <- prop_epi_inverts_biomass %>%
 
 prop_epi_inverts_ts <- prop_epi_inverts_biomass %>% 
   # drop_na(comp_2yrs) %>% 
-  filter(sp_code %in% c("ANSP", "TEAU", "URLO")) %>% 
+  filter(sp_code %in% c("ANSP", "TEAU", "URLO", "MUCA")) %>% 
   # filter(sp_code %in% c("TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>% 
   filter(treatment == "continual") %>% 
   ggplot(aes(x = time_since_end, y = percent_sp_dry, col = sp_code)) +
@@ -1587,8 +2190,12 @@ prop_epi_inverts_ts <- prop_epi_inverts_biomass %>%
   annotate("text", x = -8.2, y = 0.4, color = "#84A6A2", label = "ANSP", size = 6) +
   annotate("text", x = -8.2, y = 0.2, color = "#BE5A47", label = "TEAU", size = 6) +
   annotate("text", x = -8.2, y = 0.12, color = "#604A76", label = "URLO", size = 6) +
+  annotate("text", x = -8.2, y = 0.35, color = "#4A5352", label = "MUCA", size = 6) +
   scale_x_continuous(limits = c(-8.3, 4.8)) +
-  scale_color_manual(values = c("#84A6A2", "#BE5A47", "#604A76")) +
+  scale_color_manual(values = c("ANSP" = "#84A6A2", 
+                                "TEAU" = "#BE5A47", 
+                                "URLO" = "#604A76", 
+                                "MUCA" = "#4A5352")) +
   # geom_text_repel(data = test, 
   #           aes(group = sp_code, x = -8, y = mean, label = sp_code),
   #           size = 6) +
@@ -1753,7 +2360,7 @@ plots_together_prop <- prop_algae_ts / prop_epi_inverts_ts &
 plots_together_prop
 
 
-ggsave(here::here("figures", paste("algae_invert_proportion-", todays_date, ".jpg", sep = "")), 
+ggsave(here::here("figures", paste("fig4-", todays_date, ".jpg", sep = "")), 
        plot = plots_together_prop, 
        height = 8, width = 9, dpi = 150)
 ```
@@ -1914,7 +2521,7 @@ lrr_df_annual <- biomass %>%
   ungroup() %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename(site_full = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)")) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Isla Vista", "Mohawk", "Carpinteria")) %>% 
   # create a new column for "kelp year"
   mutate(quarter = fct_relevel(quarter, "Q2", "Q3", "Q4", "Q1")) %>% 
   mutate(kelp_year = case_when(
@@ -2058,6 +2665,8 @@ lrr_df_continual_comp2yrs <- delta_sp_df %>%
 ```{r}
 algae_2018 <- c("EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")
 
+algae_simper <- c("PTCA", "CYOS", "DL", "CC", "EC", "R", "CO")
+
 lrr_understory_annual <- lrr_df_annual %>% 
   filter(sp_code %in% algae_2018) %>% 
   mutate(sp_code = fct_relevel(sp_code, "EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")) %>%
@@ -2079,9 +2688,9 @@ lrr_understory_annual
 # ggsave(here::here("figures/fg-recovery", paste("lrr_understory_annual_", todays_date, ".jpg", sep = "")), lrr_understory_annual, width = 8, height = 6)
 
 lrr_understory_continual <- lrr_df_continual %>% 
-  # filter(sp_code %in% algae_2018) %>% 
+  filter(sp_code %in% algae_simper) %>% 
   # mutate(sp_code = fct_relevel(sp_code, "EGME", "TALE", "CYOS", "PTCA", "SAMU", "CC", "R", "DL", "CO", "GS", "RAT", "EC", "POLA")) %>%
-  filter(exp_dates == "during" & group == "algae") %>% 
+  filter(group == "algae") %>% 
   ggplot() +
   geom_hline(yintercept = 0, lty = 2, color = "grey") +
   geom_point(aes(x = reorder(sp_code, -lrr_continual), y = lrr_continual), size = 5) +
@@ -2100,13 +2709,13 @@ lrr_understory_continual
 # ggsave(here::here("figures/fg-recovery", paste("lrr_understory_continual_", todays_date, ".jpg", sep = "")), lrr_understory_continual, width = 12, height = 6)
 
 lrr_df_continual_comp2yrs %>% 
-  # filter(sp_code == "EGME") %>% 
-  filter(group == "algae") %>% 
+  #filter(sp_code == "CYOS") %>% 
+  filter(sp_code %in% algae_simper) %>% 
   ggplot() +
   geom_hline(yintercept = 0, lty = 2, color = "grey") +
-  geom_point(aes(x = comp_2yrs, y = lrr_continual), size = 5) +
-  geom_linerange(aes(x = comp_2yrs, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
-  labs(x = "period", y = "Log response ratio",
+  geom_point(aes(x = scientific_name, y = lrr_continual), size = 5) +
+  geom_linerange(aes(x = scientific_name, y = lrr_continual, ymin = lrr_continual - me_continual, ymax = lrr_continual + me_continual), size = 1) +
+  labs(x = "Species", y = "Log response ratio",
        title = "Understory algae: continual") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -2115,7 +2724,8 @@ lrr_df_continual_comp2yrs %>%
         strip.text = element_text(size = 16),
         plot.title = element_text(size = 20), 
         panel.grid = element_blank()) +
-  facet_wrap(~sp_code)
+    scale_x_discrete(labels = function(x) str_wrap(x, width = 30)) +
+  facet_wrap(~comp_2yrs, scales = "free")
   ggsave(here::here("figures/fg-recovery", paste("lrr_understory_continual_spp_during", todays_date, ".jpg", sep = "")), width = 25, height = 25)
 ```
 
@@ -2144,7 +2754,7 @@ lrr_epi_inv_annual
 # ggsave(here::here("figures/fg-recovery", paste("lrr_epi_inv_annual", todays_date, ".jpg", sep = "")), lrr_epi_inv_annual, width = 8, height = 6)
 
 lrr_epi_inv_continual <- lrr_df_continual %>% 
-  filter(sp_code %in% epi_inv_2018) %>% 
+  filter(sp_code %in% c("MUCA", "ANSP", "TEAU", "STMO", "CRGI", "URLO", "CUSP")) %>% 
   mutate(sp_code = fct_relevel(sp_code, "TEAU", "URLO", "MUCA", "DIOR", "ANSP", "CUPI", "CUSP", "STMO")) %>%
   ggplot() +
   geom_hline(yintercept = 0, lty = 2, color = "grey") +
