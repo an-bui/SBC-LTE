@@ -1269,6 +1269,22 @@
 
 # 7. start-during-after comparisons ---------------------------------------
 
+# summary(aov(delta_continual ~ comp_2yrs, data = delta_continual))
+# TukeyHSD(aov(delta_continual ~ comp_2yrs, data = delta_continual))
+# 
+# summary(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "aque"))))
+# TukeyHSD(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "aque"))))
+# 
+# summary(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "napl"))))
+# TukeyHSD(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "napl"))))
+# 
+# summary(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "mohk"))))
+# TukeyHSD(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "mohk"))))
+# 
+# summary(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "carp"))))
+# TukeyHSD(aov(delta_continual ~ comp_2yrs, data = (delta_continual %>% filter(site == "carp"))))
+
+
 # 
 # 
 # ```{r}
@@ -1407,6 +1423,255 @@
 # 
 # 
 # 
+# # aque_comm <- ggplot() +
+#   coord_cartesian() +
+#   # points in experiment period
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "aque" & exp_dates == "during"), 
+#              aes(x = NMDS1, y = NMDS2, shape = treatment), color = "grey", size = 2, alpha = 0.5) +
+#   # points in after period
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "aque" & exp_dates == "after" & treatment == "continual"), 
+#              aes(x = NMDS1, y = NMDS2, color = year), size = 2) +
+#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
+#   new_scale_color() +
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "aque" & exp_dates == "after" & treatment == "control"), 
+#              aes(x = NMDS1, y = NMDS2, color = year), size = 2, shape = 17) +
+#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
+#   new_scale_color() +
+#   # arrows for after in control
+#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "aque" & treatment == "control"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+#                                                                                                                        yend = c(tail(NMDS2, n = -1), NA),
+#                                                                                                                        color = year),
+#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+#                size = 0.5) +
+#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
+#   new_scale_color() +
+#   # arrows for after in continual removal
+#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "aque" & treatment == "continual"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+#                                                                                                                       yend = c(tail(NMDS2, n = -1), NA),
+#                                                                                                                       color = year),
+#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+#                size = 0.5) +
+#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
+#   new_scale_color() +
+#   
+#   # geom_text(data = bc_continual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
+#   theme_bw() +
+#   theme(panel.grid = element_line(color = "white")) +
+#   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+#   geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+#   labs(title = "AQUE")
 # 
+# napl_comm <- ggplot() +
+#   coord_cartesian() +
+#   # points in experiment period
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "napl" & exp_dates == "during"), 
+#              aes(x = NMDS1, y = NMDS2, shape = treatment), color = "grey", size = 2, alpha = 0.5) +
+#   # points in after period
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "napl" & exp_dates == "after" & treatment == "continual"), 
+#              aes(x = NMDS1, y = NMDS2, color = year), size = 2) +
+#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
+#   new_scale_color() +
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "napl" & exp_dates == "after" & treatment == "control"), 
+#              aes(x = NMDS1, y = NMDS2, color = year), size = 2, shape = 17) +
+#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
+#   new_scale_color() +
+#   # arrows for after in control
+#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "napl" & treatment == "control"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+#                                                                                                                        yend = c(tail(NMDS2, n = -1), NA),
+#                                                                                                                        color = year),
+#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+#                size = 0.5) +
+#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
+#   new_scale_color() +
+#   # arrows for after in continual removal
+#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "napl" & treatment == "continual"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+#                                                                                                                       yend = c(tail(NMDS2, n = -1), NA),
+#                                                                                                                       color = year),
+#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+#                size = 0.5) +
+#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
+#   new_scale_color() +
+#   
+#   # geom_text(data = bc_continual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
+#   theme_bw() +
+#   theme(panel.grid = element_line(color = "white"),
+#         legend.position = "none") +
+#   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+#   geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+#   labs(title = "NAPL")
 # 
+# mohk_comm <- ggplot() +
+#   coord_cartesian() +
+#   # points in experiment period
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "mohk" & exp_dates == "during"), 
+#              aes(x = NMDS1, y = NMDS2, shape = treatment), color = "grey", size = 2, alpha = 0.5) +
+#   # points in after period
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "mohk" & exp_dates == "after" & treatment == "continual"), 
+#              aes(x = NMDS1, y = NMDS2, color = year), size = 2) +
+#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
+#   new_scale_color() +
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "mohk" & exp_dates == "after" & treatment == "control"), 
+#              aes(x = NMDS1, y = NMDS2, color = year), size = 2, shape = 17) +
+#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
+#   new_scale_color() +
+#   # arrows for after in control
+#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "mohk" & treatment == "control"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+#                                                                                                                        yend = c(tail(NMDS2, n = -1), NA),
+#                                                                                                                        color = year),
+#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+#                size = 0.5) +
+#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
+#   new_scale_color() +
+#   # arrows for after in continual removal
+#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "mohk" & treatment == "continual"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+#                                                                                                                       yend = c(tail(NMDS2, n = -1), NA),
+#                                                                                                                       color = year),
+#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+#                size = 0.5) +
+#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
+#   new_scale_color() +
+#   
+#   # geom_text(data = bc_continual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
+#   theme_bw() +
+#   theme(panel.grid = element_line(color = "white"),
+#         legend.position = "none") +
+#   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+#   geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+#   labs(title = "MOHK")
 # 
+# carp_comm <- ggplot() +
+#   coord_cartesian() +
+#   # points in experiment period
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "carp" & exp_dates == "during"), 
+#              aes(x = NMDS1, y = NMDS2, shape = treatment), color = "grey", size = 2, alpha = 0.5) +
+#   # points in after period
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "carp" & exp_dates == "after" & treatment == "continual"), 
+#              aes(x = NMDS1, y = NMDS2, color = year), size = 2) +
+#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
+#   new_scale_color() +
+#   geom_point(data = bc_continual_plotdf %>% filter(site == "carp" & exp_dates == "after" & treatment == "control"), 
+#              aes(x = NMDS1, y = NMDS2, color = year), size = 2, shape = 17) +
+#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
+#   new_scale_color() +
+#   # arrows for after in control
+#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "carp" & treatment == "control"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+#                                                                                                                        yend = c(tail(NMDS2, n = -1), NA),
+#                                                                                                                        color = year),
+#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+#                size = 0.5) +
+#   scale_color_gradient(low = "#cdced1", high = "#99adcf", name = "Control years") +
+#   new_scale_color() +
+#   # arrows for after in continual removal
+#   geom_segment(data = bc_continual_plotdf %>% filter(exp_dates == "after" & site == "carp" & treatment == "continual"), aes(x = NMDS1, y = NMDS2, xend = c(tail(NMDS1, n = -1), NA), 
+#                                                                                                                       yend = c(tail(NMDS2, n = -1), NA),
+#                                                                                                                       color = year),
+#                arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+#                size = 0.5) +
+#   scale_color_gradient(low = "#7590e0", high = "#032a9c", name = "Removal years") +
+#   new_scale_color() +
+#   
+#   # geom_text(data = bc_continual_species, aes(x = NMDS1, y = NMDS2, label = scientific_name), col = "orange") +
+#   theme_bw() +
+#   theme(panel.grid = element_line(color = "white"),
+#         legend.position = "none") +
+#   geom_hline(aes(yintercept = 0), lty = 2, color = "grey") +
+#   geom_vline(aes(xintercept = 0), lty = 2, color = "grey") +
+#   labs(title = "CARP")
+# 
+# plots_together <- (aque_comm + napl_comm)/(mohk_comm + carp_comm + plot_spacer()) +
+#   plot_layout(guides = "collect")
+# plots_together
+# 
+##### old delta continual
+
+# delta_continual <- delta_biomass %>% 
+#   dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
+#   # take out years where continual removal hadn't happened yet
+#   drop_na(delta_continual) %>% 
+#   mutate(exp_dates = case_when(
+#     # after for continual removal:
+#     site == "aque" & date >= aque_after_date_continual ~ "after",
+#     site == "napl" & date >= napl_after_date_continual ~ "after",
+#     site == "mohk" & date >= mohk_after_date_continual ~ "after",
+#     site == "carp" & date >= carp_after_date_continual ~ "after",
+#     # everything else is "during" the experiment
+#     TRUE ~ "during"
+#   ),
+#   exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+#   time_since_columns_continual() %>% 
+#   kelp_year_column() %>% 
+#   comparison_column_continual() %>% 
+#   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+#   rename("site_full" = value)
+
+# total biomass
+# kelp_biomass <- biomass %>% 
+#   filter(sp_code == "MAPY") %>% 
+#   dplyr::select(-sp_code) %>% 
+#   # make a new column for after dates
+#   after_dates_column() %>% 
+#   # make a new column for during and after and set factor levels
+#   exp_dates_column()
+# 
+# # delta biomass
+# delta_biomass <- kelp_biomass %>% 
+#   dplyr::select(site, year, month, treatment, date, exp_dates, dry_gm2) %>% 
+#   pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
+#   mutate(delta_annual = annual - control,
+#          delta_continual = continual - control) 
+
+#### code for centroid segment arrows
+
+# geom_segment(data = aque_centroids_contin, 
+#              aes(x = NMDS1, y = NMDS2, 
+#                  xend = c(tail(NMDS1, n = -1), NA), 
+#                  yend = c(tail(NMDS2, n = -1), NA)), 
+#              arrow = arrow(length = unit(0.5, "cm")),
+#              size = 1, color = aque_col) +
+# geom_segment(data = napl_centroids_contin, 
+#              aes(x = NMDS1, y = NMDS2, 
+#                  xend = c(tail(NMDS1, n = -1), NA), 
+#                  yend = c(tail(NMDS2, n = -1), NA)), 
+#              arrow = arrow(length = unit(0.5, "cm")),
+#              size = 1, color = napl_col) +
+# # geom_point(data = mohk_centroids_contin, 
+# #            aes(x = NMDS1, y = NMDS2, shape = site_full), size = 4) +
+# geom_segment(data = mohk_centroids_contin, 
+#              aes(x = NMDS1, y = NMDS2, 
+#                  xend = c(tail(NMDS1, n = -1), NA), 
+#                  yend = c(tail(NMDS2, n = -1), NA)), 
+#              arrow = arrow(length = unit(0.5, "cm")),
+#              size = 1, color = mohk_col) +
+# geom_point(data = carp_centroids_contin, 
+#            aes(x = NMDS1, y = NMDS2, shape = site_full), size = 4) +
+# geom_segment(data = carp_centroids_contin, 
+#              aes(x = NMDS1, y = NMDS2, 
+#                  xend = c(tail(NMDS1, n = -1), NA), 
+#                  yend = c(tail(NMDS2, n = -1), NA)), 
+#              arrow = arrow(length = unit(0.5, "cm")),
+#              size = 1, color = carp_col) +
+#   geom_segment(data = aque_centroids_cont, 
+#              aes(x = NMDS1, y = NMDS2, 
+#                  xend = c(tail(NMDS1, n = -1), NA), 
+#                  yend = c(tail(NMDS2, n = -1), NA)), 
+#              arrow = arrow(length = unit(0.5, "cm")),
+#              size = 1, lty = 2, color = aque_col) +
+#     geom_segment(data = napl_centroids_cont, 
+#              aes(x = NMDS1, y = NMDS2, 
+#                  xend = c(tail(NMDS1, n = -1), NA), 
+#                  yend = c(tail(NMDS2, n = -1), NA)), 
+#              arrow = arrow(length = unit(0.5, "cm")),
+#              size = 1, lty = 2, color = napl_col) +
+#       geom_segment(data = mohk_centroids_cont, 
+#              aes(x = NMDS1, y = NMDS2, 
+#                  xend = c(tail(NMDS1, n = -1), NA), 
+#                  yend = c(tail(NMDS2, n = -1), NA)), 
+#              arrow = arrow(length = unit(0.5, "cm")),
+#              size = 1, lty = 2, color = mohk_col) +
+#         geom_segment(data = carp_centroids_cont, 
+#              aes(x = NMDS1, y = NMDS2, 
+#                  xend = c(tail(NMDS1, n = -1), NA), 
+#                  yend = c(tail(NMDS2, n = -1), NA)), 
+#              arrow = arrow(length = unit(0.5, "cm")),
+#              size = 1, lty = 2, color = carp_col) +
+# stat_ellipse(aes(group = comp_2yrs)) +
