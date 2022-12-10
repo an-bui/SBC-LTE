@@ -242,17 +242,16 @@ TukeyHSD(aov(delta_bio ~ aque_biomass_annual$exp_dates))
 
 aque_continual_bacips_results <- biomass.pcbacips(aque_biomass_continual)
 
-# LINEAR MODEL SELECTED - Likelihood = 59.1%
+# LINEAR MODEL SELECTED - Likelihood = 82.1%
 
 aque_bacips_plot <- delta_continual %>% 
   filter(site == "aque" & exp_dates == "after") %>% 
   ggplot(aes(x = time_since_end, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
-  geom_line(color = aque_col, size = 2.5) +
-  geom_point(shape = aque_shape, fill = "#FFFFFF", color = "#FFFFFF", size = 1) +
+  geom_point(shape = aque_shape, fill = aque_col, size = 4) +
   geom_function(fun = function(x) -249.35+(15.8*x), size = 2) +
-  labs(x = "Time since end", y = "\U0394 biomass",
-       title = "Arroyo Quemado (AQUE)") +
+  labs(x = "Time since end of removal (years)", y = "\U0394 giant kelp biomass",
+       title = aque_full) +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -293,19 +292,17 @@ napl_annual_bacips_results <- biomass.pcbacips(napl_biomass_annual)
 # LINEAR MODEL SELECTED - Likelihood = 47.8%
 
 napl_continual_bacips_results <- biomass.pcbacips(napl_biomass_continual)
-napl_continual_bacips_results$model.test.df.asymptotic.Model
 
-# SIGMOID MODEL SELECTED - Likelihood = 84.3%
+# LINEAR MODEL SELECTED - Likelihood = 54.6%
 
 napl_bacips_plot <- delta_continual %>% 
   filter(site == "napl" & exp_dates == "after") %>% 
   ggplot(aes(x = time_since_end, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
-  geom_line(color = napl_col, size = 2.5) +
-  geom_point(shape = napl_shape, fill = "#FFFFFF", color = "#FFFFFF", size = 1) +
-  geom_function(fun = function(x) (248.5 * (x/2.52)^17.89)/(1 + (x/2.52)^17.89) - 221.00, size = 2) +
-  labs(x = "Time since end", y = "\U0394 biomass",
-       title = "Naples (NAPL)") +
+  geom_point(shape = napl_shape, fill = napl_col, size = 4) +
+  geom_function(fun = function(x) -196.417+(11.9*x), size = 2) +
+  labs(x = "Time since end of removal (years)", y = "\U0394 giant kelp biomass",
+       title = napl_full) +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -363,17 +360,16 @@ mohk_annual_bacips_results <- biomass.pcbacips(mohk_biomass_annual)
 
 mohk_continual_bacips_results <- biomass.pcbacips(mohk_biomass_continual)
 
-# LINEAR MODEL SELECTED - Likelihood = 87.2%
+# LINEAR MODEL SELECTED - Likelihood = 79.9%
 
 mohk_bacips_plot <- delta_continual %>% 
   filter(site == "mohk" & exp_dates == "after") %>% 
   ggplot(aes(x = time_since_end, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
-  geom_line(color = mohk_col, size = 2.5) +
-  geom_point(shape = mohk_shape, fill = "#FFFFFF", color = "#FFFFFF", size = 1) +
-  geom_function(fun = function(x) -802.38+(70.47*x), size = 2) +
-  labs(x = "Time since end", y = "\U0394 biomass",
-       title = "Mohawk (MOHK)") +
+  geom_point(shape = mohk_shape, fill = mohk_col, size = 4) +
+  geom_function(fun = function(x) -824.75+(54.85*x), size = 2) +
+  labs(x = "Time since end of removal (years)", y = "\U0394 giant kelp biomass",
+       title = mohk_full) +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -413,7 +409,7 @@ carp_annual_bacips_results <- biomass.pcbacips(carp_biomass_annual)
 
 carp_continual_bacips_results <- biomass.pcbacips(carp_biomass_continual)
 
-# STEP MODEL SELECTED - Likelihood = 51.3%
+# STEP MODEL SELECTED - Likelihood = 58.3%
 
 TukeyHSD(aov(delta_continual ~ exp_dates, data = carp_biomass_continual))
 
@@ -421,11 +417,10 @@ carp_bacips_plot <- delta_continual %>%
   filter(site == "carp" & exp_dates == "after") %>% 
   ggplot(aes(x = time_since_end, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
-  geom_line(color = carp_col, size = 2.5) +
-  geom_point(shape = carp_shape, fill = "#FFFFFF", color = "#FFFFFF", size = 1) +
+  geom_point(shape = carp_shape, fill = carp_col, size = 4) +
   geom_function(fun = function(x) 0, size = 2) +
-  labs(x = "Time since end", y = "\U0394 biomass",
-       title = "Carpinteria (CARP)") +
+  labs(x = "Time since end of removal (years)", y = "\U0394 giant kelp biomass",
+       title = carp_full) + 
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -1191,7 +1186,7 @@ model_selection_summary_table <- cbind(
   aic.weights = round(aque_continual_bacips_results$aicc.test.results.aicWeights, 3)
 ) %>% 
   as.data.frame() %>% 
-  mutate(site = "Arroyo Quemado (AQUE)") %>% 
+  mutate(site = aque_full) %>% 
   rbind(
     cbind(
       model = list("Step", "Linear", "Asymptotic", "Sigmoid"),
@@ -1202,7 +1197,7 @@ model_selection_summary_table <- cbind(
       aic.weights = round(napl_continual_bacips_results$aicc.test.results.aicWeights, 3)
     ) %>% 
       as.data.frame() %>% 
-      mutate(site = "Naples (NAPL)") 
+      mutate(site = napl_full) 
   ) %>% 
   rbind(
     cbind(
@@ -1214,7 +1209,7 @@ model_selection_summary_table <- cbind(
       aic.weights = round(mohk_continual_bacips_results$aicc.test.results.aicWeights, 3)
     ) %>% 
       as.data.frame() %>% 
-      mutate(site = "Mohawk (MOHK)") 
+      mutate(site = mohk_full) 
   ) %>% 
   rbind(
     cbind(
@@ -1226,7 +1221,7 @@ model_selection_summary_table <- cbind(
       aic.weights = round(carp_continual_bacips_results$aicc.test.results.aicWeights, 3)
     ) %>% 
       as.data.frame() %>% 
-      mutate(site = "Carpinteria (CARP)") 
+      mutate(site = carp_full) 
   ) %>% 
   gt(groupname_col = "site") %>% 
   tab_style(
