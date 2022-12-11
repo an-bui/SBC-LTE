@@ -943,14 +943,22 @@ ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.97:4.0 by = 0.01]",
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [2.60:2.63 by = 0.001]", type = "fixed")
 # upper bound crosses 0 at 6.4
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [6.44:6.45 by = 0.001]", type = "fixed")
+
+# aque
 predicted_kelp_after_aque <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.7:3.8 by = 0.001]", type = "random", condition = c(site = "aque"))
+
+# napl
 predicted_kelp_after_napl <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "napl"))
-ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3:3.1 by = 0.001]", type = "random", condition = c(site = "napl"))
+ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.3:3.5 by = 0.001]", type = "random", condition = c(site = "napl"))
+
+# mohk
 predicted_kelp_after_mohk <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "mohk"))
-ggpredict(linear_model_kelp_lmer, terms = "time_since_end [4.5:4.6 by = 0.01]", type = "random", condition = c(site = "mohk"))
+ggpredict(linear_model_kelp_lmer, terms = "time_since_end [5.37:5.41 by = 0.01]", type = "random", condition = c(site = "mohk"))
+
+# carp
 predicted_kelp_after_carp <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
-ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.4:3.5 by = 0.01]", type = "random", condition = c(site = "carp"))
+ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.3:3.4 by = 0.01]", type = "random", condition = c(site = "carp"))
 
 overall <- ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
@@ -1087,6 +1095,16 @@ plots_together
 ggsave(here::here("figures", paste("delta_continual-", todays_date, ".jpg", sep = "")), plot = plots_together, height = 8, width = 16, dpi = 150)
 ggsave(here::here("figures", paste("delta_continual_sites-", todays_date, ".jpg", sep = "")), plot = plots_together_sites, height = 8, width = 16, dpi = 150)
 ```
+
+#### fall biomass calculation
+```{r}
+delta_continual %>% 
+  filter(quarter == "Q3" & exp_dates == "after") %>% 
+  summarize(mean = mean(continual),
+            sd = sd(continual),
+            se = se(continual))
+```
+
 
 ### ii. site quality
 
