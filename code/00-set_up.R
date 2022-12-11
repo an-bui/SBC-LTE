@@ -345,7 +345,7 @@ comparison_column_annual <- function(df) {
     # add in full names of sites
     left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
     rename(site_full = value) %>% 
-    mutate(site_full = fct_relevel(site_full, "Arroyo Quemado (AQUE)", "Naples (NAPL)", "Isla Vista (IVEE)", "Mohawk (MOHK)", "Carpinteria (CARP)"))
+    mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Isla Vista", "Mohawk", "Carpinteria"))
 }
 
 comparison_column_continual <- function(df) {

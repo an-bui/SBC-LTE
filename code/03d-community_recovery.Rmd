@@ -332,6 +332,15 @@ algae_after <- linear_model_algae_lmer %>%
   bold_p(t = 0.05)
 algae_after
 
+# algae decreases to control in 4.7 years on average
+ggpredict(linear_model_algae_lmer, terms = "time_since_end [4.6:4.7 by = 0.001]", type = "fixed")
+
+# lower bound of 95% conf int: 2.6 years
+ggpredict(linear_model_algae_lmer, terms = "time_since_end [2.6:2.7 by = 0.001]", type = "fixed")
+
+# upper bound of 95% conf int: 7.7 years
+ggpredict(linear_model_algae_lmer, terms = "time_since_end [7.6:7.7 by = 0.001]", type = "fixed")
+
 linear_model_algae_lmer_during <- lmer(delta_continual_algae ~ time_since_end + (1|site), data = delta_algae_continual %>% filter(exp_dates == "during"), na.action = na.pass)
 
 summary(linear_model_algae_lmer_during)
@@ -348,6 +357,8 @@ MuMIn::r.squaredGLMM(linear_model_algae_lmer_during)
 # ggeffects
 predicted_algae_after <- ggpredict(linear_model_algae_lmer, terms = ~ time_since_end, type = "fixed")
 predicted_algae_during <- ggpredict(linear_model_algae_lmer_during, terms = ~ time_since_end, type = "fixed")
+
+
 
 algae_time <- ggplot() +
   geom_vline(xintercept = 0, lty = 2) +

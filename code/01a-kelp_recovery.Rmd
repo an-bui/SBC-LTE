@@ -240,7 +240,6 @@ delta_continual_sites_raw
 ggsave(here::here("figures", paste("delta_continual_sites_raw-", todays_date, ".jpg", sep = "")), plot = delta_continual_sites_raw, height = 8, width = 16, dpi = 150)
 ```
 
-
 # 3. Start-during-after
 
 ## a. site 2 year comparison
@@ -919,22 +918,6 @@ kelp_after
 kelp_tables <- tbl_merge(tbls = list(kelp_during, kelp_after), 
                          tab_spanner = c("**Removal**", "**Recovery**"))
 
-# random intercept
-linear_model_kelp_lmer_ri <- lmer(delta_continual ~ time_since_end + (1|site), 
-                         data = continual_after, na.action = na.pass)
-
-# diagnostics
-plot(simulateResiduals(linear_model_kelp_lmer_ri))
-
-# competing models
-# compare random slope to random intercept
-AICc(linear_model_kelp_lmer, linear_model_kelp_lmer_ri)
-
-# model summary tables
-kelp_tbl <- linear_model_kelp_lmer_ri %>% 
-  tbl_regression() %>% 
-  bold_p(t = 0.05)
-
 # ggeffects
 predicted_kelp_after_overall <- ggpredict(linear_model_kelp_lmer, terms = "time_since_end", type = "fixed")
 # predicted line crosses 0 at 3.97
@@ -944,21 +927,21 @@ ggpredict(linear_model_kelp_lmer, terms = "time_since_end [2.60:2.63 by = 0.001]
 # upper bound crosses 0 at 6.4
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [6.44:6.45 by = 0.001]", type = "fixed")
 
-# aque
+# aque: 3.8 years
 predicted_kelp_after_aque <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.7:3.8 by = 0.001]", type = "random", condition = c(site = "aque"))
 
-# napl
+# napl: 3.4 years
 predicted_kelp_after_napl <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "napl"))
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.3:3.5 by = 0.001]", type = "random", condition = c(site = "napl"))
 
-# mohk
+# mohk: 5.4 years
 predicted_kelp_after_mohk <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "mohk"))
 ggpredict(linear_model_kelp_lmer, terms = "time_since_end [5.37:5.41 by = 0.01]", type = "random", condition = c(site = "mohk"))
 
-# carp
+# carp: 3.3 years
 predicted_kelp_after_carp <- ggpredict(linear_model_kelp_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
-ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.3:3.4 by = 0.01]", type = "random", condition = c(site = "carp"))
+ggpredict(linear_model_kelp_lmer, terms = "time_since_end [3.2:3.4 by = 0.01]", type = "random", condition = c(site = "carp"))
 
 overall <- ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
@@ -1095,6 +1078,74 @@ plots_together
 ggsave(here::here("figures", paste("delta_continual-", todays_date, ".jpg", sep = "")), plot = plots_together, height = 8, width = 16, dpi = 150)
 ggsave(here::here("figures", paste("delta_continual_sites-", todays_date, ".jpg", sep = "")), plot = plots_together_sites, height = 8, width = 16, dpi = 150)
 ```
+
+#### recovery time vs kelp biomass in control
+
+Not sure how to do this reproducibly. But pulled time to recovery from above predicted values with prediction intervals. Then calculated mean kelp biomass in the kelp year of recovery from `delta_continual`. For MOHK, calculated biomass using the most recent kelp year (2021-2022).
+
+```{r}
+# AQUE: kelp year 2021-2022
+# 3.80 |      1.27 | [-674.27, 676.81]
+# Naples: kelp year 2019-2020
+# 3.42 |      1.67 | [-672.08, 675.42]
+# Mohawk: 2021-2022
+# 5.40 |      0.40 | [-688.62, 689.42]
+# CArp: 2020-2021
+# 3.33 |      1.10 | [-672.28, 674.48]
+
+
+mean_kelp_all_sites <- delta_continual %>% 
+  filter(exp_dates == "after") %>% 
+  group_by(site) %>% 
+  # filter(site == "aque" & exp_dates == "after") %>% 
+  summarize(mean_control = mean(control),
+            sd_control = sd(control),
+            se_control = se(control),
+            mean_continual = mean(continual),
+            sd_continual = sd(continual),
+            se_continual = se(continual),
+            mean_delta = mean(delta_continual),
+            sd_delta = sd(delta_continual),
+            se_delta = se(delta_continual)) %>% 
+  ungroup()
+
+rec_time <- tribble(
+  ~site, ~time_to_recovery, ~pred_int_low, ~pred_int_high,
+  "aque",       3.80,          -674.27,         676.81,
+  "napl",       3.42,          -672.08,         675.42,
+  "mohk",       5.4,           -688.62,         689.42,
+  "carp",       3.33,          -672.28,         674.48
+) %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename("site_full" = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  left_join(., mean_kelp_all_sites, by = "site") 
+
+rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, shape = site, fill = site)) +
+  geom_errorbar(aes(xmin = mean_control - se_control, xmax = mean_control + se_control)) +
+  geom_point(size = 10) +
+  geom_text_repel(aes(label = site_full), seed = 666,
+                  size = 7, point.padding = 35, nudge_y = 0.1) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  theme_bw() +
+  scale_y_continuous(breaks = c(seq(3, 6, by = 1)), limits = c(3, 6)) +
+  labs(x = expression(Mean~giant~kelp~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Predicted time to recovery (years)") +
+
+  theme_bw() + 
+  theme(axis.title = element_text(size = 22),
+        axis.text = element_text(size = 20),
+        legend.text = element_text(size = 20), 
+        legend.title = element_text(size = 20),
+        legend.position = "none")
+
+rec_time_plot
+
+
+ggsave(here::here("figures", paste("recovery_time-", todays_date, ".jpg", sep = "")), plot = rec_time_plot, height = 8, width = 10, dpi = 150)
+```
+
 
 #### fall biomass calculation
 ```{r}
