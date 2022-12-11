@@ -221,13 +221,17 @@ delta_algae_continual %>%
   facet_wrap(~site, scale = "free")
 
 algae_vs_kelp <- delta_algae_continual %>% 
+  mutate(exp_dates = case_when(
+    exp_dates == "during" ~ "During removal",
+    exp_dates == "after" ~ "Post-removal"
+  )) %>% 
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
   geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
   geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
   geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21) + 
   geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), size = 2) +
-  scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
-  scale_fill_manual(values = c("during" = "#FFFFFF", after = under_col)) +
+  scale_linetype_manual(values = c("During removal" = 2, "Post-removal" = 1)) +
+  scale_fill_manual(values = c("During removal" = "#FFFFFF", "Post-removal" = under_col)) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
        y = "\U0394 understory algae biomass (treatment - control)") +
@@ -240,22 +244,26 @@ algae_vs_kelp <- delta_algae_continual %>%
         legend.title = element_blank())
 
 algae_vs_kelp_spearman <- delta_algae_continual %>% 
+  mutate(exp_dates = case_when(
+    exp_dates == "during" ~ "During removal",
+    exp_dates == "after" ~ "Post-removal"
+  )) %>% 
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
-  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
-  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
   geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21) +
   stat_cor(method = "spearman", cor.coef.name = "rho") +
   geom_smooth(method = "lm", color = "black", size = 3, se = FALSE) +
-  scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
-  scale_fill_manual(values = c("during" = "#FFFFFF", after = under_col)) +
+  scale_linetype_manual(values = c("During removal" = 2, "Post-removal" = 1)) +
+  scale_fill_manual(values = c("During removal" = "#FFFFFF", "Post-removal" = under_col)) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
        y = "\U0394 understory algae biomass (treatment - control)") +
   theme_bw() + 
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 15),
-        strip.text = element_text(size = 14),
-        legend.position = c(0.9, 0.9),
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.position = c(0.83, 0.93),
         legend.text = element_text(size = 18),
         legend.title = element_blank())
 
@@ -438,7 +446,7 @@ sda_algae_biomass <- ggplot(algae_anova_df) +
         # plot.margin = margin(0, 0, 0, 0),
         panel.grid.minor = element_line(color = "white")) +
   labs(x = "Time period", 
-       y = "\U0394 understory algae biomass \n (treatment - control)")
+       y = expression(Understory~algae~biomass~(dry~g/m^{"2"})))
 sda_algae_biomass
 ```
 
@@ -804,22 +812,26 @@ inverts_vs_kelp <- delta_invert_continual %>%
         legend.title = element_blank())
 
 inverts_vs_kelp_spearman <- delta_invert_continual %>% 
+  mutate(exp_dates = case_when(
+    exp_dates == "during" ~ "During removal",
+    exp_dates == "after" ~ "Post-removal"
+  )) %>% 
   ggplot(aes(x = delta_continual, y = delta_continual_inverts)) +
   stat_cor(method = "spearman", cor.coef.name = "rho") +
-  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
-  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
   geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 25) + 
   geom_smooth(method = "lm", se = FALSE, color = "black", size = 3) +
-  scale_linetype_manual(values = c("during" = 2, "after" = 1)) +
-  scale_fill_manual(values = c("during" = "#FFFFFF", after = ivee_col)) +
+  scale_linetype_manual(values = c("During removal" = 2, "Post-removal" = 1)) +
+  scale_fill_manual(values = c("During removal" = "#FFFFFF", "Post-removal" = "darkblue")) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 invert biomass (treatment - control)") +
+       y = "\U0394 epilithic invertebrate biomass (treatment - control)") +
   theme_bw() + 
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 15),
-        strip.text = element_text(size = 14),
-        legend.position = c(0.9, 0.9),
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.position = c(0.83, 0.93),
         legend.text = element_text(size = 18),
         legend.title = element_blank())
 
@@ -1012,7 +1024,7 @@ sda_invert_biomass <- ggplot(invert_anova_df) +
         plot.margin = margin(0, 0, 0, 0),
         panel.grid.minor = element_line(color = "white")) +
   labs(x = "Time period", 
-       y = "\U0394 epilithic invert biomass \n (treatment - control)")
+       y = expression(Epilithic~invert~biomass~(dry~g/m^{"2"})))
 sda_invert_biomass
 ```
 
@@ -1294,7 +1306,7 @@ sda_clam_biomass <- ggplot(clam_anova_df) +
         plot.margin = margin(0, 0, 0, 0),
         panel.grid.minor = element_line(color = "white")) +
   labs(x = "Time period", 
-       y = "\U0394 endolithic invert biomass \n (treatment - control)")
+       y = expression(Endolithic~invert~biomass~(dry~g/m^{"2"})))
 sda_clam_biomass
 ```
 
