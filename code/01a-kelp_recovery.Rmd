@@ -1053,7 +1053,7 @@ carp <- ggplot() +
        y = "\U0394 giant kelp biomass",
        title = carp_full)
 
-# y-axis label for patchwork side eye emoji
+# y-axis label for patchwork side eye emoji 
 yaxislabel <- ggplot(data.frame(l = "\U0394 biomass (treatment - control)", x = 1, y = 1)) +
   geom_text(aes(x, y, label = l), angle = 90) + 
   theme_void() +
