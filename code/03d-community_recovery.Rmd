@@ -890,6 +890,10 @@ epi_invert_after
 # model
 linear_model_invert_lmer_during <- lmer(delta_continual_inverts ~ time_since_end + (1|site), data = delta_invert_continual %>% filter(exp_dates == "during"), na.action = na.pass)
 
+# check
+plot(simulateResiduals(linear_model_invert_lmer_during))
+check_model(linear_model_invert_lmer_during)
+
 # summary
 summary(linear_model_invert_lmer_during) 
 
