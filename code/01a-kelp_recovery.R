@@ -167,7 +167,7 @@ check_model(lm_kelp_during_lmer)
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
 
 # summaries
-summary(lm_kelp_recovery_lmer)
+summary(lm_kelp_during_lmer)
 lm_kelp_during_summary <- lm_kelp_during_lmer %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05)
@@ -336,24 +336,24 @@ lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery
 
 # ⟞ a. delta kelp through time -------------------------------------------
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig1_", today(), ".jpg", sep = "")),
-       plot = overall_ms,
-       height = 8, width = 14, dpi = 150)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig1_", today(), ".jpg", sep = "")),
+#        plot = overall_ms,
+#        height = 8, width = 14, dpi = 150)
 
 # ⟞ a. raw kelp biomass through time --------------------------------------
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("figS2_", today(), ".jpg", sep = "")),
-       plot = delta_continual_sites_raw,
-       height = 8, width = 16, dpi = 150)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("figS2_", today(), ".jpg", sep = "")),
+#        plot = delta_continual_sites_raw,
+#        height = 8, width = 16, dpi = 150)
 
 # ⟞ a. recovery time vs biomass -------------------------------------------
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("figS4", today(), ".jpg", sep = "")),
-       plot = rec_time_plot,
-       height = 8, width = 10, dpi = 150)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("figS4", today(), ".jpg", sep = "")),
+#        plot = rec_time_plot,
+#        height = 8, width = 10, dpi = 150)
 
 
 
