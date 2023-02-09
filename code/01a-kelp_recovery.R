@@ -328,7 +328,12 @@ rec_time_plot
 ##########################################################################-
 
 lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery_summary), 
-                            tab_spanner = c("**Removal**", "**Recovery**"))
+                            tab_spanner = c("**Removal**", "**Recovery**")) %>% 
+  as_gt() 
+
+# gtsave(lm_kelp_tables, 
+#        here::here("tables", "ms-tables", paste("lm_kelp_tables_", today(), ".png", sep = "")),
+#        vwidth = 1500, vheight = 1000)
 
 ##########################################################################-
 # 6. manuscript figures ---------------------------------------------------
