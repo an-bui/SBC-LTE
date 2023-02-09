@@ -1,7 +1,6 @@
 ---
 title: "kelp frond recovery"
 author: "An Bui"
-date: "1/23/2022"
 output:
   pdf_document: default
   html_document: default
@@ -28,7 +27,15 @@ delta_annual <- biomass %>%
   dplyr::select(-sp_code) %>% 
   dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
   pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
+  # fill in values for sampling dates where control and annual were surveyed on different days
+  mutate(control = case_when(
+    site == "aque" & date == "2008-03-07" ~ 106.82000,
+    site == "napl" & date == "2012-09-26" ~ 143.22088,
+    TRUE ~ control
+  )) %>% 
   mutate(delta_annual = annual - control) %>%  
+  # missing dates are from AQUE 2008-03-05, NAPL 2012-09-25, NAPL 2008-10-10
+  drop_na(delta_annual) %>% 
   mutate(exp_dates = case_when(
     # after for continual removal:
     site == "aque" & date >= aque_after_date_annual ~ "after",
@@ -70,62 +77,6 @@ delta_continual <- biomass %>%
   mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria"))
 ```
 
-Delta annual and continual plots for kelp by section:
-
-```{r}
-# total biomass
-kelp_biomass_section <- biomass_section %>% 
-  filter(sp_code == "MAPY") %>% 
-  dplyr::select(-sp_code) %>% 
-  # make a new column for after dates
-  after_dates_column() %>% 
-  # make a new column for during and after and set factor levels
-  exp_dates_column()
-
-# delta biomass
-delta_biomass_section <- kelp_biomass_section %>% 
-  dplyr::select(site, year, month, treatment, date, quad, side, exp_dates, dry_gm2) %>% 
-  pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
-  mutate(delta_annual = annual - control,
-         delta_continual = continual - control) 
-
-delta_annual_section <- delta_biomass_section %>% 
-  dplyr::select(site, year, month, date, quad, side, control, annual, delta_annual) %>% 
-  drop_na(delta_annual) %>% 
-  mutate(exp_dates = case_when(
-    # after for annual removal:
-    site == "aque" & date >= aque_after_date_annual ~ "after",
-    site == "napl" & date >= napl_after_date_annual ~ "after",
-    site == "ivee" & date >= ivee_after_date_annual ~ "after",
-    site == "mohk" & date >= mohk_after_date_annual ~ "after",
-    site == "carp" & date >= carp_after_date_annual ~ "after",
-    # everything else is "during" the experiment
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_annual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_annual()
-
-delta_continual_section <- delta_biomass_section %>% 
-  dplyr::select(site, year, month, date, quad, side, control, continual, delta_continual) %>% 
-  # take out years where continual removal hadn't happened yet
-  drop_na(delta_continual) %>% 
-  mutate(exp_dates = case_when(
-    # after for annual removal:
-    site == "aque" & date >= aque_after_date_continual ~ "after",
-    site == "napl" & date >= napl_after_date_continual ~ "after",
-    site == "mohk" & date >= mohk_after_date_continual ~ "after",
-    site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" the experiment
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_continual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_continual()
-```
-
 # 2. Basic plots
 
 ## a. deltas
@@ -163,34 +114,9 @@ delta_annual_plot
 delta_continual_plot
 ```
 
-## b. raw biomass
+## b. average raw biomass after 3.7 years
 
 ```{r}
-ggplot(delta_continual) +
-  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.5, size = 2.5) +
-  # control
-  geom_point(aes(x = time_since_end, y = control, shape = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
-  # continual
-  geom_line(aes(x = time_since_end, y = continual, col = site), size = 2.5) +
-  geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
-  scale_shape_manual(values = shape_palette_site) +
-  scale_color_manual(values = color_palette_site) +
-  scale_fill_manual(values = color_palette_site) +
-  theme_bw() + 
-  theme(axis.title = element_text(size = 18),
-        plot.title = element_text(size = 18),
-        axis.text = element_text(size = 16),
-        legend.text = element_text(size = 16), 
-        legend.position = "none", 
-        plot.margin = margin(0, 0, 0, 0),
-        strip.background = element_rect(fill = "white", color = "white"),
-        strip.text = element_text(size = 20, hjust = 0),
-        panel.grid.minor = element_line(color = "white")) +
-  labs(x = "Time since end of experiment (years)", 
-       y = expression(Giant~kelp~biomass~(dry~g/m^{"2"}))) +
-  facet_wrap(~site_full, scales = "free_y") 
-
-# average raw biomass after 3.7 years
 delta_continual %>% 
   filter(comp_2yrs == "after" & quarter == "Q3") %>% 
   summarize(mean_cont = mean(continual),
@@ -237,7 +163,10 @@ delta_continual_sites_raw <- delta_continual %>%
 
 delta_continual_sites_raw
 
-ggsave(here::here("figures", paste("delta_continual_sites_raw-", todays_date, ".jpg", sep = "")), plot = delta_continual_sites_raw, height = 8, width = 16, dpi = 150)
+# ggsave(here::here("figures", 
+#                   paste("delta_continual_sites_raw-", today(), ".jpg", sep = "")), 
+#        plot = delta_continual_sites_raw, 
+#        height = 8, width = 16, dpi = 150)
 ```
 
 # 3. Start-during-after
@@ -1143,7 +1072,7 @@ rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, sh
 rec_time_plot
 
 
-ggsave(here::here("figures", paste("recovery_time-", todays_date, ".jpg", sep = "")), plot = rec_time_plot, height = 8, width = 10, dpi = 150)
+ggsave(here::here("figures", paste("recovery_time-", today(), ".jpg", sep = "")), plot = rec_time_plot, height = 8, width = 10, dpi = 150)
 ```
 
 

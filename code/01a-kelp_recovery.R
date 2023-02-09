@@ -10,7 +10,7 @@ source(here::here("code", "00-set_up.R"))
 # 1. data frames ----------------------------------------------------------
 ##########################################################################-
 
-# ⟞ a. delta_annual -------------------------------------------------------
+# ⟞ a. annual removal deltas ----------------------------------------------
 
 delta_annual <- biomass %>% 
   filter(sp_code == "MAPY" & treatment %in% c("control", "annual")) %>% 
@@ -41,7 +41,7 @@ delta_annual <- biomass %>%
   kelp_year_column() %>% 
   comparison_column_annual() 
 
-# ⟞ b. delta_continual ----------------------------------------------------
+# ⟞ b. continual removal deltas -------------------------------------------
 
 delta_continual <- biomass %>% 
   filter(sp_code == "MAPY" & treatment %in% c("control", "continual")) %>% 
@@ -67,4 +67,296 @@ delta_continual <- biomass %>%
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
   mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria"))
+
+##########################################################################-
+# 2. timeseries plots -----------------------------------------------------
+##########################################################################-
+
+# ⟞ a. delta annual plot --------------------------------------------------
+
+delta_annual_plot <- ggplot(delta_annual, aes(x = time_since_end, y = delta_annual)) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(col = exp_dates)) +
+  geom_smooth(method = "lm", aes(col = exp_dates)) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10)) +
+  labs(x = "Time since end of experiment", y = "\U0394 biomass (treatment - control)",
+       title = "\U0394 annual") +
+  facet_wrap(~site_full, ncol = 1, scales = "free_y")
+
+delta_annual_plot
+
+# ⟞ b. delta continual plot -----------------------------------------------
+
+delta_continual_plot <- ggplot(delta_continual, aes(x = time_since_end, y = delta_continual)) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(aes(col = exp_dates)) +
+  geom_smooth(method = "lm", aes(col = exp_dates)) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10)) +
+  labs(x = "Time since end of experiment", y = "\U0394 biomass (treatment - control)",
+       title = "\U0394 continual") +
+  facet_wrap(~site_full, ncol = 1, scales = "free_y")
+
+delta_continual_plot
+
+# ⟞ c. raw biomass through time plot --------------------------------------
+
+delta_continual_sites_raw <- delta_continual %>% 
+  mutate(strip = case_when(
+    site == "aque" ~ paste("A. ", site_full, sep = ""),
+    site == "napl" ~ paste("B. ", site_full),
+    site == "mohk" ~ paste("C. ", site_full),
+    site == "carp" ~ paste("D. ", site_full)
+  )) %>% 
+  ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.5, size = 2.5) +
+  # control
+  geom_point(aes(x = time_since_end, y = control, shape = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
+  # continual
+  geom_line(aes(x = time_since_end, y = continual, col = site), size = 2.5) +
+  geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_color_manual(values = color_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  theme_bw() + 
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16),
+        legend.text = element_text(size = 16), 
+        legend.position = "none", 
+        strip.background = element_rect(fill = "white", color = "white"),
+        strip.text = element_text(size = 20, hjust = 0),
+        panel.grid.minor = element_line(color = "white")) +
+  labs(x = "Time since end of experiment (years)", 
+       y = expression(Giant~kelp~biomass~(dry~g/m^{"2"}))) +
+  facet_wrap(~strip, scales = "free_y")
+
+delta_continual_sites_raw
+
+##########################################################################-
+# 3. linear models --------------------------------------------------------
+##########################################################################-
+
+# ⟞ a. during removal -----------------------------------------------------
+
+# ⟞ ⟞ i. model and diagnostics  -------------------------------------------
+
+# model
+lm_kelp_during_lmer <- lmer(
+  delta_continual ~ time_since_end + (1|site),
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass)
+
+# diagnostics
+plot(simulateResiduals(lm_kelp_during_lmer))
+check_model(lm_kelp_during_lmer)
+
+# Rsquared
+MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
+
+# summaries
+summary(lm_kelp_recovery_lmer)
+lm_kelp_during_summary <- lm_kelp_during_lmer %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+lm_kelp_during_summary
+
+# ⟞ ⟞ ii. predictions -----------------------------------------------------
+
+predicted_kelp_during_overall <- ggpredict(lm_kelp_during_lmer, terms = ~ time_since_end, type = "fixed")
+predicted_kelp_during_aque <- ggpredict(lm_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
+predicted_kelp_during_napl <- ggpredict(lm_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "napl"))
+predicted_kelp_during_mohk <- ggpredict(lm_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "mohk"))
+predicted_kelp_during_carp <- ggpredict(lm_kelp_during_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
+
+# ⟞ b. recovery period ----------------------------------------------------
+
+# ⟞ ⟞ i. model and diagnostics  -------------------------------------------
+
+# model
+lm_kelp_recovery_lmer <- lmer(
+  delta_continual ~ time_since_end + (1|site),
+  data = delta_continual %>% filter(exp_dates == "after"), 
+  na.action = na.pass)
+
+# diagnostics
+plot(simulateResiduals(lm_kelp_recovery_lmer))
+check_model(lm_kelp_recovery_lmer)
+
+# Rsquared
+MuMIn::r.squaredGLMM(lm_kelp_recovery_lmer)
+
+# summary
+summary(lm_kelp_recovery_lmer)
+lm_kelp_recovery_summary <- lm_kelp_recovery_lmer %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+lm_kelp_recovery_summary
+
+# ⟞ ⟞ ii. predictions -----------------------------------------------------
+
+# all sites
+predicted_kelp_after_overall <- ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end", type = "fixed")
+# predicted line crosses 0 at 3.97
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.97:4.0 by = 0.01]", type = "fixed")
+# lower bound crosses 0 at 2.6
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [2.60:2.63 by = 0.001]", type = "fixed")
+# upper bound crosses 0 at 6.4
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [6.44:6.45 by = 0.001]", type = "fixed")
+
+# aque: 3.8 years
+predicted_kelp_after_aque <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.7:3.8 by = 0.001]", type = "random", condition = c(site = "aque"))
+
+# napl: 3.4 years
+predicted_kelp_after_napl <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "napl"))
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.3:3.5 by = 0.001]", type = "random", condition = c(site = "napl"))
+
+# mohk: 5.4 years
+predicted_kelp_after_mohk <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "mohk"))
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [5.37:5.41 by = 0.01]", type = "random", condition = c(site = "mohk"))
+
+# carp: 3.3 years
+predicted_kelp_after_carp <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.2:3.4 by = 0.01]", type = "random", condition = c(site = "carp"))
+
+# ⟞ c. figure --------------------------------------------------------------
+
+overall_ms <- ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_continual, 
+             aes(x = time_since_end, y = delta_continual, fill = site, shape = site), size = 4, alpha = 0.9) +
+  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
+  scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
+  # new_scale("color") + 
+  # overall
+  geom_line(data = predicted_kelp_after_overall, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_after_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  geom_line(data = predicted_kelp_during_overall, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_during_overall, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 1000), limits = c(-1800, 900)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 22),
+        axis.text = element_text(size = 20),
+        legend.text = element_text(size = 20), 
+        legend.title = element_text(size = 20),
+        # plot.margin = margin(0, 0, 0, 0),
+        legend.position = c(0.12, 0.885)) +
+  labs(x = "Time since end of removal (years)", 
+       y = expression("\U0394"~giant~kelp~biomass~"(treatment - control, "~dry~g/m^{"2"}~")"), 
+       fill = "Site",
+       shape = "Site")
+
+overall_ms
+
+
+##########################################################################-
+# 4. recovery time vs biomass ---------------------------------------------
+##########################################################################-
+
+# ⟞ a. data frame ---------------------------------------------------------
+
+# Not sure how to do this reproducibly. But pulled time to recovery from above predicted values with prediction intervals. Then calculated mean kelp biomass in the kelp year of recovery from `delta_continual`. For MOHK, calculated biomass using the most recent kelp year (2021-2022).
+
+mean_kelp_all_sites <- delta_continual %>% 
+  filter(exp_dates == "after") %>% 
+  group_by(site) %>% 
+  # filter(site == "aque" & exp_dates == "after") %>% 
+  summarize(mean_control = mean(control),
+            sd_control = sd(control),
+            se_control = se(control),
+            mean_continual = mean(continual),
+            sd_continual = sd(continual),
+            se_continual = se(continual),
+            mean_delta = mean(delta_continual),
+            sd_delta = sd(delta_continual),
+            se_delta = se(delta_continual)) %>% 
+  ungroup()
+
+rec_time <- tribble(
+  ~site, ~time_to_recovery, ~pred_int_low, ~pred_int_high,
+  "aque",       3.80,          -674.27,         676.81,
+  "napl",       3.42,          -672.08,         675.42,
+  "mohk",       5.4,           -688.62,         689.42,
+  "carp",       3.33,          -672.28,         674.48
+) %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename("site_full" = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  left_join(., mean_kelp_all_sites, by = "site") 
+
+# ⟞ b. figure -------------------------------------------------------------
+
+rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, shape = site, fill = site)) +
+  geom_errorbar(aes(xmin = mean_control - se_control, xmax = mean_control + se_control)) +
+  geom_point(size = 10) +
+  geom_text_repel(aes(label = site_full), seed = 666,
+                  size = 7, point.padding = 35, nudge_y = 0.1) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  theme_bw() +
+  scale_y_continuous(breaks = c(seq(3, 6, by = 1)), limits = c(3, 6)) +
+  labs(x = expression(Mean~giant~kelp~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Predicted time to recovery (years)") +
+  
+  theme_bw() + 
+  theme(axis.title = element_text(size = 22),
+        axis.text = element_text(size = 20),
+        legend.text = element_text(size = 20), 
+        legend.title = element_text(size = 20),
+        legend.position = "none")
+
+rec_time_plot
+
+
+##########################################################################-
+# 5. manuscript tables ----------------------------------------------------
+##########################################################################-
+
+lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery_summary), 
+                            tab_spanner = c("**Removal**", "**Recovery**"))
+
+##########################################################################-
+# 6. manuscript figures ---------------------------------------------------
+##########################################################################-
+
+# ⟞ a. delta kelp through time -------------------------------------------
+
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig1_", today(), ".jpg", sep = "")),
+       plot = overall_ms,
+       height = 8, width = 14, dpi = 150)
+
+# ⟞ a. raw kelp biomass through time --------------------------------------
+
+ggsave(here::here("figures", "ms-figures",
+                  paste("figS2_", today(), ".jpg", sep = "")),
+       plot = delta_continual_sites_raw,
+       height = 8, width = 16, dpi = 150)
+
+# ⟞ a. recovery time vs biomass -------------------------------------------
+
+ggsave(here::here("figures", "ms-figures",
+                  paste("figS4", today(), ".jpg", sep = "")),
+       plot = rec_time_plot,
+       height = 8, width = 10, dpi = 150)
+
+
+
+
+
 
