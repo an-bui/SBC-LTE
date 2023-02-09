@@ -383,14 +383,14 @@ comparison_column_continual <- function(df) {
 
 # ⟞ a. Max's guild data ---------------------------------------------------
 
-guilds <- read_csv(here::here("code/castorani", "LTE_guild_data.csv")) %>% 
+guilds <- read_csv(here::here("code", "castorani", "LTE_guild_data.csv")) %>% 
   mutate(sp.code = replace_na(sp.code, "Nandersoniana")) %>% 
   rename("new_group" = biomass.guild)
 
 
 # ⟞ b. LTE all species biomass --------------------------------------------
 
-biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_20220314.csv")) %>% 
+biomass <- read_csv(here::here("data", "all-species-biomass", "LTE_All_Species_Biomass_at_transect_20220314.csv")) %>% 
   clean_names() %>% 
   # ANOB is incorrectly coded as having "SESSILE" mobility
   mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
@@ -417,7 +417,7 @@ biomass <- read_csv(here::here("data", "LTE_All_Species_Biomass_at_transect_2022
 
 # ⟞ c. LTE algae biomass at section ---------------------------------------
 
-biomass_section <- read_csv(here::here("data", "LTE_Algae_Biomass_at_section_20220422.csv")) %>% 
+biomass_section <- read_csv(here::here("data", "algae", "LTE_Algae_Biomass_at_section_20220422.csv")) %>% 
   clean_names() %>% 
   # replace all -99999 values with NA
   mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA),
