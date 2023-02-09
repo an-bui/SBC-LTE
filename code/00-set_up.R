@@ -1,5 +1,7 @@
 
+##########################################################################-
 # 1. libraries ------------------------------------------------------------
+##########################################################################-
 
 # general cleaning, visualization, etc.
 library(tidyverse)
@@ -39,8 +41,9 @@ library(performance)
 library(emmeans)
 library(gtsummary)
 
-
+##########################################################################-
 # 2. start and end dates --------------------------------------------------
+##########################################################################-
 
 # ⟞ a. Arroyo Quemado (AQUE) ---------------------------------------------
 
@@ -111,7 +114,9 @@ carp_after_date_annual <- as_date("2018-05-22")
 
 carp_after_date_continual <- as_date("2017-08-10")
 
-# 3. useful functions for wrangling ---------------------------------------
+##########################################################################-
+# 3. useful wranging functions --------------------------------------------
+##########################################################################-
 
 # create a column for "after" experimental removal
 after_dates_column <- function(df) {
@@ -372,7 +377,9 @@ comparison_column_continual <- function(df) {
     unite("sample_ID", site, date, quarter, remove = FALSE)
 }
 
+##########################################################################-
 # 4. data -----------------------------------------------------------------
+##########################################################################-
 
 # ⟞ a. Max's guild data ---------------------------------------------------
 
@@ -426,58 +433,16 @@ biomass_section <- read_csv(here::here("data", "LTE_Algae_Biomass_at_section_202
   # take out all the first dates 
   filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates)))
 
-# ⟞ d. LTE percent cover --------------------------------------------------
-
-percov <- read_csv(here::here("data", "LTE_Cover_All_Years_20200605.csv")) %>% 
-  clean_names() %>% 
-  # create a sample_ID for each sampling date at each treatment at each site
-  unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
-  # change to lower case
-  mutate_at(c("group", "mobility", "growth_morph", "site", "treatment"), str_to_lower) %>% 
-  # make a new column for after dates
-  after_dates_column() %>% 
-  # make a new column for during and after and set factor levels
-  exp_dates_column() %>% 
-  # create a new column for season and set factor levels
-  season_column()
-
-
-# ⟞ e. annual benthics percent cover --------------------------------------
-
-percov_annual <- read_csv(here::here("data/benthics", "Annual_Cover_All_Years_20210108.csv"))
-
-# ⟞ f. annual benthics biomass --------------------------------------------
-
-biomass_annual <- read_csv(here::here("data/benthics", "Annual_All_Species_Biomass_at_transect_20210108.csv")) %>% 
-  clean_names() %>% 
-  # create a sample_ID for each sampling date at each treatment at each site
-  unite("sample_ID", site, date, remove = FALSE) %>% 
-  # change to lower case
-  mutate_at(c("group", "mobility", "growth_morph", "site"), str_to_lower)
-
-# ⟞ g. LTE kelp fronds ----------------------------------------------------
-
-kelp_fronds <- read_csv(here::here("data", "LTE_Kelp_All_Years_20220202.csv")) %>% 
-  clean_names() %>% 
-  # create a sample_ID for each sampling date at each treatment at each site
-  unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
-  # change to lower case
-  mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
-  # # make a new column for after dates
-  # after_dates_column() %>% 
-  # make a new column for during and after and set factor levels
-  exp_dates_column() %>% 
-  # create a new column for season and set factor levels
-  season_column() %>% 
-  # replace -99999 values with NA
-  mutate(fronds = replace(fronds, fronds < 0, NA))
-
+##########################################################################-
 # 5. operators ------------------------------------------------------------
+##########################################################################-
 
 # not in operator
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
+##########################################################################-
 # 6. useful vectors and data frames ---------------------------------------
+##########################################################################-
 
 # ⟞ a. species -----------------------------------------------------------
 
@@ -597,11 +562,6 @@ mohk_after_sampleIDs <- percov %>%
 all_after_sampleIDs <- percov %>% 
   filter(exp_dates == "after") %>% 
   pull(sample_ID)
-
-
-# ⟞ d. today's date -------------------------------------------------------
-
-todays_date <- Sys.Date()
 
 
 # 7.  plot aesthetics -----------------------------------------------------
