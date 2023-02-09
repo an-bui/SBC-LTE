@@ -367,6 +367,10 @@ model_selection_summary_table <- cbind(
              aic.weights = "AIC weight")
 model_selection_summary_table
 
+# gtsave(model_selection_summary_table,
+#        here::here("tables", "ms-tables", paste("model_selection_summary_table_", today(), ".png", sep = "")),
+#        vwidth = 1500, vheight = 3000)
+
 ##########################################################################-
 # 4. manuscript figures ---------------------------------------------------
 ##########################################################################-
