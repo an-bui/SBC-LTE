@@ -530,12 +530,6 @@ algae_selection <- c("PTCA", "DL", "CYOS", "CC", "R", "EC", "POLA", "RAT", "CO",
 # vector of sites
 LTE_sites <- c("aque", "napl", "ivee", "mohk", "carp")
 
-LTER_sites <- biomass_annual %>% 
-  dplyr::select(site) %>% 
-  mutate(site = fct_relevel(site, c("bull", "aque", "ahnd", "napl", "ivee", "golb", "abur", "mohk", "carp", "scdi", "sctw"))) %>% 
-  unique() %>% 
-  pull(site)
-
 site_quality <- tribble(
   ~site, ~quality,
   "mohk", "high",
@@ -545,23 +539,6 @@ site_quality <- tribble(
   "carp", "low"
 ) %>% 
   mutate(quality = fct_relevel(quality, c("low", "medium", "high")))
-
-# ⟞ c. sample IDs ---------------------------------------------------------
-
-# NAPL after
-napl_after_sampleIDs <- percov %>% 
-  filter(site == "NAPL" & exp_dates == "after") %>% 
-  pull(sample_ID)
-
-# MOHK after
-mohk_after_sampleIDs <- percov %>% 
-  filter(site == "MOHK" & exp_dates == "after") %>% 
-  pull(sample_ID)
-
-# all after
-all_after_sampleIDs <- percov %>% 
-  filter(exp_dates == "after") %>% 
-  pull(sample_ID)
 
 
 # 7.  plot aesthetics -----------------------------------------------------
