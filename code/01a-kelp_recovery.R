@@ -232,7 +232,9 @@ ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [5.37:5.41 by = 0.01]",
 predicted_kelp_after_carp <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
 ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.2:3.4 by = 0.01]", type = "random", condition = c(site = "carp"))
 
-# ⟞ c. figure --------------------------------------------------------------
+# ⟞ c. figures -------------------------------------------------------------
+
+# ⟞ ⟞ i. overall model predictions -----------------------------------------
 
 overall_ms <- ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
@@ -262,6 +264,97 @@ overall_ms <- ggplot() +
        shape = "Site")
 
 overall_ms
+
+# ⟞ ⟞ ii. site level predictions -------------------------------------------
+
+aque <- ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_continual %>% filter(site == "aque"), aes(x = time_since_end, y = delta_continual), shape = aque_shape, fill = aque_col, size = 3, alpha = 0.9) +
+  # during
+  geom_line(data = predicted_kelp_during_aque, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_during_aque, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  # after
+  geom_line(data = predicted_kelp_after_aque, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_after_aque, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-1500, 1000, by = 1000), limits = c(-1800, 1000)) +
+  # geom_text(aes(x = -6.6, y = 600), label = "aque", size = 8) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16)) +
+  labs(x = "Time since end of removal", 
+       y = "\U0394 giant kelp biomass",
+       title = aque_full)
+
+napl <- ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_continual %>% filter(site == "napl"), aes(x = time_since_end, y = delta_continual), shape = napl_shape, fill = napl_col, size = 3, alpha = 0.9) +
+  # during
+  geom_line(data = predicted_kelp_during_napl, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_during_napl, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  # after
+  geom_line(data = predicted_kelp_after_napl, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_after_napl, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  # geom_text(aes(x = -6.8, y = 700), label = "napl", size = 8) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16)) +
+  labs(x = "Time since end of removal", 
+       y = "\U0394 giant kelp biomass",
+       title = napl_full)
+
+mohk <- ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_continual %>% filter(site == "mohk"), aes(x = time_since_end, y = delta_continual), shape = mohk_shape, fill = mohk_col, size = 3, alpha = 0.9) +
+  # during
+  geom_line(data = predicted_kelp_during_mohk, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_during_mohk, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  # after
+  geom_line(data = predicted_kelp_after_mohk, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_after_mohk, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  # geom_text(aes(x = -6.6, y = 900), label = "mohk", size = 8) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16)) +
+  labs(x = "Time since end of removal", 
+       y = "\U0394 giant kelp biomass",
+       title = mohk_full)
+
+carp <- ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_continual %>% filter(site == "carp"), aes(x = time_since_end, y = delta_continual), shape = carp_shape, fill = carp_col, size = 3, alpha = 0.9) +
+  # during
+  geom_line(data = predicted_kelp_during_carp, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_during_carp, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  # after
+  geom_line(data = predicted_kelp_after_carp, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_ribbon(data = predicted_kelp_after_carp, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  # geom_text(aes(x = -6.8, y = 1000), label = "carp", size = 8) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 18),
+        plot.title = element_text(size = 18),
+        axis.text = element_text(size = 16)) +
+  labs(x = "Time since end of removal", 
+       y = "\U0394 giant kelp biomass",
+       title = carp_full)
+
+plots_together_sites <- (aque + napl) / (mohk + carp) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 30))
+plots_together_sites
 
 
 ##########################################################################-
@@ -328,10 +421,11 @@ rec_time_plot
 ##########################################################################-
 
 lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery_summary), 
-                            tab_spanner = c("**Removal**", "**Recovery**")) %>% 
-  as_gt() 
+                            tab_spanner = c("**Removal**", "**Recovery**")) 
 
-# gtsave(lm_kelp_tables, 
+# lm_kelp_tables %>% 
+#   as_gt() %>% 
+#   gtsave(lm_kelp_tables,
 #        here::here("tables", "ms-tables", paste("lm_kelp_tables_", today(), ".png", sep = "")),
 #        vwidth = 1500, vheight = 1000)
 
@@ -342,23 +436,31 @@ lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery
 # ⟞ a. delta kelp through time -------------------------------------------
 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("fig1_", today(), ".jpg", sep = "")),
+#                   paste("fig-1_", today(), ".jpg", sep = "")),
 #        plot = overall_ms,
 #        height = 8, width = 14, dpi = 150)
 
-# ⟞ a. raw kelp biomass through time --------------------------------------
+# ⟞ b. raw kelp biomass through time --------------------------------------
 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("figS2_", today(), ".jpg", sep = "")),
+#                   paste("fig-S2_", today(), ".jpg", sep = "")),
 #        plot = delta_continual_sites_raw,
 #        height = 8, width = 16, dpi = 150)
 
-# ⟞ a. recovery time vs biomass -------------------------------------------
+# ⟞ c. recovery time vs biomass -------------------------------------------
 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("figS4", today(), ".jpg", sep = "")),
+#                   paste("fig-S4_", today(), ".jpg", sep = "")),
 #        plot = rec_time_plot,
 #        height = 8, width = 10, dpi = 150)
+
+# ⟞ c. recovery time vs biomass -------------------------------------------
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S1_", today(), ".jpg", sep = "")),
+#        plot = plots_together_sites,
+#        height = 8, width = 16, dpi = 150)
+
 
 
 
