@@ -578,6 +578,18 @@ continual_col <- "#009BB0"
 control_col <- "grey"
 kelp_col <- "#6D5A18"
 under_col <- "#CC7540"
+  
+site_raw_biomass_theme <- function() {
+  theme_bw() + 
+    theme(axis.title = element_text(size = 18),
+          plot.title = element_text(size = 18),
+          axis.text = element_text(size = 16),
+          legend.text = element_text(size = 16), 
+          legend.position = "none", 
+          strip.background = element_rect(fill = "#FFFFFF", color = "#FFFFFF"),
+          strip.text = element_text(size = 20, hjust = 0),
+          panel.grid.minor = element_line(color = "#FFFFFF")) 
+}
 
 # ⟞ b. treatment colors and shapes ----------------------------------------
 
@@ -601,7 +613,7 @@ during_col <- "#54662C"
 after_col <- "#114C54"
   
 sda_biomass_theme <- function() {
-  theme_bw() +
+    theme_bw() +
     theme(axis.title = element_text(size = 22),
           axis.text = element_text(size = 20),
           legend.text = element_text(size = 20), 
