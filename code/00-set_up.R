@@ -21,6 +21,7 @@ library(ggeffects)
 library(ggnewscale)
 library(scales)
 library(ggpubr)
+library(webshot2)
 
 # analysis
 library(vegan)
@@ -593,12 +594,21 @@ shape_palette <- c("annual" = annual_shape,
                    "control" = control_shape)
 
 
-# ⟞ d. start-during-after colors ------------------------------------------
+# ⟞ d. start-during-after -------------------------------------------------
 
 start_col <- "#FFBF00"
 during_col <- "#54662C"
 after_col <- "#114C54"
-
+  
+sda_biomass_theme <- function() {
+  theme_bw() +
+    theme(axis.title = element_text(size = 22),
+          axis.text = element_text(size = 20),
+          legend.text = element_text(size = 20), 
+          legend.title = element_text(size = 20),
+          plot.margin = margin(0, 0, 0, 0),
+          panel.grid.minor = element_line(color = "#FFFFFF")) 
+}
 
 # ⟞ e. site full names ----------------------------------------------------
 
@@ -634,7 +644,7 @@ sites_continual_full <- setNames(c("Arroyo Quemado",
                          "mohk",
                          "carp"))
 
-
+# ⟞ f. start-during-after -------------------------------------------------
 
 
 
