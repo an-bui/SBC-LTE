@@ -540,7 +540,7 @@ algae_time
 # model
 lm_epi_during_lmer <- lmer(
   delta_continual_epi ~ time_since_end + (1|site), 
-  data = delta_invert_continual %>% filter(exp_dates == "during"), 
+  data = delta_epi_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
 
 # diagnostics
@@ -568,7 +568,7 @@ predicted_epi_during <- ggpredict(lm_epi_during_lmer, terms = ~ time_since_end, 
 # model
 lm_epi_recovery_lmer <- lmer(
   delta_continual_epi ~ time_since_end + (1|site), 
-  data = delta_invert_continual %>% filter(exp_dates == "after"), 
+  data = delta_epi_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass)
 
 # diagnostics
@@ -712,6 +712,7 @@ endo_time
 # 5. manuscript tables ----------------------------------------------------
 ##########################################################################-
 
+# individual group tables
 lm_algae_tables <- tbl_merge(tbls = list(lm_algae_during_summary, lm_algae_recovery_summary),
                              tab_spanner = c("**Removal**", "**Recovery**")) 
 
@@ -721,7 +722,7 @@ lm_epi_tables <- tbl_merge(tbls = list(lm_epi_during_summary, lm_epi_recovery_su
 lm_endo_tables <- tbl_merge(tbls = list(lm_endo_during_summary, lm_endo_recovery_summary),
                             tab_spanner = c("**Removal**", "**Recovery**")) 
 
-# table
+# stack tables
 lm_summary_tables <- tbl_stack(
   tbls = list(lm_kelp_tables, lm_algae_tables, lm_epi_tables, lm_endo_tables),
   group_header = c("Kelp", "Algae", "Epilithic invertebrates", "Endolithic invertebrates"),
@@ -729,14 +730,12 @@ lm_summary_tables <- tbl_stack(
   as_gt()
 lm_summary_tables
 
-gtsave(lm_summary_tables,
-       here::here("tables", "ms-tables", paste("lm_summary_tables_", today(), ".png", sep = "")),
-       vwidth = 1500, vheight = 1000)
-
-
+# gtsave(lm_summary_tables,
+#        here::here("tables", "ms-tables", paste("lm_summary_tables_", today(), ".png", sep = "")),
+#        vwidth = 1500, vheight = 1000)
 
 ##########################################################################-
-# X. manuscript figures ---------------------------------------------------
+# 6. manuscript figures ---------------------------------------------------
 ##########################################################################-
 
 # ⟞ a. s-d-a and model predictions ----------------------------------------
