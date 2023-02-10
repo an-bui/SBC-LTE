@@ -5,15 +5,15 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
 ## Repository structure:
 
     .
-    ├── code                                       # all analysis code
-    │   └── 00-set_up.R                                     # all set up libraries, functions, objects  
-    │   └── 01a-kelp_recovery.R                             # analysis, figures, tables for kelp recovery
-    │   └── 01b-kelp_BACIPS                                 # analysis, figures, tables for kelp Before-AFter-Control-Impact-Paired-Series (BACIPS) analysis
-    │   └── 02a-community_recovery.R                        # analysis, figures, tables for community biomass analysis
-    |   └── 02b-community_composition.R                     # analysis, figures for community composition analysis
+    ├── code/                        # all analysis code
+    │   └── 00-set_up.R                                     
+    │   └── 01a-kelp_recovery.R                             
+    │   └── 01b-kelp_BACIPS                                  
+    │   └── 02a-community_recovery.R                        
+    |   └── 02b-community_composition.R                     
     |   └── README.md
     |
-    ├── data/                                      # raw data files
+    ├── data/                        # raw data files
     |   └── algae                                          
     |   └── all-species-biomass
     |   └── allometrics
@@ -32,10 +32,10 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
     |   └── urchins
     |   └── README.md  
     |
-    ├── figures/                                  # folder containing the code for App #1, a single-file-app 
-    |   └── ms-figures                                       # app code
+    ├── figures/                      # figures generated from code 
+    |   └── ms-figures                                      
     |    
-    ├── tables/ms-tables/                                     # folder containing the code for App #2, a two-file-app 
+    ├── tables/ms-tables/             # tables generated from code 
     ├── .gitignore        
     ├── README.md
     └── SBC-LTE.Rproj
