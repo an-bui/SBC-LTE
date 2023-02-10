@@ -3,8 +3,7 @@
 .RData
 .Ruserdata
 
-figures/trajectories/biomass/
-figures/trajectories/prelim-trajectories/
+figures/trajectories/
 figures/old
 figures/fg-recovery
 figures/timeseries
