@@ -5,5 +5,8 @@
 
 figures/trajectories/biomass/
 figures/trajectories/prelim-trajectories/
-figures/
-tables/
+figures/old
+figures/fg-recovery
+figures/timeseries
+tables/kelp_frond_model.png
+tables/old
