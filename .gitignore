@@ -4,8 +4,9 @@
 .Ruserdata
 
 figures/trajectories/
-figures/old
-figures/fg-recovery
-figures/timeseries
-tables/kelp_frond_model.png
-tables/old
+figures/old/
+figures/fg-recovery/
+figures/timeseries/
+figures/recovery-metrics/
+tables/kelp_frond_model.png/
+tables/old/
