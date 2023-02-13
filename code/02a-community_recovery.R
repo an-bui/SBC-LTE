@@ -169,11 +169,11 @@ delta_continual_sites_algae_raw <- delta_algae_continual %>%
   ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
-  geom_line(aes(x = time_since_end, y = control_algae, col = site), alpha = 0.5, size = 2.5) +
+  geom_line(aes(x = time_since_end, y = control_algae, col = site), alpha = 0.5, linewidth = 2.5) +
   # control
   geom_point(aes(x = time_since_end, y = control_algae, shape = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual_algae, col = site), size = 2.5) +
+  geom_line(aes(x = time_since_end, y = continual_algae, col = site), linewidth = 2.5) +
   geom_point(aes(x = time_since_end, y = continual_algae, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
@@ -198,10 +198,10 @@ delta_continual_sites_epi_raw <- delta_epi_continual %>%
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
   # control
-  geom_line(aes(x = time_since_end, y = control_epi, col = site), alpha = 0.5, size = 2.5) +
+  geom_line(aes(x = time_since_end, y = control_epi, col = site), alpha = 0.5, linewidth = 2.5) +
   geom_point(aes(x = time_since_end, y = control_epi, shape = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual_epi, col = site), size = 2.5) +
+  geom_line(aes(x = time_since_end, y = continual_epi, col = site), linewidth = 2.5) +
   geom_point(aes(x = time_since_end, y = continual_epi, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
@@ -225,11 +225,11 @@ delta_continual_sites_endo_raw <- delta_endo_continual %>%
   ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
-  geom_line(aes(x = time_since_end, y = control_endo, col = site), alpha = 0.5, size = 2.5) +
+  geom_line(aes(x = time_since_end, y = control_endo, col = site), alpha = 0.5, linewidth = 2.5) +
   # control
   geom_point(aes(x = time_since_end, y = control_endo, shape = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual_endo, col = site), size = 2.5) +
+  geom_line(aes(x = time_since_end, y = continual_endo, col = site), linewidth = 2.5) +
   geom_point(aes(x = time_since_end, y = continual_endo, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
@@ -510,9 +510,9 @@ algae_time <- ggplot() +
   scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
   # new_scale("color") + 
   # overall
-  geom_line(data = predicted_algae_recovery, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_line(data = predicted_algae_recovery, aes(x = x, y = predicted), linewidth = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_algae_recovery, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
-  geom_line(data = predicted_algae_during, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_line(data = predicted_algae_during, aes(x = x, y = predicted), linewidth = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
@@ -602,7 +602,7 @@ epi_time <- ggplot() +
   # overall
   # geom_line(data = predicted_epi_after, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   # geom_ribbon(data = predicted_epi_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
-  geom_line(data = predicted_epi_during, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
+  geom_line(data = predicted_epi_during, aes(x = x, y = predicted), linewidth = 2, alpha = 0.7) +
   geom_ribbon(data = predicted_epi_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
