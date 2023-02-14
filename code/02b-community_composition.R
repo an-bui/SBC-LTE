@@ -11,7 +11,6 @@ source(here::here("code", "02a-community_recovery.R"))
 
 # ⟞ a. continual removal communities --------------------------------------
 
-
 comm_df <- biomass %>% 
   new_group_column() %>% 
   # select columns of interest
@@ -114,77 +113,88 @@ comm_mat_control_epi <- comm_df %>%
 
 # ⟞ ⟞ i. period*treatment -------------------------------------------------
 
-algae_pt_dist <- vegdist(comm_mat_algae, "bray")
-algae_pt_nmds <- metaMDS(comm_mat_algae, "bray")
-stressplot(algae_pt_nmds)
+# ⟞ ⟞ ⟞  1. analysis ------------------------------------------------------
 
-plot(algae_pt_nmds, dispaly)
+# Bray-Curtis
+algae_pt_bray <- metaMDS(comm_mat_algae, "bray")
 
-algae_pt_plotdf <- scores(algae_pt_nmds, display = "sites") %>%
-  as_tibble(rownames = "sample_ID") %>% 
-  left_join(., comm_meta, by = "sample_ID")
+# stress plot
+stressplot(algae_pt_bray)
 
+# preliminary plot
+plot(algae_pt_bray)
+
+# SIMPER analysis
 simper_algae <- simper(comm_mat_algae, comm_meta_algae$treatment)
 summary(simper_algae)
+
+# permanova
+algae_pt_perma <- adonis2(comm_mat_algae ~ treatment*comp_2yrs, data = comm_meta)
+algae_pt_perma
+
+# beta dispersion
+algae_pt_dist <- vegdist(comm_mat_algae, "bray")
+algae_betadisper <- betadisper(algae_pt_dist, comm_meta$treatment)
+anova(algae_betadisper)
+
+# ⟞ ⟞ ⟞  2. plotting ------------------------------------------------------
+
+# points into data frame for plotting
+algae_pt_bray_plotdf <- scores(algae_pt_bray, display = "sites") %>% 
+  as_tibble(rownames = "sample_ID") %>% 
+  # join with metadata
+  left_join(., comm_meta, by = "sample_ID")
+
+# create data frame from simper analysis
 simper_algae_df <- simper_algae$control_continual %>% 
   as_tibble() %>% 
   # arrange by greatest to least contribution to dissimilarity
   arrange(-average)
+
 # pull top species from simper analysis
 simper_algae_spp <- simper_algae_df %>% 
   # take top 10 species
   head(10) %>% 
   pull(species)
 
-algae_pt_species <- scores(algae_pt_nmds, display = "species", tidy = TRUE) %>% 
+# get species points
+algae_pt_bray_species <- scores(algae_pt_bray, display = "species", tidy = TRUE) %>% 
   as_tibble(rownames = "sp_code") %>% 
+  # keep species from simper analysis only
   filter(sp_code %in% simper_algae_spp) %>% 
   left_join(., spp_names, by = "sp_code")
 
-algae_pt_perma <- adonis2(comm_mat_algae ~ treatment*comp_2yrs, data = comm_meta)
-algae_pt_perma
+# continual removal plots only
+algae_pt_bray_continual_plot <- nmds_plot_fxn(
+  algae_pt_bray_plotdf, "continual", algae_pt_bray_species
+  ) +
+  # axis limits
+  scale_x_continuous(limits = c(-1.5, 1.6), breaks = seq(-1, 1, by = 1)) +
+  scale_y_continuous(limits = c(-1.3, 1), breaks = seq(-1, 1, by = 1)) +
+  # ordination_theme() +
+  labs(shape = "Site",
+       color = "Time period",
+       fill = "Time period") +
+  # ellipse labels. clown shit
+  # annotate("text", x = -1, y = 0.5, label = "Start of", size = 10, col = start_col) +
+  # annotate("text", x = -1, y = 0.4, label = "removal", size = 10, col = start_col) +
+  # annotate("text", x = 1.4, y = 0.75, label = "End of", size = 10, col = during_col) +
+  # annotate("text", x = 1.4, y = 0.65, label = "removal", size = 10, col = during_col) +
+  # annotate("text", x = 0.85, y = -0.9, label = "Recovery", size = 10, col = after_col) +
+  # annotate("text", x = 0.85, y = -1, label = "period", size = 10, col = after_col) +
+  # stress annotation
+  annotate("text", x = -1.4, y = -1.25, label = "Stress = 0.2", size = 5)
+algae_pt_bray_continual_plot
 
-algae_betadisper <- betadisper(algae_pt_dist, comm_meta$treatment)
-anova(algae_betadisper)
 
-algae_pt_continual_plot <- algae_pt_plotdf %>% 
-  filter(treatment == "continual") %>% 
-  ggplot(aes(x = NMDS1, y = NMDS2)) +
-  # make sure plot is square (ratio comes from axis limits)
-  coord_fixed(ratio = 3.75/2.25) +
-  scale_x_continuous(limits = c(-1.75, 2)) +
-  scale_y_continuous(limits = c(-1.25, 1), breaks = seq(-1, 1, by = 1)) +
-  # x and y axes at 0
-  geom_vline(xintercept = 0, color = "grey", lty = 2) +
-  geom_hline(yintercept = 0, color = "grey", lty = 2) +
-  # site points
-  geom_point(aes(shape = site_full, fill = comp_2yrs), size = 4, alpha = 0.9) +
-  # ellipse
-  stat_ellipse(aes(color = comp_2yrs), size = 1) +
-  # colors and linetypes
-  scale_color_manual(values = c(start_col, during_col, after_col)) +
-  scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
-  # scale_linetype_manual(values = c("continual" = 1)) +
-  scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
-  # arrows for species from SIMPER
-  geom_text_repel(data = algae_pt_species, 
-                  aes(x = NMDS1, y = NMDS2, 
-                      label = stringr::str_wrap(scientific_name, 10, width = 40)),
-                  color = "#C70000", lineheight = 0.8) +
-  geom_segment(data = algae_pt_species,
-               aes(x = 0, y = 0,
-                   xend = NMDS1, yend = NMDS2),
-               arrow = arrow(length = unit(0.5, "cm")), 
-               color = "#C70000", size = 1) +
+# control plots only
+algae_pt_bray_control_plot <- nmds_plot_fxn(
+  algae_pt_bray_plotdf, "control", algae_pt_bray_species
+) +
   # plot aesthetics
-  theme_classic() +
+  # ordination_theme() +
   # scale_x_continuous(limits = c(-1.75, 2)) +
   # scale_y_continuous(limits = c(-1.25, 1), breaks = seq(-1, 1, by = 1)) +
-  theme(axis.title = element_text(size = 22),
-        axis.text = element_text(size = 20),
-        legend.text = element_text(size = 20), 
-        legend.title = element_text(size = 20),
-        legend.position = c(-1.2, 1.2)) +
   labs(shape = "Site",
        color = "Time period",
        fill = "Time period") +
@@ -197,46 +207,12 @@ algae_pt_continual_plot <- algae_pt_plotdf %>%
   # annotate("text", x = -1.4, y = 0.9, label = "period", size = 10, col = after_col) +
   # stress annotation
   annotate("text", x = -1.4, y = -1.25, label = "Stress = 0.2", size = 5)
-algae_pt_continual_plot
+algae_pt_bray_control_plot
 
-algae_pt_control_plot <- algae_pt_plotdf %>% 
-  filter(treatment == "control") %>% 
-  ggplot(aes(x = NMDS1, y = NMDS2)) +
-  # make sure plot is square (ratio comes from axis limits)
-  # coord_fixed(ratio = 3.75/2.25) +
-  # scale_x_continuous(limits = c(-1.75, 2)) +
-  # scale_y_continuous(limits = c(-1.25, 1), breaks = seq(-1, 1, by = 1)) +
-  # x and y axes at 0
-  geom_vline(xintercept = 0, color = "grey", lty = 2) +
-  geom_hline(yintercept = 0, color = "grey", lty = 2) +
-  # site points
-  geom_point(aes(shape = site_full, fill = comp_2yrs), size = 4, alpha = 0.9) +
-  # ellipse
-  stat_ellipse(aes(color = comp_2yrs), size = 1) +
-  # colors and linetypes
-  scale_color_manual(values = c(start_col, during_col, after_col)) +
-  scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
-  # scale_linetype_manual(values = c("continual" = 1)) +
-  scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
-  # arrows for species from SIMPER
-  geom_text_repel(data = algae_pt_species, 
-                  aes(x = NMDS1, y = NMDS2, 
-                      label = stringr::str_wrap(scientific_name, 10, width = 40)),
-                  color = "#C70000", lineheight = 0.8) +
-  geom_segment(data = algae_pt_species,
-               aes(x = 0, y = 0,
-                   xend = NMDS1, yend = NMDS2),
-               arrow = arrow(length = unit(0.5, "cm")), 
-               color = "#C70000", size = 1) +
-  # plot aesthetics
-  theme_classic() +
-  # scale_x_continuous(limits = c(-1.75, 2)) +
-  # scale_y_continuous(limits = c(-1.25, 1), breaks = seq(-1, 1, by = 1)) +
-  theme(axis.title = element_text(size = 22),
-        axis.text = element_text(size = 20),
-        legend.text = element_text(size = 20), 
-        legend.title = element_text(size = 20),
-        legend.position = c(-1.2, 1.2)) +
+# both treatments together
+algae_pt_bray_both_plot <- nmds_plot_fxn(
+  algae_pt_bray_plotdf, "both", algae_pt_bray_species
+) +
   labs(shape = "Site",
        color = "Time period",
        fill = "Time period") +
@@ -249,5 +225,93 @@ algae_pt_control_plot <- algae_pt_plotdf %>%
   # annotate("text", x = -1.4, y = 0.9, label = "period", size = 10, col = after_col) +
   # stress annotation
   annotate("text", x = -1.4, y = -1.25, label = "Stress = 0.2", size = 5)
-algae_pt_control_plot
+algae_pt_bray_both_plot
+
+# ⟞ b. epi inverts --------------------------------------------------------
+
+# ⟞ ⟞ i. period*treatment -------------------------------------------------
+
+# ⟞ ⟞ ⟞  1. analysis ------------------------------------------------------
+
+# Bray-Curtis
+epi_pt_bray <- metaMDS(comm_mat_epi, "bray")
+
+# stress plot
+stressplot(epi_pt_bray)
+
+# preliminary plot
+plot(epi_pt_bray)
+
+# SIMPER analysis
+simper_epi <- simper(comm_mat_epi, comm_meta$treatment)
+summary(simper_epi)
+
+# permanova
+epi_pt_perma <- adonis2(comm_mat_epi ~ treatment*comp_2yrs, data = comm_meta)
+epi_pt_perma
+
+# beta dispersion
+epi_pt_dist <- vegdist(comm_mat_epi, "bray")
+epi_betadisper <- betadisper(epi_pt_dist, comm_meta$treatment)
+anova(epi_betadisper)
+# not significantly different dispersions
+
+# ⟞ ⟞ ⟞  2. plotting ------------------------------------------------------
+
+# points into data frame for plotting
+epi_pt_bray_plotdf <- scores(epi_pt_bray, display = "sites") %>% 
+  as_tibble(rownames = "sample_ID") %>% 
+  # join with metadata
+  left_join(., comm_meta, by = "sample_ID")
+
+# create data frame from simper analysis
+simper_epi_df <- simper_epi$control_continual %>% 
+  as_tibble() %>% 
+  # arrange by greatest to least contribution to dissimilarity
+  arrange(-average)
+
+# pull top species from simper analysis
+simper_epi_spp <- simper_epi_df %>% 
+  # take top 10 species
+  head(10) %>% 
+  pull(species)
+
+# get species points
+epi_pt_bray_species <- scores(epi_pt_bray, display = "species", tidy = TRUE) %>% 
+  as_tibble(rownames = "sp_code") %>% 
+  # keep species from simper analysis only
+  filter(sp_code %in% simper_epi_spp) %>% 
+  left_join(., spp_names, by = "sp_code")
+
+# continual removal plots only
+epi_pt_bray_continual_plot <- nmds_plot_fxn(
+  epi_pt_bray_plotdf, "continual", epi_pt_bray_species
+) +
+  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
+  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
+  annotate("text", x = -1.6, y = -1.7, label = "Stress = 0.2", size = 5)
+epi_pt_bray_continual_plot
+
+
+# control plots only
+epi_pt_bray_control_plot <- nmds_plot_fxn(
+  epi_pt_bray_plotdf, "control", epi_pt_bray_species
+) +
+  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
+  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
+  annotate("text", x = -1.6, y = -1.7, label = "Stress = 0.2", size = 5)
+epi_pt_bray_control_plot
+
+# both treatments together
+epi_pt_bray_both_plot <- nmds_plot_fxn(
+  epi_pt_bray_plotdf, "both", epi_pt_bray_species
+) +
+  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
+  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
+  annotate("text", x = -1.6, y = -1.7, label = "Stress = 0.2", size = 5)
+epi_pt_bray_both_plot
+
+
+
+
 
