@@ -200,7 +200,7 @@ exp_dates_column_continual <- function(df) {
       # after for control:
       site == "aque" & treatment == "control" & date > aque_after_date_continual ~ "after",
       site == "napl" & treatment == "control" & date > napl_after_date_continual ~ "after",
-      site == "ivee" & treatment == "control" & date > ivee_after_date_continual ~ "after",
+      # site == "ivee" & treatment == "control" & date > ivee_after_date_continual ~ "after",
       site == "mohk" & treatment == "control" & date > mohk_after_date_continual ~ "after",
       site == "carp" & treatment == "control" & date > carp_after_date_continual ~ "after",
       # everything else is "during" the experiment
