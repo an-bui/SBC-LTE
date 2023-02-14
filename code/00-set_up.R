@@ -657,8 +657,85 @@ sites_continual_full <- setNames(c("Arroyo Quemado",
                          "carp"))
 
 # ⟞ f. start-during-after -------------------------------------------------
+# ⟞ f. ordinations --------------------------------------------------------
 
-
+nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
+  
+  if(treatment == "continual"){
+    df <- plotdf %>% 
+      filter(treatment == "continual")
+  } else if(treatment == "control") {
+    df <- plotdf %>% 
+      filter(treatment == "control")
+  } else if(treatment == c("both")) {
+    df <- plotdf
+  } else {
+    warning("Check your arguments! You may have specified the wrong treatment.")
+    return(NA)
+  }
+  
+  if(treatment == "continual"){
+    treatment_linetype <- 1
+  } else if(treatment == "control") {
+    treatment_linetype <- 2
+  }
+  
+  if(treatment %in% c("continual", "control")){
+    point_aesthetics <- function() {
+      df %>% 
+        mutate(comp_2yrs = recode(comp_2yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
+        ggplot(aes(x = NMDS1, y = NMDS2)) +
+        coord_fixed() +
+        geom_vline(xintercept = 0, color = "grey", lty = 2) +
+        geom_hline(yintercept = 0, color = "grey", lty = 2) +
+        geom_point(aes(shape = site_full, fill = comp_2yrs), size = 4, alpha = 0.9) +
+        # ellipse
+        stat_ellipse(aes(color = comp_2yrs), size = 1, linetype = treatment_linetype) 
+    }
+  } else if(treatment == "both") {
+    point_aesthetics <- function() {
+      df %>% 
+        mutate(comp_2yrs = recode(comp_2yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
+        ggplot(aes(x = NMDS1, y = NMDS2)) +
+        coord_fixed() +
+        geom_vline(xintercept = 0, color = "grey", lty = 2) +
+        geom_hline(yintercept = 0, color = "grey", lty = 2) +
+        geom_point(aes(shape = site_full, fill = comp_2yrs, alpha = treatment), size = 4) +
+        # ellipse
+        stat_ellipse(aes(color = comp_2yrs, linetype = treatment), size = 1) +
+        scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5)) +
+        scale_linetype_manual(values = c("continual" = 1, "control" = 2))
+    }
+  } else {
+    warning("Check your arguments! You may have specified the wrong treatment.")
+    return(NA)
+  }
+  
+  # site points
+  point_aesthetics() +
+    # colors and linetypes
+    scale_color_manual(values = c(start_col, during_col, after_col)) +
+    scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
+    scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
+    # arrows for species from SIMPER
+    geom_text_repel(data = simper_spp, 
+                    aes(x = NMDS1, y = NMDS2, 
+                        label = stringr::str_wrap(scientific_name, 10, width = 40)),
+                    color = "#C70000", lineheight = 0.8, max.overlaps = 100) +
+    geom_segment(data = simper_spp,
+                 aes(x = 0, y = 0,
+                     xend = NMDS1, yend = NMDS2),
+                 arrow = arrow(length = unit(0.5, "cm")), 
+                 color = "#C70000", size = 1) +
+    theme_bw() +
+    theme(axis.title = element_text(size = 22),
+          axis.text = element_text(size = 20),
+          legend.text = element_text(size = 20), 
+          legend.title = element_text(size = 20)) +
+    labs(shape = "Site",
+         color = "Time period",
+         fill = "Time period")
+}
 
 
 
