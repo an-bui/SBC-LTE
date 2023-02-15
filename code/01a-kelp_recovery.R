@@ -229,12 +229,12 @@ lm_kelp_recovery_gls_ar1 <- nlme::gls(
 # diagnostics
 plot(DHARMa::simulateResiduals(lm_kelp_recovery_lmer)) # outer Newton doesn't converge?
 performance::check_model(lm_kelp_recovery_lmer)
-performance::check_model(lm_kelp_recovery_lme_ar1_m1)
+performance::check_model(lm_kelp_recovery_lme_ar1)
 qqnorm(lm_kelp_recovery_gls_ar1)
 plot(residuals(lm_kelp_recovery_gls_ar1))
 
 # plot ACF
-plot(nlme::ACF(lm_kelp_recovery_lme_ar1_m1), alpha = 0.05/20)
+plot(nlme::ACF(lm_kelp_recovery_lme_ar1), alpha = 0.05/20)
 plot(nlme::ACF(lm_kelp_recovery_gls_ar1), alpha = 0.05/20)
 
 # Rsquared
