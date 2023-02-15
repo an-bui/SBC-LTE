@@ -163,14 +163,25 @@ lm_kelp_during_lme_ar1 <- nlme::lme(
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass,
   correlation = corAR1())
+lm_kelp_during_gls <- nlme::gls(
+  delta_continual ~ time_since_end,
+  data = delta_continual %>% filter(exp_dates == "during")
+)
+lm_kelp_during_gls_ar1 <- nlme::gls(
+  delta_continual ~ time_since_end,
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  correlation = corAR1(form = ~ 1|site)
+)
 
 # diagnostics
 plot(DHARMa::simulateResiduals(lm_kelp_during_lmer))
 performance::check_model(lm_kelp_during_lmer)
 performance::check_model(lm_kelp_during_lme_ar1)
+performance::check_model(gls_kelp_during_ar1)
 
 # plot ACF
 plot(nlme::ACF(lm_kelp_during_lme_ar1))
+plot(nlme::ACF(gls_kelp_during_ar1))
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
@@ -179,13 +190,14 @@ MuMIn::r.squaredGLMM(lm_kelp_during_lme_ar1)
 # summaries
 summary(lm_kelp_during_lmer)
 summary(lm_kelp_during_lme_ar1)
+summary(lm_kelp_during_gls_ar1)
 lm_kelp_during_summary <- lm_kelp_during_lmer %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05)
 lm_kelp_during_summary
 
 # AIC comparison
-MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_lme_ar1)
+MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_lme_ar1, lm_kelp_during_gls, lm_kelp_during_gls_ar1)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
@@ -208,15 +220,23 @@ lm_kelp_recovery_lme_ar1 <- nlme::lme(
   delta_continual ~ time_since_end, random = ~1|site,
   data = delta_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass,
+  correlation = corAR1())
+lm_kelp_recovery_gls_ar1 <- nlme::gls(
+  delta_continual ~ time_since_end, 
+  data = delta_continual %>% filter(exp_dates == "after"), 
+  na.action = na.pass,
   correlation = corAR1(form = ~1|site))
 
 # diagnostics
 plot(DHARMa::simulateResiduals(lm_kelp_recovery_lmer)) # outer Newton doesn't converge?
 performance::check_model(lm_kelp_recovery_lmer)
 performance::check_model(lm_kelp_recovery_lme_ar1_m1)
+qqnorm(lm_kelp_recovery_gls_ar1)
+plot(residuals(lm_kelp_recovery_gls_ar1))
 
 # plot ACF
 plot(nlme::ACF(lm_kelp_recovery_lme_ar1_m1), alpha = 0.05/20)
+plot(nlme::ACF(lm_kelp_recovery_gls_ar1), alpha = 0.05/20)
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_recovery_lmer)
@@ -225,13 +245,14 @@ MuMIn::r.squaredGLMM(lm_kelp_recovery_lme_ar1)
 # summary
 summary(lm_kelp_recovery_lmer)
 summary(lm_kelp_recovery_lme_ar1)
+summary(lm_kelp_recovery_gls_ar1)
 lm_kelp_recovery_summary <- lm_kelp_recovery_lmer %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05)
 lm_kelp_recovery_summary
 
 # AIC comparisons
-MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1_m1)
+MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1, lm_kelp_recovery_gls_ar1)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
