@@ -158,20 +158,32 @@ lm_kelp_during_lmer <- lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
+lm_kelp_during_lme_ar1 <- lme(
+  delta_continual ~ time_since_end, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass,
+  correlation = corAR1())
 
 # diagnostics
 plot(simulateResiduals(lm_kelp_during_lmer))
 check_model(lm_kelp_during_lmer)
+check_model(lm_kelp_during_lme_ar1)
+plot(ACF(lm_kelp_during_lme_ar1))
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
+MuMIn::r.squaredGLMM(lm_kelp_during_lme_ar1)
 
 # summaries
 summary(lm_kelp_during_lmer)
+summary(lm_kelp_during_lme_ar1)
 lm_kelp_during_summary <- lm_kelp_during_lmer %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05)
 lm_kelp_during_summary
+
+# AIC comparison
+AICc(lm_kelp_during_lmer, lm_kelp_during_lme_ar1)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
@@ -190,20 +202,32 @@ lm_kelp_recovery_lmer <- lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass)
+lm_kelp_recovery_lme_ar1 <- nlme::lme(
+  delta_continual ~ time_since_end, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "after"), 
+  na.action = na.pass,
+  correlation = corAR1())
 
 # diagnostics
-plot(simulateResiduals(lm_kelp_recovery_lmer))
+plot(simulateResiduals(lm_kelp_recovery_lmer)) # convergence problems?
 check_model(lm_kelp_recovery_lmer)
+check_model(lm_kelp_recovery_lme_ar1_m1)
+plot(ACF(lm_kelp_recovery_lme_ar1_m1))
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_recovery_lmer)
+MuMIn::r.squaredGLMM(lm_kelp_recovery_lme_ar1)
 
 # summary
 summary(lm_kelp_recovery_lmer)
+summary(lm_kelp_recovery_lme_ar1)
 lm_kelp_recovery_summary <- lm_kelp_recovery_lmer %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05)
 lm_kelp_recovery_summary
+
+# AIC comparisons
+AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1_m1)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
