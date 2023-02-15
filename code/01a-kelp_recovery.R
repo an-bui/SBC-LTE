@@ -154,7 +154,7 @@ delta_continual_sites_raw
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
 
 # model
-lm_kelp_during_lmer <- lme4::lmer(
+lm_kelp_during_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
@@ -180,8 +180,8 @@ performance::check_model(lm_kelp_during_lme_ar1)
 performance::check_model(gls_kelp_during_ar1)
 
 # plot ACF
-plot(nlme::ACF(lm_kelp_during_lme_ar1))
-plot(nlme::ACF(gls_kelp_during_ar1))
+plot(nlme::ACF(lm_kelp_during_lme_ar1), alpha = 0.05)
+plot(nlme::ACF(lm_kelp_during_gls_ar1), alpha = 0.05)
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
