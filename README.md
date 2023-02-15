@@ -1,5 +1,7 @@
 # Kelp recovery
 
+**last updated: 2023-02-15**  
+
 This is a repository for analyzing kelp and kelp-associated community recovery dynamics from the long term kelp removal experiment in the Santa Barbara Coastal Long Term Ecological Research (SBC LTER) network. All data are from the [SBC LTER Data Catalog](https://sbclter.msi.ucsb.edu/data/catalog/).
 
 ## Repository structure:
@@ -10,7 +12,8 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
     │   └── 01a-kelp_recovery.R                             
     │   └── 01b-kelp_BACIPS                                  
     │   └── 02a-community_recovery.R                        
-    |   └── 02b-community_composition.R                     
+    |   └── 02b-community_composition.R 
+    |   └── 03a-algae_epi_kelp.R   
     |   └── README.md
     |
     ├── data/                        # raw data files
@@ -36,6 +39,7 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
     |   └── ms-figures                                      
     |    
     ├── tables/ms-tables/             # tables generated from code 
+    |  
     ├── .gitignore        
     ├── README.md
     └── SBC-LTE.Rproj
