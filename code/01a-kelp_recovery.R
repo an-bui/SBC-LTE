@@ -177,7 +177,6 @@ lm_kelp_during_gls_ar1 <- nlme::gls(
 plot(DHARMa::simulateResiduals(lm_kelp_during_lmer))
 performance::check_model(lm_kelp_during_lmer)
 performance::check_model(lm_kelp_during_lme_ar1)
-performance::check_model(gls_kelp_during_ar1)
 
 # plot ACF
 plot(nlme::ACF(lm_kelp_during_lme_ar1), alpha = 0.05)
