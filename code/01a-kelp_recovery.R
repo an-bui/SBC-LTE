@@ -27,13 +27,13 @@ delta_annual <- biomass %>%
   # missing dates are from AQUE 2008-03-05, NAPL 2012-09-25, NAPL 2008-10-10
   drop_na(delta_annual) %>% 
   mutate(exp_dates = case_when(
-    # after for continual removal:
+    # after removal ended:
     site == "aque" & date >= aque_after_date_annual ~ "after",
     site == "napl" & date >= napl_after_date_annual ~ "after",
     site == "ivee" & date >= ivee_after_date_annual ~ "after", 
     site == "mohk" & date >= mohk_after_date_annual ~ "after",
     site == "carp" & date >= carp_after_date_annual ~ "after",
-    # everything else is "during" the experiment
+    # everything else is "during" removal
     TRUE ~ "during"
   ),
   exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
@@ -52,12 +52,12 @@ delta_continual <- biomass %>%
   # take out years where continual removal hadn't happened yet
   drop_na(delta_continual) %>% 
   mutate(exp_dates = case_when(
-    # after for continual removal:
+    # after removal ended
     site == "aque" & date >= aque_after_date_continual ~ "after",
     site == "napl" & date >= napl_after_date_continual ~ "after",
     site == "mohk" & date >= mohk_after_date_continual ~ "after",
     site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" the experiment
+    # everything else is "during" removal
     TRUE ~ "during"
   ),
   exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
@@ -154,21 +154,23 @@ delta_continual_sites_raw
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
 
 # model
-lm_kelp_during_lmer <- lmer(
+lm_kelp_during_lmer <- lme4::lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
-lm_kelp_during_lme_ar1 <- lme(
+lm_kelp_during_lme_ar1 <- nlme::lme(
   delta_continual ~ time_since_end, random = ~1|site,
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass,
   correlation = corAR1())
 
 # diagnostics
-plot(simulateResiduals(lm_kelp_during_lmer))
-check_model(lm_kelp_during_lmer)
-check_model(lm_kelp_during_lme_ar1)
-plot(ACF(lm_kelp_during_lme_ar1))
+plot(DHARMa::simulateResiduals(lm_kelp_during_lmer))
+performance::check_model(lm_kelp_during_lmer)
+performance::check_model(lm_kelp_during_lme_ar1)
+
+# plot ACF
+plot(nlme::ACF(lm_kelp_during_lme_ar1))
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
@@ -183,7 +185,7 @@ lm_kelp_during_summary <- lm_kelp_during_lmer %>%
 lm_kelp_during_summary
 
 # AIC comparison
-AICc(lm_kelp_during_lmer, lm_kelp_during_lme_ar1)
+MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_lme_ar1)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
@@ -198,7 +200,7 @@ predicted_kelp_during_carp <- ggpredict(lm_kelp_during_lmer, terms = ~ time_sinc
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
 
 # model
-lm_kelp_recovery_lmer <- lmer(
+lm_kelp_recovery_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass)
@@ -206,13 +208,15 @@ lm_kelp_recovery_lme_ar1 <- nlme::lme(
   delta_continual ~ time_since_end, random = ~1|site,
   data = delta_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass,
-  correlation = corAR1())
+  correlation = corAR1(form = ~1|site))
 
 # diagnostics
-plot(simulateResiduals(lm_kelp_recovery_lmer)) # convergence problems?
-check_model(lm_kelp_recovery_lmer)
-check_model(lm_kelp_recovery_lme_ar1_m1)
-plot(ACF(lm_kelp_recovery_lme_ar1_m1))
+plot(DHARMa::simulateResiduals(lm_kelp_recovery_lmer)) # outer Newton doesn't converge?
+performance::check_model(lm_kelp_recovery_lmer)
+performance::check_model(lm_kelp_recovery_lme_ar1_m1)
+
+# plot ACF
+plot(nlme::ACF(lm_kelp_recovery_lme_ar1_m1), alpha = 0.05/20)
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_recovery_lmer)
@@ -227,7 +231,7 @@ lm_kelp_recovery_summary <- lm_kelp_recovery_lmer %>%
 lm_kelp_recovery_summary
 
 # AIC comparisons
-AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1_m1)
+MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1_m1)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
