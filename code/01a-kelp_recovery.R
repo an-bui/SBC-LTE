@@ -178,6 +178,13 @@ plot(DHARMa::simulateResiduals(lm_kelp_during_lmer))
 performance::check_model(lm_kelp_during_lmer)
 performance::check_model(lm_kelp_during_lme_ar1)
 
+# model checks
+performance::check_convergence(lm_kelp_during_lmer)
+performance::check_autocorrelation(lm_kelp_during_lmer) # Durbin-Watson-Test
+performance::check_normality(lm_kelp_during_lmer) # Shapiro test
+performance::check_homogeneity(lm_kelp_during_lmer) # Bartlett test
+performance::check_heteroskedasticity(lm_kelp_during_lmer) # Breusch-Pagan test
+
 # plot ACF
 plot(nlme::ACF(lm_kelp_during_lme_ar1), alpha = 0.05)
 plot(nlme::ACF(lm_kelp_during_gls_ar1), alpha = 0.05)
@@ -226,12 +233,19 @@ lm_kelp_recovery_gls_ar1 <- nlme::gls(
   na.action = na.pass,
   correlation = corAR1(form = ~1|site))
 
+# check for autocorrelation
+performance::check_autocorrelation(lm_kelp_recovery_lmer)
+
 # diagnostics
 plot(DHARMa::simulateResiduals(lm_kelp_recovery_lmer)) # outer Newton doesn't converge?
 performance::check_model(lm_kelp_recovery_lmer)
 performance::check_model(lm_kelp_recovery_lme_ar1)
 qqnorm(lm_kelp_recovery_gls_ar1)
 plot(residuals(lm_kelp_recovery_gls_ar1))
+
+# model checks
+check_normality(lm_kelp_recovery_lmer)
+check_heteroscedasticity(lm_kelp_recovery_lmer)
 
 # plot ACF
 plot(nlme::ACF(lm_kelp_recovery_lme_ar1), alpha = 0.05/20)
