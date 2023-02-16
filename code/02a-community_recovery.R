@@ -374,21 +374,25 @@ anova_endo_2yrs_df <- ggpredict(anova_endo_2yrs, terms = "comp_2yrs", type = "fi
 sda_algae_biomass <- ggplot(anova_algae_2yrs_df) +
   # horizontal line at 0
   geom_hline(yintercept = 0, lty = 2) +
+  # annotate("rect", xmin = 0, xmax = 4, ymin = 125.5, ymax = 140, fill = "#FFFFFF") +
   # points and error bars
-  geom_point(aes(x = x, y = predicted), size = 6) +
+  geom_point(aes(x = x, y = predicted), size = 2) +
   geom_errorbar(aes(x = x, ymin = predicted - std.error, ymax = predicted + std.error), width = 0.2) +
   # path between time periods
-  geom_line(aes(x = x, y = predicted, group = 1)) +
+  geom_line(aes(x = x, y = predicted, group = 2)) +
   # add in post-hoc comparisons
-  annotate("text", x = 1, y = 125, label = "a", size = 11) +
-  annotate("text", x = 2, y = 125, label = "b", size = 11) +
-  annotate("text", x = 3, y = 125, label = "a", size = 11) +
+  annotate("text", x = 1, y = 122, label = "a", size = 3) +
+  annotate("text", x = 2, y = 122, label = "b", size = 3) +
+  annotate("text", x = 3, y = 122, label = "a", size = 3) +
+  # annotate("text", x = 0.55, y = 135, label = "Understory algae", size = 10) +
   # aesthetics
   scale_x_discrete(labels = wrap_format(10)) +
-  scale_y_continuous(limits = c(-30, 130)) +
+  scale_y_continuous(limits = c(-30, 130), breaks = c(0, 50, 100, 150), expand = c(0, 0)) +
   sda_biomass_theme() +
   labs(x = "Time period", 
-       y = expression(Understory~algae~biomass~(dry~g/m^{"2"})))
+       y = expression(Biomass~(dry~g/m^{"2"})),
+       title = "Understory algae", 
+       subtitle = "A")
 sda_algae_biomass
 
 # ⟞ ⟞ ii. epi inverts ----------------------------------------------------
@@ -397,20 +401,24 @@ sda_epi_biomass <- ggplot(anova_epi_2yrs_df) +
   # horizontal line at 0
   geom_hline(yintercept = 0, lty = 2) +
   # points and error bars
-  geom_point(aes(x = x, y = predicted), size = 6) +
+  geom_point(aes(x = x, y = predicted), size = 2) +
+  # annotate("rect", xmin = 0, xmax = 4, ymin = 20.1, ymax = 24, fill = "#FFFFFF") +
   geom_errorbar(aes(x = x, ymin = predicted - std.error, ymax = predicted + std.error), width = 0.2) +
   # path between time periods
   geom_line(aes(x = x, y = predicted, group = 1)) +
   # add in post-hoc comparisons
-  annotate("text", x = 1, y = 20, label = "a", size = 11) +
-  annotate("text", x = 2, y = 20, label = "b", size = 11) +
-  annotate("text", x = 3, y = 20, label = "b", size = 11) +
+  annotate("text", x = 1, y = 20, label = "a", size = 3) +
+  annotate("text", x = 2, y = 20, label = "b", size = 3) +
+  annotate("text", x = 3, y = 20, label = "b", size = 3) +
+  # annotate("text", x = 0.68, y = 23, label = "Epilithic invertebrates", size = 10) +
   # aesthetics
   scale_x_discrete(labels = wrap_format(10)) +
-  scale_y_continuous(limits = c(-13, 21)) +
+  scale_y_continuous(limits = c(-13, 22), expand = c(0, 0)) +
   sda_biomass_theme() +
   labs(x = "Time period", 
-       y = expression(Epilithic~invert~biomass~(dry~g/m^{"2"})))
+       y = expression(Biomass~(dry~g/m^{"2"})),
+       title = "Epilithic invertebrates",
+       subtitle = "C")
 sda_epi_biomass
 
 # ⟞ ⟞ iii. endo inverts --------------------------------------------------
@@ -418,16 +426,21 @@ sda_epi_biomass
 sda_endo_biomass <- ggplot(anova_endo_2yrs_df) +
   # horizontal line at 0
   geom_hline(yintercept = 0, lty = 2) +
+  # annotate("rect", xmin = 0, xmax = 4, ymin = 551, ymax = 650, fill = "#FFFFFF") +
   # points and error bars
-  geom_point(aes(x = x, y = predicted), size = 6) +
+  geom_point(aes(x = x, y = predicted), size = 2) +
   geom_errorbar(aes(x = x, ymin = predicted - std.error, ymax = predicted + std.error), width = 0.2) +
   # path between time periods
   geom_line(aes(x = x, y = predicted, group = 1)) +
+  # annotate("text", x = 0.75, y = 625, label = "Endolithic invertebrates", size = 10) +
   # aesthetics
   scale_x_discrete(labels = wrap_format(10)) +
+  scale_y_continuous(limits = c(-100, 550), expand = c(0, 0), breaks = c(0, 200, 400, 600)) +
   sda_biomass_theme() +
   labs(x = "Time period", 
-       y = expression(Endolithic~invert~biomass~(dry~g/m^{"2"})))
+       y = expression(Biomass~(dry~g/m^{"2"})),
+       title = "Endolithic invertebrates",
+       subtitle = "E")
 sda_endo_biomass
 
 ##########################################################################-
@@ -505,26 +518,21 @@ algae_time <- ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
   geom_point(data = delta_algae_continual, 
-             aes(x = time_since_end, y = delta_continual_algae, fill = site, shape = site), size = 4, alpha = 0.9) +
+             aes(x = time_since_end, y = delta_continual_algae, fill = site, shape = site), size = 2, alpha = 0.9) +
   scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
   scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
   # new_scale("color") + 
   # overall
-  geom_line(data = predicted_algae_recovery, aes(x = x, y = predicted), linewidth = 2, alpha = 0.7) +
+  geom_line(data = predicted_algae_recovery, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
   geom_ribbon(data = predicted_algae_recovery, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
-  geom_line(data = predicted_algae_during, aes(x = x, y = predicted), linewidth = 2, alpha = 0.7) +
+  geom_line(data = predicted_algae_during, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
   geom_ribbon(data = predicted_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
-  theme_bw() + 
-  theme(axis.title = element_text(size = 22),
-        axis.text = element_text(size = 20),
-        legend.text = element_text(size = 18), 
-        legend.title = element_text(size = 18),
-        legend.position = c(0.8, 0.82), 
-        plot.margin = margin(0, 0, 0, 0)) +
+  delta_timeseries_theme("algae") +
   labs(x = "Time since end of removal (years)",
-       y = "\U0394 understory algae biomass \n (treatment - control)",
+       y = "\U0394 biomass \n (treatment - control)",
+       title = " ", subtitle = "B",
        fill = "Site", shape = "Site")
 
 algae_time
@@ -596,25 +604,20 @@ epi_time <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   geom_point(data = delta_epi_continual, 
              aes(x = time_since_end, y = delta_continual_epi, fill = site, shape = site), 
-             size = 4, alpha = 0.9) +
+             size = 2, alpha = 0.9) +
   scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
   scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
   # overall
   # geom_line(data = predicted_epi_after, aes(x = x, y = predicted), size = 2, alpha = 0.7) +
   # geom_ribbon(data = predicted_epi_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
-  geom_line(data = predicted_epi_during, aes(x = x, y = predicted), linewidth = 2, alpha = 0.7) +
+  geom_line(data = predicted_epi_during, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
   geom_ribbon(data = predicted_epi_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
-  theme_bw() + 
-  theme(axis.title = element_text(size = 22),
-        axis.text = element_text(size = 20),
-        legend.text = element_text(size = 20), 
-        legend.title = element_text(size = 20),
-        legend.position = "none", 
-        plot.margin = margin(0, 0, 0, 0)) +
+  delta_timeseries_theme("epi") +
   labs(x = "Time since end of removal (years)", 
-       y = "\U0394 epilithic invert biomass \n (treatment - control)")
+       y = "\U0394 biomass \n (treatment - control)",
+       title = " ", subtitle = "D")
 epi_time
 
 ##########################################################################-
@@ -685,7 +688,7 @@ endo_time <- ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
   geom_point(data = delta_endo_continual, 
-             aes(x = time_since_end, y = delta_continual_endo, fill = site, shape = site), size = 4, alpha = 0.9) +
+             aes(x = time_since_end, y = delta_continual_endo, fill = site, shape = site), size = 2, alpha = 0.9) +
   scale_shape_manual(values = shape_palette_site) +
   scale_fill_manual(values = color_palette_site) +
   # new_scale("color") + 
@@ -696,15 +699,10 @@ endo_time <- ggplot() +
   # geom_ribbon(data = predicted_clam_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
-  theme_bw() + 
-  theme(axis.title = element_text(size = 22),
-        axis.text = element_text(size = 20),
-        legend.text = element_text(size = 20), 
-        legend.title = element_text(size = 20),
-        legend.position = "none", 
-        plot.margin = margin(0, 0, 0, 0)) +
+  delta_timeseries_theme("endo") +
   labs(x = "Time since end of removal (years)", 
-       y = "\U0394 endolithic invert biomass \n (treatment - control)")
+       y = "\U0394 biomass \n (treatment - control)",
+       title = " ", subtitle = "F")
 endo_time
 
 
@@ -740,6 +738,25 @@ lm_summary_tables
 
 # ⟞ a. s-d-a and model predictions ----------------------------------------
 
+sda_time_algae <- (sda_algae_biomass + algae_time) +
+  plot_layout(widths = c(1.5, 2.5)) 
+
+sda_time_epi <- (sda_epi_biomass + epi_time) +
+  plot_layout(widths = c(1.5, 2.5))
+
+sda_time_endo <- (sda_endo_biomass + endo_time) +
+  plot_layout(widths = c(1.5, 2.5)) 
+
+sda_time_together_v2 <- sda_time_algae/
+                        sda_time_epi/
+                        sda_time_endo
+
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-3_", today(), ".jpg", sep = "")),
+       plot = sda_time_together_v2,
+       height = 18, width = 16, units = "cm", 
+       dpi = 300)
+
 sda_time_together <- (sda_algae_biomass + algae_time) /
   (sda_epi_biomass + epi_time) /
   (sda_endo_biomass + endo_time) +
@@ -750,8 +767,8 @@ sda_time_together <- (sda_algae_biomass + algae_time) /
 sda_time_together
 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-3_", today(), ".jpg", sep = "")), 
-#        plot = sda_time_together, 
+#                   paste("fig-3_", today(), ".jpg", sep = "")),
+#        plot = sda_time_together,
 #        height = 17, width = 16, dpi = 150)
 
 # ⟞ b. raw biomass through time -------------------------------------------

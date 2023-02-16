@@ -614,12 +614,14 @@ after_col <- "#114C54"
   
 sda_biomass_theme <- function() {
     theme_bw() +
-    theme(axis.title = element_text(size = 22),
-          axis.text = element_text(size = 20),
-          legend.text = element_text(size = 20), 
-          legend.title = element_text(size = 20),
-          plot.margin = margin(0, 0, 0, 0),
-          panel.grid.minor = element_line(color = "#FFFFFF")) 
+    theme(axis.title = element_text(size = 8),
+          axis.text = element_text(size = 7),
+          legend.text = element_text(size = 6), 
+          legend.title = element_text(size = 8),
+          plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(size = 11, face = "bold"),
+          plot.subtitle = element_text(size = 10)) 
 }
 
 # ⟞ e. site full names ----------------------------------------------------
@@ -656,7 +658,30 @@ sites_continual_full <- setNames(c("Arroyo Quemado",
                          "mohk",
                          "carp"))
 
-# ⟞ f. start-during-after -------------------------------------------------
+# ⟞ X. delta timeseries ---------------------------------------------------
+
+delta_timeseries_theme <- function(group) {
+  if(group == "algae") {
+    legend.coords <- c(0.83, 0.75)
+  } else if (group %in% c("epi", "endo")) {
+    legend.coords <- "none"
+  } else {
+    warning("Check your group! It should be 'algae', 'epi', or 'endo'.")
+    return(NA)
+  }
+  
+  theme_bw() + 
+    theme(axis.title = element_text(size = 8),
+          axis.text = element_text(size = 7),
+          legend.text = element_text(size = 7), 
+          legend.title = element_text(size = 7),
+          legend.key.size = unit(0.03, units = "cm"), 
+          legend.position = legend.coords, 
+          plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
+          plot.title = element_text(size = 11),
+          plot.subtitle = element_text(size = 10)) 
+}
+
 # ⟞ f. ordinations --------------------------------------------------------
 
 nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
