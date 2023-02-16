@@ -384,7 +384,7 @@ comparison_column_continual <- function(df) {
 
 # ⟞ a. Max's guild data ---------------------------------------------------
 
-guilds <- read_csv(here::here("code", "castorani", "LTE_guild_data.csv")) %>% 
+guilds <- read_csv(here::here("code", "resources", "castorani", "LTE_guild_data.csv")) %>% 
   mutate(sp.code = replace_na(sp.code, "Nandersoniana")) %>% 
   rename("new_group" = biomass.guild)
 
