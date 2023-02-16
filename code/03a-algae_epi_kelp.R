@@ -12,25 +12,43 @@ source(here::here("code", "02a-community_recovery.R"))
 cor.test(delta_algae_continual$delta_continual_algae, delta_algae_continual$delta_continual,
          method = "spearman")
 
-delta_algae_vs_kelp <- lm(delta_continual_algae ~ delta_continual, data = delta_algae_continual)
-summary(delta_algae_vs_kelp)
-
-# model
-delta_algae_vs_kelp_lmer <- lmer(delta_continual_algae ~ delta_continual + (1|year) + (1|site), 
-                                 data = delta_algae_continual)
+lm_algae_kelp_during_m1 <- lm(
+  delta_continual_algae ~ delta_continual, 
+  data = delta_algae_continual %>% filter(exp_dates == "during"),
+  na.action = na.omit
+)
+lm_algae_kelp_during_m2 <- lmer(
+  delta_continual_algae ~ delta_continual + (1|year) + (1|site), 
+  data = delta_algae_continual %>% filter(exp_dates == "during")
+)
+lm_algae_kelp_during_m3 <- lmer(
+  delta_continual_algae ~ delta_continual + (1|site), 
+  data = delta_algae_continual %>% filter(exp_dates == "during")
+)
 
 # diagnostics (NOT GOOD)
-plot(simulateResiduals(delta_algae_vs_kelp_lmer))
-check_model(delta_algae_vs_kelp_lmer)
+plot(simulateResiduals(lm_algae_kelp_during_m1))
+plot(simulateResiduals(lm_algae_kelp_during_m2))
+check_model(lm_algae_kelp_during_m1)
+check_model(lm_algae_kelp_during_m2)
+check_model(lm_algae_kelp_during_m3)
+
+# model checks
+check_autocorrelation(lm_algae_kelp_during_m1) # autocorrelation of residuals
+check_autocorrelation(lm_algae_kelp_during_m2) # no autocorrelation
+check_heteroscedasticity(lm_algae_kelp_during_m1) # herteroscedastic
+check_normality(lm_algae_kelp_during_m3)
 
 # Rsquared
-MuMIn::r.squaredGLMM(delta_algae_vs_kelp_lmer)
+r.squaredGLMM(lm_algae_kelp_during_m1)
+r.squaredGLMM(lm_algae_kelp_during_m2)
 
 # summary
-summary(delta_algae_vs_kelp_lmer)
-delta_algae_vs_kelp_lmer %>% 
-  tbl_regression(intercept = TRUE) %>% 
-  bold_p(t = 0.05)
+summary(lm_algae_kelp_during_m1)
+summary(lm_algae_kelp_during_m2)
+
+# model selection
+AICc(lm_algae_kelp_during_m1, lm_algae_kelp_during_m2)
 
 
 predicted_delta_algae_vs_kelp <- ggpredict(delta_algae_vs_kelp_lmer, terms = ~ delta_continual, type = "fixed")
@@ -41,6 +59,7 @@ algae_vs_kelp <- delta_algae_continual %>%
     exp_dates == "during" ~ "During removal",
     exp_dates == "after" ~ "Post-removal"
   )) %>% 
+  # two points missing from delta kelp: MOHK 2010-06-14, NAPL 2014-11-14
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
   geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
   geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
@@ -62,16 +81,16 @@ algae_vs_kelp <- delta_algae_continual %>%
 algae_vs_kelp_spearman <- delta_algae_continual %>% 
   mutate(exp_dates = case_when(
     exp_dates == "during" ~ "During removal",
-    exp_dates == "after" ~ "Post-removal"
+    exp_dates == "after" ~ "Recovery period"
   )) %>% 
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
   geom_hline(aes(yintercept = 0), lty = 2) +
   geom_vline(aes(xintercept = 0), lty = 2) +
   geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21) +
   stat_cor(method = "spearman", cor.coef.name = "rho") +
-  geom_smooth(method = "lm", color = "black", size = 3, se = FALSE) +
-  scale_linetype_manual(values = c("During removal" = 2, "Post-removal" = 1)) +
-  scale_fill_manual(values = c("During removal" = "#FFFFFF", "Post-removal" = under_col)) +
+  geom_smooth(aes(linetype = exp_dates), method = "lm", color = "black", linewidth = 3, se = FALSE) +
+  scale_linetype_manual(values = c("During removal" = 2, "Recovery period" = 1)) +
+  scale_fill_manual(values = c("During removal" = "#FFFFFF", "Recovery period" = under_col)) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
        y = "\U0394 understory algae biomass (treatment - control)") +
