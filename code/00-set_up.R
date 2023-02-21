@@ -581,13 +581,13 @@ under_col <- "#CC7540"
   
 site_raw_biomass_theme <- function() {
   theme_bw() + 
-    theme(axis.title = element_text(size = 18),
-          plot.title = element_text(size = 18),
-          axis.text = element_text(size = 16),
-          legend.text = element_text(size = 16), 
+    theme(axis.title = element_text(size = 8),
+          plot.title = element_text(size = 8),
+          axis.text = element_text(size = 7),
+          legend.text = element_text(size = 6), 
           legend.position = "none", 
           strip.background = element_rect(fill = "#FFFFFF", color = "#FFFFFF"),
-          strip.text = element_text(size = 20, hjust = 0),
+          strip.text = element_text(size = 8, hjust = 0),
           panel.grid.minor = element_line(color = "#FFFFFF")) 
 }
 
@@ -662,7 +662,7 @@ sites_continual_full <- setNames(c("Arroyo Quemado",
 
 delta_timeseries_theme <- function(group) {
   if(group == "algae") {
-    legend.coords <- c(0.83, 0.75)
+    legend.coords <- c(0.86, 0.75)
   } else if (group %in% c("epi", "endo")) {
     legend.coords <- "none"
   } else {
@@ -673,9 +673,9 @@ delta_timeseries_theme <- function(group) {
   theme_bw() + 
     theme(axis.title = element_text(size = 8),
           axis.text = element_text(size = 7),
-          legend.text = element_text(size = 7), 
-          legend.title = element_text(size = 7),
-          legend.key.size = unit(0.03, units = "cm"), 
+          legend.text = element_text(size = 5), 
+          legend.title = element_text(size = 5),
+          legend.key.size = unit(0.25, units = "cm"), 
           legend.position = legend.coords, 
           plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
           plot.title = element_text(size = 11),

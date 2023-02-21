@@ -161,20 +161,20 @@ delta_endo_continual <- delta_endo_biomass %>%
 
 delta_continual_sites_algae_raw <- delta_algae_continual %>% 
   mutate(strip = case_when(
-    site == "aque" ~ paste("A. ", site_full, sep = ""),
-    site == "napl" ~ paste("B. ", site_full),
-    site == "mohk" ~ paste("C. ", site_full),
-    site == "carp" ~ paste("D. ", site_full)
+    site == "aque" ~ paste("(a) ", site_full, sep = ""),
+    site == "napl" ~ paste("(b) ", site_full),
+    site == "mohk" ~ paste("(c) ", site_full),
+    site == "carp" ~ paste("(d) ", site_full)
   )) %>% 
   ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
-  geom_line(aes(x = time_since_end, y = control_algae, col = site), alpha = 0.5, linewidth = 2.5) +
+  geom_line(aes(x = time_since_end, y = control_algae, col = site), alpha = 0.5, linewidth = 2) +
   # control
-  geom_point(aes(x = time_since_end, y = control_algae, shape = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
+  geom_point(aes(x = time_since_end, y = control_algae, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual_algae, col = site), linewidth = 2.5) +
-  geom_point(aes(x = time_since_end, y = continual_algae, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual_algae, col = site), linewidth = 2) +
+  geom_point(aes(x = time_since_end, y = continual_algae, shape = site, col = site), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
@@ -189,20 +189,20 @@ delta_continual_sites_algae_raw
 
 delta_continual_sites_epi_raw <- delta_epi_continual %>% 
   mutate(strip = case_when(
-    site == "aque" ~ paste("A. ", site_full, sep = ""),
-    site == "napl" ~ paste("B. ", site_full),
-    site == "mohk" ~ paste("C. ", site_full),
-    site == "carp" ~ paste("D. ", site_full)
+    site == "aque" ~ paste("(a) ", site_full, sep = ""),
+    site == "napl" ~ paste("(b) ", site_full),
+    site == "mohk" ~ paste("(c) ", site_full),
+    site == "carp" ~ paste("(d) ", site_full)
   )) %>% 
   ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
   # control
-  geom_line(aes(x = time_since_end, y = control_epi, col = site), alpha = 0.5, linewidth = 2.5) +
-  geom_point(aes(x = time_since_end, y = control_epi, shape = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = control_epi, col = site), alpha = 0.5, linewidth = 2) +
+  geom_point(aes(x = time_since_end, y = control_epi, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual_epi, col = site), linewidth = 2.5) +
-  geom_point(aes(x = time_since_end, y = continual_epi, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual_epi, col = site), linewidth = 2) +
+  geom_point(aes(x = time_since_end, y = continual_epi, shape = site, col = site), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
@@ -217,33 +217,25 @@ delta_continual_sites_epi_raw
 
 delta_continual_sites_endo_raw <- delta_endo_continual %>% 
   mutate(strip = case_when(
-    site == "aque" ~ paste("A. ", site_full, sep = ""),
-    site == "napl" ~ paste("B. ", site_full),
-    site == "mohk" ~ paste("C. ", site_full),
-    site == "carp" ~ paste("D. ", site_full)
+    site == "aque" ~ paste("(a) ", site_full, sep = ""),
+    site == "napl" ~ paste("(b) ", site_full),
+    site == "mohk" ~ paste("(c) ", site_full),
+    site == "carp" ~ paste("(d) ", site_full)
   )) %>% 
   ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
-  geom_line(aes(x = time_since_end, y = control_endo, col = site), alpha = 0.5, linewidth = 2.5) +
+  geom_line(aes(x = time_since_end, y = control_endo, col = site), alpha = 0.5, linewidth = 2) +
   # control
-  geom_point(aes(x = time_since_end, y = control_endo, shape = site), size = 1.5, alpha = 0.5, fill = "#FFFFFF") +
+  geom_point(aes(x = time_since_end, y = control_endo, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual_endo, col = site), linewidth = 2.5) +
-  geom_point(aes(x = time_since_end, y = continual_endo, shape = site, col = site), size = 1.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual_endo, col = site), linewidth = 2) +
+  geom_point(aes(x = time_since_end, y = continual_endo, shape = site, col = site), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
-  theme_bw() + 
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
-  theme(axis.title = element_text(size = 18),
-        plot.title = element_text(size = 18),
-        axis.text = element_text(size = 16),
-        legend.text = element_text(size = 16), 
-        legend.position = "none", 
-        strip.background = element_rect(fill = "white", color = "white"),
-        strip.text = element_text(size = 20, hjust = 0),
-        panel.grid.minor = element_line(color = "white")) +
+  site_raw_biomass_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = expression(Endolithic~invertebrate~biomass~(dry~g/m^{"2"}))) +
   facet_wrap(~strip, scales = "free_y")
@@ -392,7 +384,7 @@ sda_algae_biomass <- ggplot(anova_algae_2yrs_df) +
   labs(x = "Time period", 
        y = expression(Biomass~(dry~g/m^{"2"})),
        title = "Understory algae", 
-       subtitle = "A")
+       subtitle = "(a)")
 sda_algae_biomass
 
 # ⟞ ⟞ ii. epi inverts ----------------------------------------------------
@@ -418,7 +410,7 @@ sda_epi_biomass <- ggplot(anova_epi_2yrs_df) +
   labs(x = "Time period", 
        y = expression(Biomass~(dry~g/m^{"2"})),
        title = "Epilithic invertebrates",
-       subtitle = "C")
+       subtitle = "(c)")
 sda_epi_biomass
 
 # ⟞ ⟞ iii. endo inverts --------------------------------------------------
@@ -440,7 +432,7 @@ sda_endo_biomass <- ggplot(anova_endo_2yrs_df) +
   labs(x = "Time period", 
        y = expression(Biomass~(dry~g/m^{"2"})),
        title = "Endolithic invertebrates",
-       subtitle = "E")
+       subtitle = "(e)")
 sda_endo_biomass
 
 ##########################################################################-
@@ -532,7 +524,7 @@ algae_time <- ggplot() +
   delta_timeseries_theme("algae") +
   labs(x = "Time since end of removal (years)",
        y = "\U0394 biomass \n (treatment - control)",
-       title = " ", subtitle = "B",
+       title = " ", subtitle = "(b)",
        fill = "Site", shape = "Site")
 
 algae_time
@@ -617,7 +609,7 @@ epi_time <- ggplot() +
   delta_timeseries_theme("epi") +
   labs(x = "Time since end of removal (years)", 
        y = "\U0394 biomass \n (treatment - control)",
-       title = " ", subtitle = "D")
+       title = " ", subtitle = "(d)")
 epi_time
 
 ##########################################################################-
@@ -702,7 +694,7 @@ endo_time <- ggplot() +
   delta_timeseries_theme("endo") +
   labs(x = "Time since end of removal (years)", 
        y = "\U0394 biomass \n (treatment - control)",
-       title = " ", subtitle = "F")
+       title = " ", subtitle = "(f)")
 endo_time
 
 
@@ -751,11 +743,11 @@ sda_time_together_v2 <- sda_time_algae/
                         sda_time_epi/
                         sda_time_endo
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-3_", today(), ".jpg", sep = "")),
-       plot = sda_time_together_v2,
-       height = 18, width = 16, units = "cm", 
-       dpi = 300)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-3_", today(), ".jpg", sep = "")),
+#        plot = sda_time_together_v2,
+#        height = 18, width = 16, units = "cm", 
+#        dpi = 400)
 
 sda_time_together <- (sda_algae_biomass + algae_time) /
   (sda_epi_biomass + epi_time) /
