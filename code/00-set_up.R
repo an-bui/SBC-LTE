@@ -679,7 +679,7 @@ delta_timeseries_theme <- function(group) {
           legend.key.size = unit(0.25, units = "cm"), 
           legend.position = legend.coords, 
           plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
-          plot.title = element_text(size = 11),
+          plot.title = element_text(size = 10),
           plot.subtitle = element_text(size = 10),
           plot.title.position = "plot") 
 }
