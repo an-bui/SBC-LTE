@@ -727,6 +727,7 @@ lm_summary_tables
 
 # ⟞ a. s-d-a and model predictions ----------------------------------------
 
+# making labels
 algae_label <- ggplot(data.frame(l = "Understory algae", x = 1, y = 1)) +
   geom_text(aes(x, y, label = l), fontface = "bold") + 
   theme_void() +
@@ -745,25 +746,19 @@ endo_label <- ggplot(data.frame(l = "Endolithic invertebrates", x = 1, y = 1)) +
   theme(plot.margin = margin(0, 0, 0, 0)) +
   coord_cartesian(clip = "off")
 
-top <- plot_grid(
-  sda_algae_biomass, algae_time, ncol = 2
-)
+# putting group plots together
+top <- plot_grid(sda_algae_biomass, algae_time, ncol = 2)
+middle <- plot_grid(sda_epi_biomass, epi_time, ncol = 2)
+bottom <- plot_grid(sda_endo_biomass, endo_time, ncol = 2)
 
-middle <- plot_grid(
-    sda_epi_biomass, epi_time, ncol = 2
-  )
-
-bottom <- plot_grid(
-  sda_endo_biomass, endo_time, ncol = 2
-)
-
+# putting group plots with labels
 algae <- plot_grid(algae_label, top, ncol = 1, rel_heights = c(1, 12))
 epi <- plot_grid(epi_label, middle, ncol = 1, rel_heights = c(1, 12))
 endo <- plot_grid(endo_label, bottom, ncol = 1, rel_heights = c(1, 12))
 
+# putting plots together
 algae_epi <- plot_grid(algae, epi, ncol = 1)
 sda_time_together_v2 <- plot_grid(algae_epi, endo, ncol = 1, rel_heights = c(2, 1))
-
 sda_time_together_v2
 
 # ggsave(here::here("figures", "ms-figures",
