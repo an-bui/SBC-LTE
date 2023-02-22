@@ -603,11 +603,11 @@ s4_panels <- rec_time_plot + delta_vs_biomass +
 #        height = 8, width = 12, units = "cm",
 #        dpi = 300)
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-S4_panels_", today(), ".jpg", sep = "")),
-       plot = s4_panels,
-       height = 8, width = 16, units = "cm",
-       dpi = 400)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S4_panels_", today(), ".jpg", sep = "")),
+#        plot = s4_panels,
+#        height = 8, width = 16, units = "cm",
+#        dpi = 400)
 
 # ⟞ d. raw biomass by site ------------------------------------------------
 
