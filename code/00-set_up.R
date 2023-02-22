@@ -705,7 +705,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
     treatment_linetype <- 2
   }
   
-  if(treatment %in% c("continual", "control")){
+  if(treatment == "continual"){
     point_aesthetics <- function() {
       df %>% 
         mutate(comp_2yrs = recode(comp_2yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
@@ -713,9 +713,31 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         coord_fixed() +
         geom_vline(xintercept = 0, color = "grey", lty = 2) +
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = site_full, fill = comp_2yrs), size = 4, alpha = 0.9) +
+        geom_point(aes(shape = site_full, fill = comp_2yrs), size = 1, alpha = 0.9) +
         # ellipse
-        stat_ellipse(aes(color = comp_2yrs), size = 1, linetype = treatment_linetype) 
+        stat_ellipse(aes(color = comp_2yrs), size = 0.5, linetype = treatment_linetype) +
+        # arrows for species from SIMPER
+        geom_text_repel(data = simper_spp, 
+                        aes(x = NMDS1, y = NMDS2, 
+                            label = stringr::str_wrap(scientific_name, 4, width = 40)),
+                        color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 2) +
+        geom_segment(data = simper_spp,
+                     aes(x = 0, y = 0,
+                         xend = NMDS1, yend = NMDS2),
+                     arrow = arrow(length = unit(0.1, "cm")), 
+                     color = "#C70000", size = 0.5) 
+    }
+  } else if(treatment == "control") {
+    point_aesthetics <- function() {
+      df %>% 
+        mutate(comp_2yrs = recode(comp_2yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
+        ggplot(aes(x = NMDS1, y = NMDS2)) +
+        coord_fixed() +
+        geom_vline(xintercept = 0, color = "grey", lty = 2) +
+        geom_hline(yintercept = 0, color = "grey", lty = 2) +
+        geom_point(aes(shape = site_full, fill = comp_2yrs), size = 1, alpha = 0.9) +
+        # ellipse
+        stat_ellipse(aes(color = comp_2yrs), size = 0.5, linetype = treatment_linetype) 
     }
   } else if(treatment == "both") {
     point_aesthetics <- function() {
@@ -725,9 +747,9 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         coord_fixed() +
         geom_vline(xintercept = 0, color = "grey", lty = 2) +
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = site_full, fill = comp_2yrs, alpha = treatment), size = 4) +
+        geom_point(aes(shape = site_full, fill = comp_2yrs, alpha = treatment), size = 1) +
         # ellipse
-        stat_ellipse(aes(color = comp_2yrs, linetype = treatment), size = 1) +
+        stat_ellipse(aes(color = comp_2yrs, linetype = treatment), size = 0.5) +
         scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5)) +
         scale_linetype_manual(values = c("continual" = 1, "control" = 2))
     }
@@ -742,21 +764,13 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
     scale_color_manual(values = c(start_col, during_col, after_col)) +
     scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
     scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
-    # arrows for species from SIMPER
-    geom_text_repel(data = simper_spp, 
-                    aes(x = NMDS1, y = NMDS2, 
-                        label = stringr::str_wrap(scientific_name, 10, width = 40)),
-                    color = "#C70000", lineheight = 0.8, max.overlaps = 100) +
-    geom_segment(data = simper_spp,
-                 aes(x = 0, y = 0,
-                     xend = NMDS1, yend = NMDS2),
-                 arrow = arrow(length = unit(0.5, "cm")), 
-                 color = "#C70000", size = 1) +
     theme_bw() +
-    theme(axis.title = element_text(size = 22),
-          axis.text = element_text(size = 20),
-          legend.text = element_text(size = 20), 
-          legend.title = element_text(size = 20)) +
+    theme(axis.title = element_text(size = 8),
+          axis.text = element_text(size = 7),
+          legend.text = element_text(size = 5), 
+          legend.title = element_text(size = 5),
+          plot.title = element_text(size = 8),
+          legend.key.size = unit(0.3, units = "cm")) +
     labs(shape = "Site",
          color = "Time period",
          fill = "Time period")
