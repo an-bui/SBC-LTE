@@ -6,55 +6,112 @@
 source(here::here("code", "02a-community_recovery.R"))
 
 ##########################################################################-
-# 1. data frames and wranging functions -----------------------------------
+# 1. algae ----------------------------------------------------------------
 ##########################################################################-
+
+# ⟞ a. correlation --------------------------------------------------------
 
 cor.test(delta_algae_continual$delta_continual_algae, delta_algae_continual$delta_continual,
          method = "spearman")
 
-lm_algae_kelp_during_m1 <- lm(
+# ⟞ b. linear models ------------------------------------------------------
+
+# ⟞ ⟞ i. model and diagnostics  -------------------------------------------
+
+# models
+lm_delta_algae_kelp_during_m1 <- lm(
   delta_continual_algae ~ delta_continual, 
   data = delta_algae_continual %>% filter(exp_dates == "during"),
   na.action = na.omit
 )
-lm_algae_kelp_during_m2 <- lmer(
+lm_delta_algae_kelp_during_m2 <- lmer(
   delta_continual_algae ~ delta_continual + (1|year) + (1|site), 
   data = delta_algae_continual %>% filter(exp_dates == "during")
 )
-lm_algae_kelp_during_m3 <- lmer(
+lm_delta_algae_kelp_during_m3 <- lmer(
   delta_continual_algae ~ delta_continual + (1|site), 
   data = delta_algae_continual %>% filter(exp_dates == "during")
 )
+lm_algae_kelp_during_m1 <- lmer(
+  continual_algae ~ continual + (1|year) + (1|site),
+  data = delta_algae_continual %>% filter(exp_dates == "during")
+)
 
-# diagnostics (NOT GOOD)
-plot(simulateResiduals(lm_algae_kelp_during_m1))
-plot(simulateResiduals(lm_algae_kelp_during_m2))
+lm_algae_kelp_during_m2 <- lmer(
+  continual_algae ~ continual*time_since_end + (1|site),
+  data = delta_algae_continual %>% filter(exp_dates == "during")
+)
+lm_algae_kelp_after_m1 <- lmer(
+  continual_algae ~ continual + (1|year) + (1|site),
+  data = delta_algae_continual %>% filter(exp_dates == "after")
+)
+lm_algae_kelp_after_m2 <- lmer(
+  continual_algae ~ continual*time_since_end + (1|site),
+  data = delta_algae_continual %>% filter(exp_dates == "after")
+)
+
+# diagnostics
+check_model(lm_delta_algae_kelp_during_m1)
+check_model(lm_delta_algae_kelp_during_m2)
+check_model(lm_delta_algae_kelp_during_m3)
 check_model(lm_algae_kelp_during_m1)
 check_model(lm_algae_kelp_during_m2)
-check_model(lm_algae_kelp_during_m3)
-
-# model checks
-check_autocorrelation(lm_algae_kelp_during_m1) # autocorrelation of residuals
-check_autocorrelation(lm_algae_kelp_during_m2) # no autocorrelation
-check_heteroscedasticity(lm_algae_kelp_during_m1) # herteroscedastic
-check_normality(lm_algae_kelp_during_m3)
+plot(simulateResiduals(lm_algae_kelp_during_m2))
+check_model(lm_algae_kelp_after_m1)
+plot(simulateResiduals(lm_algae_kelp_after_m2))
 
 # Rsquared
+r.squaredGLMM(lm_delta_algae_kelp_during_m1)
+r.squaredGLMM(lm_delta_algae_kelp_during_m2)
+r.squaredGLMM(lm_delta_algae_kelp_during_m3)
 r.squaredGLMM(lm_algae_kelp_during_m1)
 r.squaredGLMM(lm_algae_kelp_during_m2)
+r.squaredGLMM(lm_algae_kelp_after_m1)
+r.squaredGLMM(lm_algae_kelp_after_m2)
 
-# summary
+# summaries
+summary(lm_delta_algae_kelp_during_m1)
+summary(lm_delta_algae_kelp_during_m2)
+summary(lm_delta_algae_kelp_during_m3)
 summary(lm_algae_kelp_during_m1)
 summary(lm_algae_kelp_during_m2)
+summary(lm_algae_kelp_after_m1)
+summary(lm_algae_kelp_after_m2)
 
-# model selection
-AICc(lm_algae_kelp_during_m1, lm_algae_kelp_during_m2)
+# AIC comparison
+AICc(lm_delta_algae_kelp_during_m1, lm_delta_algae_kelp_during_m2, lm_delta_algae_kelp_during_m3)
+AICc(lm_algae_kelp_after_m1, lm_algae_kelp_after_m2)
 
+# ⟞ ⟞ ii. predictions -----------------------------------------------------
 
-predicted_delta_algae_vs_kelp <- ggpredict(delta_algae_vs_kelp_lmer, terms = ~ delta_continual, type = "fixed")
+# raw biomass
+predicted_algae_kelp_during <- ggpredict(lm_algae_kelp_during_m1, terms = ~ continual, type = "fixed")
+predicted_algae_kelp_after <- ggpredict(lm_algae_kelp_after_m1, terms = ~ continual, type = "fixed")
 
+# deltas
+predicted_delta_algae_vs_kelp <- ggpredict(lm_delta_algae_kelp_during_m2, terms = ~ delta_continual, type = "fixed")
 
-algae_vs_kelp <- delta_algae_continual %>% 
+# ⟞ c. figures ------------------------------------------------------------
+
+# ⟞ ⟞ i. raw biomass ------------------------------------------------------
+
+algae_kelp_during_plot <- ggplot(data = delta_algae_continual %>% 
+                                   filter(exp_dates == "during"), aes(x = continual, y = continual_algae)) +
+  geom_point(shape = 21) +
+  geom_line(data = predicted_algae_kelp_during, aes(x = x, y = predicted), lty = 1) +
+  geom_ribbon(data = predicted_algae_kelp_during, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.2)
+
+algae_kelp_after_plot <- algae_kelp_after_plot <- ggplot(data = delta_algae_continual %>% 
+                                                            filter(exp_dates == "after"), aes(x = continual, y = continual_algae)) +
+  geom_point(shape = 21) +
+  geom_line(data = predicted_algae_kelp_after, aes(x = x, y = predicted), lty = 1) +
+  geom_ribbon(data = predicted_algae_kelp_after, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.2)
+
+algae_kelp_during_plot + algae_kelp_after_plot
+
+# ⟞ ⟞ ii. deltas ----------------------------------------------------------
+
+delta_algae_vs_kelp_lm <- delta_algae_continual %>% 
   mutate(exp_dates = case_when(
     exp_dates == "during" ~ "During removal",
     exp_dates == "after" ~ "Post-removal"
@@ -78,7 +135,7 @@ algae_vs_kelp <- delta_algae_continual %>%
         legend.text = element_text(size = 18),
         legend.title = element_blank())
 
-algae_vs_kelp_spearman <- delta_algae_continual %>% 
+delta_algae_vs_kelp_spearman <- delta_algae_continual %>% 
   mutate(exp_dates = case_when(
     exp_dates == "during" ~ "During removal",
     exp_dates == "after" ~ "Recovery period"
@@ -139,6 +196,81 @@ delta_algae_continual %>%
         legend.position = c(0.9, 0.7),
         legend.text = element_text(size = 18),
         legend.title = element_blank())
+
+##########################################################################-
+# 2. epilithic inverts ----------------------------------------------------
+##########################################################################-
+
+# ⟞ a. correlation --------------------------------------------------------
+
+cor.test(delta_epi_continual$delta_continual_epi, delta_epi_continual$delta_continual,
+         method = "spearman")
+
+# ⟞ b. linear models ------------------------------------------------------
+
+# ⟞ ⟞ i. model and diagnostics  -------------------------------------------
+
+lm_delta_epi_kelp_during_m1 <- lm(
+  delta_continual_epi ~ delta_continual, 
+  data = delta_epi_continual %>% filter(exp_dates == "during"),
+  na.action = na.omit
+)
+lm_delta_epi_kelp_during_m2 <- lmer(
+  delta_continual_epi ~ delta_continual + (1|year) + (1|site), 
+  data = delta_epi_continual %>% filter(exp_dates == "during")
+)
+lm_delta_epi_kelp_during_m3 <- lmer(
+  delta_continual_epi ~ delta_continual + (1|site), 
+  data = delta_epi_continual %>% filter(exp_dates == "during")
+)
+
+lm_epi_kelp_during_m1 <- lmer(
+  continual_epi ~ continual + (1|year) + (1|site),
+  data = delta_epi_continual %>% filter(exp_dates == "during")
+)
+
+lm_epi_kelp_after_m1 <- lmer(
+  continual_epi ~ continual + (1|year) + (1|site),
+  data = delta_epi_continual %>% filter(exp_dates == "after")
+)
+
+# diagnostics
+check_model(lm_delta_epi_kelp_during_m1)
+check_model(lm_delta_epi_kelp_during_m2)
+check_model(lm_delta_epi_kelp_during_m3)
+check_model(lm_epi_kelp_after_m1)
+
+# Rsquared
+r.squaredGLMM(lm_epi_kelp_during_m1)
+r.squaredGLMM(lm_epi_kelp_after_m1)
+
+# summaries
+summary(lm_delta_algae_kelp_during_m1)
+summary(lm_delta_algae_kelp_during_m2)
+summary(lm_delta_algae_kelp_during_m3)
+
+summary(lm_epi_kelp_during_m1)
+summary(lm_epi_kelp_after_m1)
+
+# AICc
+AICc(lm_delta_epi_kelp_during_m1, lm_delta_epi_kelp_during_m2, lm_delta_epi_kelp_during_m3)
+
+# ⟞ ⟞ ii. predictions -----------------------------------------------------
+
+predicted_epi_vs_kelp <- ggpredict(lm_epi_kelp_during_m1, terms = ~ continual, type = "fixed")
+
+# ⟞ c. figures ------------------------------------------------------------
+
+# ⟞ ⟞ i. raw biomass ------------------------------------------------------
+
+delta_epi_continual %>% 
+  filter(exp_dates == "during") %>% 
+  ggplot(aes(x = continual, y = continual_epi)) +
+  geom_point() +
+  geom_line(data = predicted_epi_vs_kelp, aes(x = x, y = predicted))
+
+
+
 
 
 
