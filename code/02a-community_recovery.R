@@ -383,8 +383,7 @@ sda_algae_biomass <- ggplot(anova_algae_2yrs_df) +
   sda_biomass_theme() +
   labs(x = "Time period", 
        y = expression(Biomass~(dry~g/m^{"2"})),
-       title = "Understory algae", 
-       subtitle = "(a)")
+       title = "(a)")
 sda_algae_biomass
 
 # ⟞ ⟞ ii. epi inverts ----------------------------------------------------
@@ -409,8 +408,7 @@ sda_epi_biomass <- ggplot(anova_epi_2yrs_df) +
   sda_biomass_theme() +
   labs(x = "Time period", 
        y = expression(Biomass~(dry~g/m^{"2"})),
-       title = "Epilithic invertebrates",
-       subtitle = "(c)")
+       title = "(c)")
 sda_epi_biomass
 
 # ⟞ ⟞ iii. endo inverts --------------------------------------------------
@@ -431,8 +429,7 @@ sda_endo_biomass <- ggplot(anova_endo_2yrs_df) +
   sda_biomass_theme() +
   labs(x = "Time period", 
        y = expression(Biomass~(dry~g/m^{"2"})),
-       title = "Endolithic invertebrates",
-       subtitle = "(e)")
+       title = "(e)")
 sda_endo_biomass
 
 ##########################################################################-
@@ -524,7 +521,7 @@ algae_time <- ggplot() +
   delta_timeseries_theme("algae") +
   labs(x = "Time since end of removal (years)",
        y = "\U0394 biomass \n (treatment - control)",
-       title = " ", subtitle = "(b)",
+       title = "(b)",
        fill = "Site", shape = "Site")
 
 algae_time
@@ -609,7 +606,7 @@ epi_time <- ggplot() +
   delta_timeseries_theme("epi") +
   labs(x = "Time since end of removal (years)", 
        y = "\U0394 biomass \n (treatment - control)",
-       title = " ", subtitle = "(d)")
+       subtitle = "(d)")
 epi_time
 
 ##########################################################################-
@@ -694,7 +691,7 @@ endo_time <- ggplot() +
   delta_timeseries_theme("endo") +
   labs(x = "Time since end of removal (years)", 
        y = "\U0394 biomass \n (treatment - control)",
-       title = " ", subtitle = "(f)")
+       subtitle = "(f)")
 endo_time
 
 
@@ -730,18 +727,44 @@ lm_summary_tables
 
 # ⟞ a. s-d-a and model predictions ----------------------------------------
 
-sda_time_algae <- (sda_algae_biomass + algae_time) +
-  plot_layout(widths = c(1.5, 2.5)) 
+algae_label <- ggplot(data.frame(l = "Understory algae", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), fontface = "bold") + 
+  theme_void() +
+  theme(plot.margin = margin(0, 0, 0, 0)) +
+  coord_cartesian(clip = "off")
 
-sda_time_epi <- (sda_epi_biomass + epi_time) +
-  plot_layout(widths = c(1.5, 2.5))
+epi_label <- ggplot(data.frame(l = "Epilithic invertebrates", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), fontface = "bold") + 
+  theme_void() +
+  theme(plot.margin = margin(0, 0, 0, 0)) +
+  coord_cartesian(clip = "off")
 
-sda_time_endo <- (sda_endo_biomass + endo_time) +
-  plot_layout(widths = c(1.5, 2.5)) 
+endo_label <- ggplot(data.frame(l = "Endolithic invertebrates", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), fontface = "bold") + 
+  theme_void() +
+  theme(plot.margin = margin(0, 0, 0, 0)) +
+  coord_cartesian(clip = "off")
 
-sda_time_together_v2 <- sda_time_algae/
-                        sda_time_epi/
-                        sda_time_endo
+top <- plot_grid(
+  sda_algae_biomass, algae_time, ncol = 2
+)
+
+middle <- plot_grid(
+    sda_epi_biomass, epi_time, ncol = 2
+  )
+
+bottom <- plot_grid(
+  sda_endo_biomass, endo_time, ncol = 2
+)
+
+algae <- plot_grid(algae_label, top, ncol = 1, rel_heights = c(1, 12))
+epi <- plot_grid(epi_label, middle, ncol = 1, rel_heights = c(1, 12))
+endo <- plot_grid(endo_label, bottom, ncol = 1, rel_heights = c(1, 12))
+
+algae_epi <- plot_grid(algae, epi, ncol = 1)
+sda_time_together_v2 <- plot_grid(algae_epi, endo, ncol = 1, rel_heights = c(2, 1))
+
+sda_time_together_v2
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-2_", today(), ".jpg", sep = "")),

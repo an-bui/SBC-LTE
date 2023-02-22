@@ -9,6 +9,7 @@ library(here)
 library(janitor)
 library(lubridate)
 library(patchwork)
+library(cowplot)
 library(calecopal)
 library(PNWColors)
 library(ggrepel)
@@ -620,8 +621,8 @@ sda_biomass_theme <- function() {
           legend.title = element_text(size = 8),
           plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
           panel.grid.minor = element_blank(),
-          plot.title = element_text(size = 11, face = "bold"),
-          plot.subtitle = element_text(size = 10)) 
+          plot.title = element_text(size = 10),
+          plot.title.position = "plot") 
 }
 
 # ⟞ e. site full names ----------------------------------------------------
@@ -662,7 +663,7 @@ sites_continual_full <- setNames(c("Arroyo Quemado",
 
 delta_timeseries_theme <- function(group) {
   if(group == "algae") {
-    legend.coords <- c(0.86, 0.75)
+    legend.coords <- c(0.83, 0.78)
   } else if (group %in% c("epi", "endo")) {
     legend.coords <- "none"
   } else {
@@ -679,7 +680,8 @@ delta_timeseries_theme <- function(group) {
           legend.position = legend.coords, 
           plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
           plot.title = element_text(size = 11),
-          plot.subtitle = element_text(size = 10)) 
+          plot.subtitle = element_text(size = 10),
+          plot.title.position = "plot") 
 }
 
 # ⟞ f. ordinations --------------------------------------------------------
