@@ -134,7 +134,7 @@ algae_pt_perma
 
 # beta dispersion
 algae_pt_dist <- vegdist(comm_mat_algae, "bray")
-algae_betadisper <- betadisper(algae_pt_dist, comm_meta$treatment)
+algae_betadisper <- betadisper(algae_pt_dist, comm_meta$comp_2yrs)
 anova(algae_betadisper)
 
 # ⟞ ⟞ ⟞  2. plotting ------------------------------------------------------
@@ -169,12 +169,14 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "continual", algae_pt_bray_species
   ) +
   # axis limits
-  scale_x_continuous(limits = c(-1.5, 1.6), breaks = seq(-1, 1, by = 1)) +
-  scale_y_continuous(limits = c(-1.3, 1), breaks = seq(-1, 1, by = 1)) +
+  scale_x_continuous(limits = c(-1.5, 1.6), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(-1.6, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  # scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
+  # scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
   # ordination_theme() +
   labs(shape = "Site",
-       color = "Time period",
-       fill = "Time period") +
+       color = "Time period", fill = "Time period",
+       title = "(a) Understory algae") +
   # ellipse labels. clown shit
   # annotate("text", x = -1, y = 0.5, label = "Start of", size = 10, col = start_col) +
   # annotate("text", x = -1, y = 0.4, label = "removal", size = 10, col = start_col) +
@@ -183,7 +185,8 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
   # annotate("text", x = 0.85, y = -0.9, label = "Recovery", size = 10, col = after_col) +
   # annotate("text", x = 0.85, y = -1, label = "period", size = 10, col = after_col) +
   # stress annotation
-  annotate("text", x = -1.4, y = -1.25, label = "Stress = 0.2", size = 5)
+  annotate("text", x = -1.15, y = -1.51, label = "Stress = 0.2", size = 2) +
+  theme(legend.position = "none")
 algae_pt_bray_continual_plot
 
 
@@ -193,11 +196,11 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
 ) +
   # plot aesthetics
   # ordination_theme() +
-  # scale_x_continuous(limits = c(-1.75, 2)) +
-  # scale_y_continuous(limits = c(-1.25, 1), breaks = seq(-1, 1, by = 1)) +
+  scale_x_continuous(limits = c(-1.5, 6.5), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(-1.85, 1.5), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   labs(shape = "Site",
-       color = "Time period",
-       fill = "Time period") +
+       color = "Time period", fill = "Time period",
+       title = "(a) Understory algae") +
   # ellipse labels. clown shit
   # annotate("text", x = -1.2, y = 1.05, label = "Start of", size = 10, col = start_col) +
   # annotate("text", x = -1.2, y = 0.9, label = "removal", size = 10, col = start_col) +
@@ -206,7 +209,8 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
   # annotate("text", x = -1.4, y = 1.05, label = "Recovery", size = 10, col = after_col) +
   # annotate("text", x = -1.4, y = 0.9, label = "period", size = 10, col = after_col) +
   # stress annotation
-  annotate("text", x = -1.4, y = -1.25, label = "Stress = 0.2", size = 5)
+  annotate("text", x = -0.9, y = -1.75, label = "Stress = 0.2", size = 2) +
+  theme(legend.position = "none")
 algae_pt_bray_control_plot
 
 # both treatments together
@@ -252,7 +256,7 @@ epi_pt_perma
 
 # beta dispersion
 epi_pt_dist <- vegdist(comm_mat_epi, "bray")
-epi_betadisper <- betadisper(epi_pt_dist, comm_meta$treatment)
+epi_betadisper <- betadisper(epi_pt_dist, comm_meta$comp_2yrs)
 anova(epi_betadisper)
 # not significantly different dispersions
 
@@ -287,9 +291,15 @@ epi_pt_bray_species <- scores(epi_pt_bray, display = "species", tidy = TRUE) %>%
 epi_pt_bray_continual_plot <- nmds_plot_fxn(
   epi_pt_bray_plotdf, "continual", epi_pt_bray_species
 ) +
-  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
-  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
-  annotate("text", x = -1.6, y = -1.7, label = "Stress = 0.2", size = 5)
+  coord_fixed() +
+  # scale_x_continuous(limits = c(-1.7, 1.4), breaks = seq(-1, 1, by = 1)) + # length = 3.1
+  # scale_y_continuous(limits = c(-1.3, 1), breaks = seq(-1, 1, by = 1)) +
+  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) + # length = 3.15
+  annotate("text", x = -1.2, y = -1.6, label = "Stress = 0.2", size = 2) +
+  theme(legend.position = "none") +
+  labs(title = "(b) Epilithic invertebrates") +
+  theme(legend.position = "right")
 epi_pt_bray_continual_plot
 
 
@@ -297,10 +307,12 @@ epi_pt_bray_continual_plot
 epi_pt_bray_control_plot <- nmds_plot_fxn(
   epi_pt_bray_plotdf, "control", epi_pt_bray_species
 ) +
-  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
-  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
-  annotate("text", x = -1.6, y = -1.7, label = "Stress = 0.2", size = 5)
+  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  annotate("text", x = -1.2, y = -1.6, label = "Stress = 0.2", size = 2) +
+  labs(title = "(b) Epilithic invertebrates") 
 epi_pt_bray_control_plot
+
 
 # both treatments together
 epi_pt_bray_both_plot <- nmds_plot_fxn(
@@ -308,10 +320,33 @@ epi_pt_bray_both_plot <- nmds_plot_fxn(
 ) +
   scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
   scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
-  annotate("text", x = -1.6, y = -1.7, label = "Stress = 0.2", size = 5)
+  annotate("text", x = -1, y = -1.7, label = "Stress = 0.2", size = 2)
 epi_pt_bray_both_plot
 
+##########################################################################-
+# 3. manuscript figures ---------------------------------------------------
+##########################################################################-
 
+# ⟞ a. continual removal --------------------------------------------------
+
+comm_comp_together <- algae_pt_bray_continual_plot + epi_pt_bray_continual_plot 
+comm_comp_together
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-3_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_together,
+#        height = 8, width = 16, units = "cm",
+#        dpi = 300)
+
+# ⟞ b. control ------------------------------------------------------------
+
+comm_comp_control <- algae_pt_bray_control_plot + epi_pt_bray_control_plot 
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S7_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_control,
+#        height = 10, width = 16, units = "cm",
+#        dpi = 300)
 
 
 

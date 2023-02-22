@@ -744,9 +744,9 @@ sda_time_together_v2 <- sda_time_algae/
                         sda_time_endo
 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-3_", today(), ".jpg", sep = "")),
+#                   paste("fig-2_", today(), ".jpg", sep = "")),
 #        plot = sda_time_together_v2,
-#        height = 18, width = 16, units = "cm", 
+#        height = 18, width = 16, units = "cm",
 #        dpi = 400)
 
 sda_time_together <- (sda_algae_biomass + algae_time) /
