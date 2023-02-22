@@ -476,8 +476,8 @@ rec_time <- tribble(
 # ⟞ b. figure -------------------------------------------------------------
 
 rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, shape = site, fill = site)) +
-  geom_errorbar(aes(xmin = mean_control - se_control, xmax = mean_control + se_control)) +
-  geom_errorbar(aes(ymin = pred_int_low, ymax = pred_int_high), width = 1) +
+  geom_errorbar(aes(xmin = mean_control - se_control, xmax = mean_control + se_control), width = 1) +
+  geom_errorbar(aes(ymin = pred_int_low, ymax = pred_int_high)) +
   geom_point(size = 4) +
   # geom_text_repel(aes(label = site_full), seed = 666,
   #                 size = 7, point.padding = 35, nudge_y = 0.1) +
@@ -545,7 +545,7 @@ delta_vs_biomass <- delta_continual %>%
   geom_point(aes(fill = site, shape = site), size = 2) +
   scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
   scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
-  geom_smooth(method = "lm", color = "#000000", se = FALSE, linewidth = 2) +
+  geom_smooth(method = "lm", color = "#000000", se = FALSE, linewidth = 1) +
   labs(x = expression(Biomass~"("~dry~g/m^{"2"}~")"), 
        y = "\U0394 biomass (treatment - control)",
        fill = "Site", shape = "Site") +
@@ -553,7 +553,8 @@ delta_vs_biomass <- delta_continual %>%
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
         legend.text = element_text(size = 6), 
-        legend.title = element_text(size = 7))
+        legend.title = element_text(size = 7),
+        legend.key.size = unit(0.3, "cm"))
   
 delta_vs_biomass
 
@@ -592,7 +593,7 @@ lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery
 # ⟞ c. recovery time vs biomass -------------------------------------------
 
 s4_panels <- rec_time_plot + delta_vs_biomass +
-  plot_layout(widths = c(2.5, 2)) +
+  plot_layout(widths = c(2, 2.1)) +
   plot_annotation(tag_levels = "a", tag_suffix = ")") &
   theme(plot.tag = element_text(size = 12))
 
@@ -602,11 +603,11 @@ s4_panels <- rec_time_plot + delta_vs_biomass +
 #        height = 8, width = 12, units = "cm",
 #        dpi = 300)
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-S4_panels_", today(), ".jpg", sep = "")),
-#        plot = s4_panels,
-#        height = 8, width = 16, units = "cm",
-#        dpi = 400)
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-S4_panels_", today(), ".jpg", sep = "")),
+       plot = s4_panels,
+       height = 8, width = 16, units = "cm",
+       dpi = 400)
 
 # ⟞ d. raw biomass by site ------------------------------------------------
 
