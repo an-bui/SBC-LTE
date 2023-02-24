@@ -124,7 +124,7 @@ delta_continual_sites_raw <- delta_continual %>%
   # control
   geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual, col = site), size = 2) +
+  geom_line(aes(x = time_since_end, y = continual, col = site), linewidth = 2) +
   geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
@@ -154,56 +154,89 @@ delta_continual_sites_raw
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
 
 # model
+# normal model
 lm_kelp_during_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
-lm_kelp_during_lme_ar1 <- nlme::lme(
+# continuous AR1
+lm_kelp_during_lme_car1 <- nlme::lme(
   delta_continual ~ time_since_end, random = ~1|site,
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass,
-  correlation = corAR1())
-lm_kelp_during_gls <- nlme::gls(
-  delta_continual ~ time_since_end,
-  data = delta_continual %>% filter(exp_dates == "during")
-)
-lm_kelp_during_gls_ar1 <- nlme::gls(
+  correlation = corCAR1())
+# ARMA 4
+lm_kelp_during_lme_ar2 <- nlme::lme(
+  delta_continual ~ time_since_end, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass,
+  correlation = corARMA(p = 4, q = 0)) # 4 steps in the past?
+# GLS CAR1
+lm_kelp_during_gls_car1 <- nlme::gls(
   delta_continual ~ time_since_end,
   data = delta_continual %>% filter(exp_dates == "during"), 
-  correlation = corAR1(form = ~ 1|site)
+  correlation = corCAR1(form = ~ 1|site)
 )
 
 # diagnostics
+# normal model
 plot(DHARMa::simulateResiduals(lm_kelp_during_lmer))
 performance::check_model(lm_kelp_during_lmer)
-performance::check_model(lm_kelp_during_lme_ar1)
+performance::check_autocorrelation(lm_kelp_during_lmer) # Durbin-Watson-Test
+
+# continuous AR1
+plot(fitted(lm_kelp_during_lme_car1), resid(lm_kelp_during_lme_car1))
+plot(density(resid(lm_kelp_during_lme_car1)))
+performance::check_model(lm_kelp_during_lme_car1)
+
+# ARMA 4
+plot(fitted(lm_kelp_during_lme_ar2), resid(lm_kelp_during_lme_ar2))
+
+# GLS CAR1
+performance::check_model(lm_kelp_during_gls_car1)
 
 # model checks
+# normal model
 performance::check_convergence(lm_kelp_during_lmer)
-performance::check_autocorrelation(lm_kelp_during_lmer) # Durbin-Watson-Test
 performance::check_normality(lm_kelp_during_lmer) # Shapiro test
 performance::check_homogeneity(lm_kelp_during_lmer) # Bartlett test
 performance::check_heteroskedasticity(lm_kelp_during_lmer) # Breusch-Pagan test
 
-# plot ACF
-plot(nlme::ACF(lm_kelp_during_lme_ar1), alpha = 0.05)
-plot(nlme::ACF(lm_kelp_during_gls_ar1), alpha = 0.05)
+# plot ACF/PACF
+# normal model
+acf(resid(lm_kelp_during_lmer))
+pacf(resid(lm_kelp_during_lmer))
+
+# continuous AR1
+acf(resid(lm_kelp_during_lme_car1))
+pacf(resid(lm_kelp_during_lme_car1))
+
+# ARMA 4
+acf(resid(lm_kelp_during_lme_ar2))
+pacf(resid(lm_kelp_during_lme_ar2))
+
+# GLS CAR1
+acf(resid(lm_kelp_during_gls_car1))
+pacf(resid(lm_kelp_during_gls_car1))
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
-MuMIn::r.squaredGLMM(lm_kelp_during_lme_ar1)
+MuMIn::r.squaredGLMM(lm_kelp_during_lme_car1)
+MuMIn::r.squaredGLMM(lm_kelp_during_lme_ar2)
 
 # summaries
-summary(lm_kelp_during_lmer)
-summary(lm_kelp_during_lme_ar1)
-summary(lm_kelp_during_gls_ar1)
+summary(lm_kelp_during_lmer) # significant slope
+summary(lm_kelp_during_lme_car1) # significant slope
+summary(lm_kelp_during_gls_car1) # non significant slope
+summary(lm_kelp_during_lme_ar2)
 lm_kelp_during_summary <- lm_kelp_during_lmer %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05)
 lm_kelp_during_summary
 
 # AIC comparison
-MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_lme_ar1, lm_kelp_during_gls, lm_kelp_during_gls_ar1)
+MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_lme_car1, lm_kelp_during_lme_ar2, lm_kelp_during_gls_car1)
+# ARMA 4 best model?
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
@@ -218,15 +251,24 @@ predicted_kelp_during_carp <- ggpredict(lm_kelp_during_lmer, terms = ~ time_sinc
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
 
 # model
+# normal model
 lm_kelp_recovery_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass)
+# continuous AR1
 lm_kelp_recovery_lme_ar1 <- nlme::lme(
   delta_continual ~ time_since_end, random = ~1|site,
   data = delta_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass,
   correlation = corAR1())
+# ARMA 2
+lm_kelp_recovery_lme_ar2 <- nlme::lme(
+  delta_continual ~ time_since_end, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "after"), 
+  na.action = na.pass,
+  correlation = corARMA(p = 2, q = 0))
+# GLS AR1
 lm_kelp_recovery_gls_ar1 <- nlme::gls(
   delta_continual ~ time_since_end, 
   data = delta_continual %>% filter(exp_dates == "after"), 
@@ -237,19 +279,31 @@ lm_kelp_recovery_gls_ar1 <- nlme::gls(
 performance::check_autocorrelation(lm_kelp_recovery_lmer)
 
 # diagnostics
-plot(DHARMa::simulateResiduals(lm_kelp_recovery_lmer)) # outer Newton doesn't converge?
+# normal model
+plot(DHARMa::simulateResiduals(lm_kelp_recovery_lmer))
 performance::check_model(lm_kelp_recovery_lmer)
+
+# continuous AR1
 performance::check_model(lm_kelp_recovery_lme_ar1)
+
+# GLS AR1
 qqnorm(lm_kelp_recovery_gls_ar1)
-plot(residuals(lm_kelp_recovery_gls_ar1))
+plot(fitted(lm_kelp_recovery_gls_ar1), residuals(lm_kelp_recovery_gls_ar1))
 
 # model checks
+# normal model
+check_convergence(lm_kelp_recovery_lmer)
 check_normality(lm_kelp_recovery_lmer)
 check_heteroscedasticity(lm_kelp_recovery_lmer)
 
 # plot ACF
-plot(nlme::ACF(lm_kelp_recovery_lme_ar1), alpha = 0.05/20)
-plot(nlme::ACF(lm_kelp_recovery_gls_ar1), alpha = 0.05/20)
+# normal model
+acf(residuals(lm_kelp_recovery_lmer))
+pacf(residuals(lm_kelp_recovery_lmer))
+
+# ARMA 2
+acf(residuals(lm_kelp_recovery_lme_ar2))
+pacf(residuals(lm_kelp_recovery_lme_ar2))
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_recovery_lmer)
@@ -265,7 +319,8 @@ lm_kelp_recovery_summary <- lm_kelp_recovery_lmer %>%
 lm_kelp_recovery_summary
 
 # AIC comparisons
-MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1, lm_kelp_recovery_gls_ar1)
+MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1, lm_kelp_recovery_lme_ar2, lm_kelp_recovery_gls_ar1)
+# GLS AR1 best model?
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
