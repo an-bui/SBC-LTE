@@ -159,18 +159,35 @@ lm_kelp_during_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
+# normal model with season
+lm_kelp_during_season <- lmerTest::lmer(
+  delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass)
 # continuous AR1
 lm_kelp_during_lme_car1 <- nlme::lme(
   delta_continual ~ time_since_end, random = ~1|site,
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass,
   correlation = corCAR1())
+# continuous AR1 with season
+lm_kelp_during_lme_car1_season <- nlme::lme(
+  delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass,
+  correlation = corCAR1())
 # ARMA 4
-lm_kelp_during_lme_ar2 <- nlme::lme(
+lm_kelp_during_lme_ar4 <- nlme::lme(
   delta_continual ~ time_since_end, random = ~1|site,
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass,
-  correlation = corARMA(p = 4, q = 0)) # 4 steps in the past?
+  correlation = corARMA(p = 4, q = 0)) 
+# ARMA 4 with season
+lm_kelp_during_lme_ar4_season <- nlme::lme(
+  delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass,
+  correlation = corARMA(p = 4, q = 0)) 
 # GLS CAR1
 lm_kelp_during_gls_car1 <- nlme::gls(
   delta_continual ~ time_since_end,
@@ -184,13 +201,26 @@ plot(DHARMa::simulateResiduals(lm_kelp_during_lmer))
 performance::check_model(lm_kelp_during_lmer)
 performance::check_autocorrelation(lm_kelp_during_lmer) # Durbin-Watson-Test
 
+# normal model with season
+plot(DHARMa::simulateResiduals(lm_kelp_during_season))
+performance::check_model(lm_kelp_during_season)
+
 # continuous AR1
 plot(fitted(lm_kelp_during_lme_car1), resid(lm_kelp_during_lme_car1))
 plot(density(resid(lm_kelp_during_lme_car1)))
 performance::check_model(lm_kelp_during_lme_car1)
 
+# continuous AR1 with season
+resid_plot_fxn(lm_kelp_during_lme_car1_season)
+plot(density(resid(lm_kelp_during_lme_car1_season)))
+performance::check_model(lm_kelp_during_lme_car1_season)
+
 # ARMA 4
-plot(fitted(lm_kelp_during_lme_ar2), resid(lm_kelp_during_lme_ar2))
+resid_plot_fxn(lm_kelp_during_lme_ar4)
+
+# ARMA 4 with season
+resid_plot_fxn(lm_kelp_during_lme_ar4_season)
+check_model(lm_kelp_during_lme_ar4_season)
 
 # GLS CAR1
 performance::check_model(lm_kelp_during_gls_car1)
@@ -212,8 +242,8 @@ acf(resid(lm_kelp_during_lme_car1))
 pacf(resid(lm_kelp_during_lme_car1))
 
 # ARMA 4
-acf(resid(lm_kelp_during_lme_ar2))
-pacf(resid(lm_kelp_during_lme_ar2))
+acf(resid(lm_kelp_during_lme_ar4))
+pacf(resid(lm_kelp_during_lme_ar4))
 
 # GLS CAR1
 acf(resid(lm_kelp_during_gls_car1))
@@ -222,20 +252,24 @@ pacf(resid(lm_kelp_during_gls_car1))
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
 MuMIn::r.squaredGLMM(lm_kelp_during_lme_car1)
-MuMIn::r.squaredGLMM(lm_kelp_during_lme_ar2)
+MuMIn::r.squaredGLMM(lm_kelp_during_lme_ar4)
 
 # summaries
 summary(lm_kelp_during_lmer) # significant slope
 summary(lm_kelp_during_lme_car1) # significant slope
 summary(lm_kelp_during_gls_car1) # non significant slope
-summary(lm_kelp_during_lme_ar2)
+summary(lm_kelp_during_lme_ar4)
+summary(lm_kelp_during_lme_ar4_season)
 lm_kelp_during_summary <- lm_kelp_during_lmer %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05)
 lm_kelp_during_summary
 
 # AIC comparison
-MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_lme_car1, lm_kelp_during_lme_ar2, lm_kelp_during_gls_car1)
+MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_season,
+            lm_kelp_during_lme_car1, lm_kelp_during_lme_car1_season, 
+            lm_kelp_during_lme_ar4, lm_kelp_during_lme_ar4_season,
+            lm_kelp_during_gls_car1)
 # ARMA 4 best model?
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
