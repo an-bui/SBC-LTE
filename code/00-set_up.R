@@ -778,6 +778,16 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
          fill = "Time period")
 }
 
+# ⟞ g. model residuals in ggplot ------------------------------------------
+
+# function
+
+resid_plot_fxn <- function(lm) {
+  ggplot() +
+    geom_point(aes(x = fitted(lm), y = resid(lm))) +
+    geom_hline(yintercept = 0) +
+    geom_smooth(aes(x = fitted(lm), y = resid(lm)))
+}
 
 
 
