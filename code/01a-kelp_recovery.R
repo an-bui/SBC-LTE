@@ -157,7 +157,7 @@ delta_continual_sites_raw
 # normal model
 lm_kelp_during_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
-  data = delta_continual %>% filter(exp_dates == "during"), 
+  data = delta_continual %>% filter(exp_dates == "during" & site != "carp"), 
   na.action = na.pass)
 # normal model with season
 lm_kelp_during_season <- lmerTest::lmer(
@@ -176,6 +176,18 @@ lm_kelp_during_lme_car1_season <- nlme::lme(
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass,
   correlation = corCAR1())
+# AR1
+lm_kelp_during_lme_ar1 <- nlme::lme(
+  delta_continual ~ time_since_end, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass,
+  correlation = corAR1())
+# AR1 with season
+lm_kelp_during_lme_ar1_season <- nlme::lme(
+  delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass,
+  correlation = corAR1())
 # ARMA 4
 lm_kelp_during_lme_ar4 <- nlme::lme(
   delta_continual ~ time_since_end, random = ~1|site,
@@ -195,38 +207,58 @@ lm_kelp_during_gls_car1 <- nlme::gls(
   correlation = corCAR1(form = ~ 1|site)
 )
 
+df <- delta_continual %>% 
+  filter(exp_dates == "during") %>% 
+  cbind(., residuals(lm_kelp_during_lmer)) %>% 
+  dplyr::rename(resid = 'residuals(lm_kelp_during_lmer)')
+
+ggplot(df, aes(x = quarter, y = resid)) +
+  geom_point()
+
 # diagnostics
 # normal model
-plot(DHARMa::simulateResiduals(lm_kelp_during_lmer))
+DHARMa::simulateResiduals(lm_kelp_during_lmer, plot = T)
 performance::check_model(lm_kelp_during_lmer)
 performance::check_autocorrelation(lm_kelp_during_lmer) # Durbin-Watson-Test
 
 # normal model with season
-plot(DHARMa::simulateResiduals(lm_kelp_during_season))
-performance::check_model(lm_kelp_during_season)
+simulateResiduals(lm_kelp_during_season, plot = T)
+check_model(lm_kelp_during_season)
 
 # continuous AR1
-plot(fitted(lm_kelp_during_lme_car1), resid(lm_kelp_during_lme_car1))
+resid_plot_fxn(lm_kelp_during_lme_car1)
 plot(density(resid(lm_kelp_during_lme_car1)))
-performance::check_model(lm_kelp_during_lme_car1)
+check_model(lm_kelp_during_lme_car1)
 
 # continuous AR1 with season
 resid_plot_fxn(lm_kelp_during_lme_car1_season)
 plot(density(resid(lm_kelp_during_lme_car1_season)))
-performance::check_model(lm_kelp_during_lme_car1_season)
+check_model(lm_kelp_during_lme_car1_season)
+
+# AR1
+resid_plot_fxn(lm_kelp_during_lme_ar1)
+check_model(lm_kelp_during_lme_ar1)
+
+# AR1 with season
+resid_plot_fxn(lm_kelp_during_lme_ar1_season)
 
 # ARMA 4
 resid_plot_fxn(lm_kelp_during_lme_ar4)
+qqnorm(residuals(lm_kelp_during_lme_ar4))
+qqline(residuals(lm_kelp_during_lme_ar4))
+ks.test(residuals(lm_kelp_during_lme_ar4), "pnorm")
+testDispersion(lm_kelp_during_lme_ar4)
 
 # ARMA 4 with season
 resid_plot_fxn(lm_kelp_during_lme_ar4_season)
 check_model(lm_kelp_during_lme_ar4_season)
 
 # GLS CAR1
-performance::check_model(lm_kelp_during_gls_car1)
+check_model(lm_kelp_during_gls_car1)
 
 # model checks
 # normal model
+testUniformity(lm_kelp_during_lmer)
 performance::check_convergence(lm_kelp_during_lmer)
 performance::check_normality(lm_kelp_during_lmer) # Shapiro test
 performance::check_homogeneity(lm_kelp_during_lmer) # Bartlett test
@@ -251,8 +283,8 @@ pacf(resid(lm_kelp_during_gls_car1))
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
-MuMIn::r.squaredGLMM(lm_kelp_during_lme_car1)
-MuMIn::r.squaredGLMM(lm_kelp_during_lme_ar4)
+r.squaredGLMM(lm_kelp_during_lme_car1)
+r.squaredGLMM(lm_kelp_during_lme_ar4)
 
 # summaries
 summary(lm_kelp_during_lmer) # significant slope
@@ -268,9 +300,10 @@ lm_kelp_during_summary
 # AIC comparison
 MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_season,
             lm_kelp_during_lme_car1, lm_kelp_during_lme_car1_season, 
+            lm_kelp_during_lme_ar1, lm_kelp_during_lme_ar1_season,
             lm_kelp_during_lme_ar4, lm_kelp_during_lme_ar4_season,
             lm_kelp_during_gls_car1)
-# ARMA 4 best model?
+# ARMA 4 with season best model?
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
@@ -288,7 +321,7 @@ predicted_kelp_during_carp <- ggpredict(lm_kelp_during_lmer, terms = ~ time_sinc
 # normal model
 lm_kelp_recovery_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
-  data = delta_continual %>% filter(exp_dates == "after"), 
+  data = delta_continual %>% filter(exp_dates == "after" & site != "carp"), 
   na.action = na.pass)
 # continuous AR1
 lm_kelp_recovery_lme_ar1 <- nlme::lme(
