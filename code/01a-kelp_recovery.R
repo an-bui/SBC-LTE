@@ -152,12 +152,26 @@ delta_continual_sites_raw
 # ⟞ a. during removal -----------------------------------------------------
 
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
+      
+model_number <- c(1, 2, 3, 4, 5)
+model_formula <- 
+
+tribble(
+  ~"Model number", ~"Model formula",                                 ~"Autocorrelation structure",
+  "1",             "time_since_end + (1|site)",                      "none",
+  "2",             "time_since_end + quarter + time_since_end*quarter + (1|site)", "none",
+  "3",             "time_since_end + (1|site) + (1|quarter)",        "none",
+  "4",             "time_since_end, random = ~1|site",               "corCAR1()",
+  "5",             "time_since_end, random = ~1|site",               "corAR1()"
+) %>% 
+  kbl("html") %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T)
 
 # model
 # normal model
 lm_kelp_during_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
-  data = delta_continual %>% filter(exp_dates == "during" & site != "carp"), 
+  data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
 # normal model with season
 lm_kelp_during_season <- lmerTest::lmer(
@@ -235,7 +249,7 @@ df <- delta_continual %>%
   cbind(., residuals(lm_kelp_during_lmer)) %>% 
   dplyr::rename(resid = 'residuals(lm_kelp_during_lmer)')
 
-ggplot(df, aes(x = quarter, y = resid)) +
+ggplot(df, aes(x = time_since_end, y = resid)) +
   geom_point()
 
 # diagnostics
