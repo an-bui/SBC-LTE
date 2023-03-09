@@ -2,6 +2,15 @@
 
 **last updated: 2023-02-15**
 
+    ├── code/                        # all analysis code
+    │   └── 00-set_up.R                                                   
+    │   └── 01a-kelp_recovery.R                             
+    │   └── 01b-kelp_BACIPS                                  
+    │   └── 02a-community_recovery.R                        
+    |   └── 02b-community_composition.R 
+    |   └── 03a-algae_epi_kelp.R   
+    |   └── README.md
+
 ## Set up
 - `00-set_up.R`: libraries, functions, operators, objects  
 

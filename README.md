@@ -44,7 +44,7 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
     ├── README.md
     └── SBC-LTE.Rproj
 
-
+Please visit each directory for detailed descriptions of items.
 
 
 

@@ -1,9 +1,33 @@
 ## Data
 
-All files were pulled from [SBC LTER Data Catalog](https://sbclter.msi.ucsb.edu/data/catalog/) on 7 December 2020.
+All files were pulled from [SBC LTER Data Catalog](https://sbclter.msi.ucsb.edu/data/catalog/).
 
-| Category | Files | Notes | 
+    ├── data/                        # raw data files
+    |   └── algae                                          
+    |   └── all-species-biomass
+    |   └── allometrics
+    |   └── benthics
+    |   └── detritus
+    |   └── fish
+    |   └── inverts
+    |   └── irradiance
+    |   └── kelp-fronds
+    |   └── percent-cover
+    |   └── quads-swaths
+    |   └── substrate
+    |   └── traits
+    |   └── transect-depths
+    |   └── understory
+    |   └── urchins
+    |   └── README.md  
+
+| Directory | Files | Notes | 
 | -------- | ----- | ----------- | 
+| [algae](https://doi.org/10.6073/pasta/47db4ee01f516b0a47b7c585fd552645) | LTE_Algae_Biomass_at_section_20220422.csv, LTE_Algae_Biomass_at_transect_20220314.csv | combined universal point count (UPC) and density converted to biomass |
+| [all-species-biomass](https://doi.org/10.6073/pasta/47db4ee01f516b0a47b7c585fd552645) | LTE_All_Species_Biomass_at_transect_20210209.csv, LTE_All_Species_Biomass_at_transect_20220202.csv, LTE_All_Species_Biomass_at_transect_20220208.csv, LTE_All_Species_Biomass_at_transect_20220314.csv | Biomass taken from UPC (cover) or density (quad swath), converted using coefficients for estimating biomass from body size or percent cover for [macroalgae, invertebrates, and fish](https://portal.edirepository.org/nis/mapbrowse?scope=knb-lter-sbc&identifier=127) |
+| [allometrics](https://doi.org/10.6073/pasta/edff194a827cf11ce80e2ce07d14bf2f) | Allometrics_All_Years_20131009.csv | [morphometric measurements](https://sbclter.msi.ucsb.edu/external/Reef/Protocols/Long_Term_Kelp_Removal/Long_Term_Experiment_Protocol_Understory_Kelp_Allometrics.pdf) of _Pterygophora californica_ and _Laminaria farlowii_
+
+
 | [Cover of sessile organisms, UPC](https://doi.org/10.6073/pasta/9ef0a3d317f6553e1600a0e5af016e43) | LTE_Cover_All_Years_20200605.csv, LTE_Substrate_All_Years_20200605.csv | 80 points along transect, species percent cover is determined as the fraction of points a species intercepts x 100, kelps (_Macrocystis_, _Pterygophora_, _Eisenia_, _Laminaria_) only measured using holdfasts, includes all sessile organisms encountered | 
 | [Abundance and size of Giant Kelp](https://doi.org/10.6073/pasta/5bf131bc3b03ec9f59dc885629065824) | LTE_Kelp_All_Years_20200605.csv | Density measured along whole transect |
 | [Fish abundance](https://doi.org/10.6073/pasta/ecf2e269db7a4807bcaa765422d8186c) | LTE_All_Fish_All_Years_20200605.csv | Density measured along whole transect |
