@@ -46,7 +46,9 @@ lm_algae_kelp_after_m2 <- lmer(
 
 # diagnostics
 check_model(lm_delta_algae_kelp_after_m1)
+simulateResiduals(lm_delta_algae_kelp_after_m1, plot = TRUE)
 check_model(lm_delta_algae_kelp_after_m2)
+simulateResiduals(lm_delta_algae_kelp_after_m2, plot = TRUE)
 check_model(lm_delta_algae_kelp_after_m3)
 
 check_model(lm_algae_kelp_after_m1)
@@ -66,11 +68,16 @@ summary(lm_delta_algae_kelp_after_m1)
 summary(lm_delta_algae_kelp_after_m2)
 summary(lm_delta_algae_kelp_after_m3)
 
+lm_delta_algae_kelp_after_summary <- lm_delta_algae_kelp_after_m2 %>% 
+  tbl_regression() %>% 
+  bold_p(t = 0.05)
+
 summary(lm_algae_kelp_after_m1)
 summary(lm_algae_kelp_after_m2)
 
 # AIC comparison
-AICc(lm_delta_algae_kelp_after_m1, lm_delta_algae_kelp_after_m2, lm_delta_algae_kelp_after_m3)
+AICc(lm_delta_algae_kelp_after_m1, lm_delta_algae_kelp_after_m2, lm_delta_algae_kelp_after_m3) %>% 
+  arrange(AICc)
 AICc(lm_algae_kelp_after_m1, lm_algae_kelp_after_m2)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
@@ -100,21 +107,29 @@ delta_algae_vs_kelp_lm <- delta_algae_continual %>%
   filter(exp_dates == "after") %>% 
   # two points missing from delta kelp: MOHK 2010-06-14, NAPL 2014-11-14
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
-  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
-  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
-  geom_point(size = 5, shape = 21, fill = under_col) + 
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_point(aes(shape = site, fill = site), size = 1) + 
+  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
+  scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
   geom_ribbon(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.1) +
-  geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), size = 2) +
+  geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), linewidth = 1) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 understory algae biomass (treatment - control)") +
+       y = "\U0394 understory algae biomass \n (treatment - control)",
+       title = "(a) Understory algae",
+       fill = "Site", shape = "Site") +
   theme_bw() + 
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 15),
-        strip.text = element_text(size = 14),
-        legend.position = c(0.9, 0.9),
-        legend.text = element_text(size = 18),
-        legend.title = element_blank())
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 5), 
+        legend.title = element_text(size = 5),
+        legend.key.size = unit(0.25, units = "cm"), 
+        legend.position = c(0.2, 0.16), 
+        plot.margin = margin(0.2, 0.22, 0.2, 0.2, unit = "cm"),
+        plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 10),
+        plot.title.position = "plot") 
 delta_algae_vs_kelp_lm
 
 delta_algae_vs_kelp_pearson <- delta_algae_continual %>% 
@@ -204,11 +219,18 @@ summary(lm_delta_epi_kelp_after_m1)
 summary(lm_delta_epi_kelp_after_m2)
 summary(lm_delta_epi_kelp_after_m3)
 
+lm_delta_epi_kelp_after_summary <- lm_delta_epi_kelp_after_m1 %>% 
+tbl_regression() %>% 
+  bold_p(t = 0.05)
+
 summary(lm_epi_kelp_after_m1)
 summary(lm_epi_kelp_after_m2)
 
+
+
 # AICc
-AICc(lm_delta_epi_kelp_after_m1, lm_delta_epi_kelp_after_m2, lm_delta_epi_kelp_after_m3)
+AICc(lm_delta_epi_kelp_after_m1, lm_delta_epi_kelp_after_m2, lm_delta_epi_kelp_after_m3) %>% 
+  arrange(AICc)
 
 AICc(lm_epi_kelp_after_m1, lm_epi_kelp_after_m2) # same?
 
@@ -236,21 +258,25 @@ delta_epi_vs_kelp_lm <- delta_epi_continual %>%
   filter(exp_dates == "after") %>% 
   # two points missing from delta kelp: MOHK 2010-06-14, NAPL 2014-11-14
   ggplot(aes(x = delta_continual, y = delta_continual_epi)) +
-  geom_hline(aes(yintercept = 0), lty = 3, color = "grey") +
-  geom_vline(aes(xintercept = 0), lty = 3, color = "grey") +
-  geom_point(size = 5, shape = 25, fill = "#54662C") + 
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_point(aes(shape = site, fill = site), size = 1) + 
+  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
+  scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
   # geom_ribbon(data = predicted_delta_epi_vs_kelp, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.1) +
   # geom_line(data = predicted_delta_epi_vs_kelp, aes(x = x, y = predicted), size = 2) +
   # scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 epilithic invertebrate biomass \n (treatment - control)") +
+       y = "\U0394 epilithic invertebrate biomass \n (treatment - control)",
+       title = "(b) Epilithic invertebrates") +
   theme_bw() + 
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 15),
-        strip.text = element_text(size = 14),
-        legend.position = c(0.9, 0.9),
-        legend.text = element_text(size = 18),
-        legend.title = element_blank())
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.position = "none", 
+        plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
+        plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 10),
+        plot.title.position = "plot") 
 delta_epi_vs_kelp_lm
 
 epi_vs_kelp_pearson <- delta_epi_continual %>% 
@@ -280,17 +306,34 @@ epi_vs_kelp_pearson <- delta_epi_continual %>%
 epi_vs_kelp_pearson
 
 ##########################################################################-
-# 3. manuscript figures ---------------------------------------------------
+# 3. manuscript tables ----------------------------------------------------
+##########################################################################-
+
+lm_vs_kelp_summary_tables <- tbl_stack(
+  tbls = list(lm_delta_algae_kelp_after_summary, lm_delta_epi_kelp_after_summary),
+  group_header = c("Understory algae", "Epilithic invertebrates"),
+  quiet = TRUE) %>% 
+  as_gt() %>% 
+  tab_options(table.font.names = "Times New Roman") 
+
+# gtsave(lm_vs_kelp_summary_tables,
+#        here::here("tables", "ms-tables", paste("tbl-S2_", today(), ".png", sep = "")),
+#        vwidth = 1500, vheight = 1000)
+
+##########################################################################-
+# 4. manuscript figures ---------------------------------------------------
 ##########################################################################-
 
 # ⟞ a. correlation --------------------------------------------------------
 
 algae_vs_kelp_spearman
 
+# ⟞ b. linear models ------------------------------------------------------
 
+group_vs_kelp <- plot_grid(delta_algae_vs_kelp_lm, delta_epi_vs_kelp_lm, ncol = 2)
 
-
-
-
-
-
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-4_", today(), ".jpg", sep = "")),
+       plot = group_vs_kelp,
+       height = 7, width = 14, units = "cm",
+       dpi = 400)

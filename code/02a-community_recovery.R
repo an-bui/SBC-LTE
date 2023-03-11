@@ -714,11 +714,12 @@ lm_summary_tables <- tbl_stack(
   tbls = list(lm_kelp_tables, lm_algae_tables, lm_epi_tables, lm_endo_tables),
   group_header = c("Kelp", "Algae", "Epilithic invertebrates", "Endolithic invertebrates"),
   quiet = TRUE) %>% 
-  as_gt()
+  as_gt() %>% 
+  tab_options(table.font.names = "Times New Roman") 
 lm_summary_tables
 
 # gtsave(lm_summary_tables,
-#        here::here("tables", "ms-tables", paste("lm_summary_tables_", today(), ".png", sep = "")),
+#        here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".png", sep = "")),
 #        vwidth = 1500, vheight = 1000)
 
 ##########################################################################-

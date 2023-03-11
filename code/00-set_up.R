@@ -789,5 +789,18 @@ resid_plot_fxn <- function(lm) {
     geom_smooth(aes(x = fitted(lm), y = resid(lm)))
 }
 
+# ⟞ h. raw biomass plots --------------------------------------------------
+
+raw_biomass_plot_theme <- function() {
+    theme_bw() +
+    theme(axis.title = element_text(size = 8),
+          plot.title = element_text(size = 8),
+          axis.text = element_text(size = 7),
+          legend.text = element_text(size = 7),
+          legend.position = "none",
+          panel.grid.minor = element_line(color = "#FFFFFF")) 
+}
+  
+
 
 

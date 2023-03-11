@@ -120,8 +120,8 @@ delta_continual_sites_raw <- delta_continual %>%
   ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
-  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.5, size = 2) +
   # control
+  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.5, linewidth = 2) +
   geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
   geom_line(aes(x = time_since_end, y = continual, col = site), linewidth = 2) +
@@ -129,16 +129,8 @@ delta_continual_sites_raw <- delta_continual %>%
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
-  theme_bw() + 
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
-  theme(axis.title = element_text(size = 8),
-        plot.title = element_text(size = 8),
-        axis.text = element_text(size = 7),
-        legend.text = element_text(size = 7), 
-        legend.position = "none", 
-        strip.background = element_rect(fill = "white", color = "white"),
-        strip.text = element_text(size = 8, hjust = 0),
-        panel.grid.minor = element_line(color = "white")) +
+  raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = expression(Giant~kelp~biomass~(dry~g/m^{"2"}))) +
   facet_wrap(~strip, scales = "free_y")
@@ -537,12 +529,13 @@ aque <- ggplot() +
   geom_line(data = predicted_kelp_after_aque, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_aque, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  # scale_y_continuous(breaks = seq(-1500, 1000, by = 1000), limits = c(-1800, 1000)) +
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1250, 1100), expand = c(0, 0)) +
   # geom_text(aes(x = -6.6, y = 600), label = "aque", size = 8) +
   theme_bw() + 
   theme(axis.title = element_text(size = 8),
         plot.title = element_text(size = 8),
-        axis.text = element_text(size = 7)) +
+        axis.text = element_text(size = 7),
+        plot.title.position = "plot") +
   labs(x = "Time since end of removal", 
        y = "\U0394 giant kelp biomass",
        title = paste("(a) ", aque_full, sep = ""))
@@ -558,12 +551,13 @@ napl <- ggplot() +
   geom_line(data = predicted_kelp_after_napl, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_napl, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1250, 1100), expand = c(0, 0)) +
   # geom_text(aes(x = -6.8, y = 700), label = "napl", size = 8) +
   theme_bw() + 
   theme(axis.title = element_text(size = 8),
         plot.title = element_text(size = 8),
-        axis.text = element_text(size = 7)) +
+        axis.text = element_text(size = 7),
+        plot.title.position = "plot") +
   labs(x = "Time since end of removal", 
        y = "\U0394 giant kelp biomass",
        title = paste("(b) ", napl_full, sep = ""))
@@ -579,12 +573,13 @@ mohk <- ggplot() +
   geom_line(data = predicted_kelp_after_mohk, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_mohk, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1800, 1100), expand = c(0, 0)) +
   # geom_text(aes(x = -6.6, y = 900), label = "mohk", size = 8) +
   theme_bw() + 
   theme(axis.title = element_text(size = 8),
         plot.title = element_text(size = 8),
-        axis.text = element_text(size = 7)) +
+        axis.text = element_text(size = 7),
+        plot.title.position = "plot") +
   labs(x = "Time since end of removal", 
        y = "\U0394 giant kelp biomass",
        title = paste("(c) ", mohk_full, sep = ""))
@@ -600,12 +595,13 @@ carp <- ggplot() +
   geom_line(data = predicted_kelp_after_carp, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
   geom_ribbon(data = predicted_kelp_after_carp, aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 5, by = 1), minor_breaks = NULL) +
-  # scale_y_continuous(breaks = seq(-1500, 1500, by = 1000), limits = c(-1800, 1500)) +
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1250, 1100), expand = c(0, 0)) +
   # geom_text(aes(x = -6.8, y = 1000), label = "carp", size = 8) +
-  theme_bw() + 
+  theme_bw() +
   theme(axis.title = element_text(size = 8),
         plot.title = element_text(size = 8),
-        axis.text = element_text(size = 7)) +
+        axis.text = element_text(size = 7),
+        plot.title.position = "plot") +
   labs(x = "Time since end of removal", 
        y = "\U0394 giant kelp biomass",
        title = paste("(d) ", carp_full, sep = ""))
@@ -740,11 +736,7 @@ delta_vs_biomass
 
 lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery_summary), 
                             tab_spanner = c("**Removal**", "**Recovery**")) 
-
-# lm_kelp_tables %>%
-#   as_gt() %>%
-#   gtsave(here::here("tables", "ms-tables", paste("lm_kelp_tables_", today(), ".png", sep = "")),
-#        vwidth = 1500, vheight = 1000)
+# this table is compiled with others in the `02a-community_recovery.R` script
 
 ##########################################################################-
 # 7. manuscript figures ---------------------------------------------------
@@ -768,10 +760,10 @@ lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery
 
 # ⟞ c. recovery time vs biomass -------------------------------------------
 
-s4_panels <- rec_time_plot + delta_vs_biomass +
-  plot_layout(widths = c(2, 2.1)) +
-  plot_annotation(tag_levels = "a", tag_suffix = ")") &
-  theme(plot.tag = element_text(size = 12))
+# s4_panels <- rec_time_plot + delta_vs_biomass +
+#   plot_layout(widths = c(2, 2.1)) +
+#   plot_annotation(tag_levels = "a", tag_suffix = ")") &
+#   theme(plot.tag = element_text(size = 12))
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S4_", today(), ".jpg", sep = "")),
@@ -785,7 +777,7 @@ s4_panels <- rec_time_plot + delta_vs_biomass +
 #        height = 8, width = 16, units = "cm",
 #        dpi = 400)
 
-# ⟞ d. raw biomass by site ------------------------------------------------
+# ⟞ d. predictions by site ------------------------------------------------
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S1_", today(), ".jpg", sep = "")),
