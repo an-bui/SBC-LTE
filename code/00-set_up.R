@@ -717,7 +717,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
         geom_point(aes(shape = site_full, fill = comp_2yrs), size = 1, alpha = 0.9) +
         # ellipse
-        stat_ellipse(aes(color = comp_2yrs), size = 0.5, linetype = treatment_linetype) +
+        stat_ellipse(aes(color = comp_2yrs), linewidth = 0.5, linetype = treatment_linetype) +
         # arrows for species from SIMPER
         geom_text_repel(data = simper_spp, 
                         aes(x = NMDS1, y = NMDS2, 
@@ -772,6 +772,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
           legend.text = element_text(size = 5), 
           legend.title = element_text(size = 5),
           plot.title = element_text(size = 8),
+          plot.title.position = "plot",
           legend.key.size = unit(0.3, units = "cm")) +
     labs(shape = "Site",
          color = "Time period",

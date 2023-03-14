@@ -296,7 +296,7 @@ epi_pt_bray_continual_plot <- nmds_plot_fxn(
   # scale_y_continuous(limits = c(-1.3, 1), breaks = seq(-1, 1, by = 1)) +
   scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) + # length = 3.15
-  annotate("text", x = -1.2, y = -1.6, label = "Stress = 0.2", size = 2) +
+  annotate("text", x = -1.4, y = -1.6, label = "Stress = 0.2", size = 2) +
   theme(legend.position = "none") +
   labs(title = "(b) Epilithic invertebrates") +
   theme(legend.position = "right")
@@ -330,23 +330,22 @@ epi_pt_bray_both_plot
 # ⟞ a. continual removal --------------------------------------------------
 
 comm_comp_together <- algae_pt_bray_continual_plot + epi_pt_bray_continual_plot 
-comm_comp_together
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-3_", today(), ".jpg", sep = "")),
-#        plot = comm_comp_together,
-#        height = 8, width = 16, units = "cm",
-#        dpi = 300)
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-3_", today(), ".jpg", sep = "")),
+       plot = comm_comp_together,
+       height = 8, width = 16, units = "cm",
+       dpi = 300)
 
 # ⟞ b. control ------------------------------------------------------------
 
 comm_comp_control <- algae_pt_bray_control_plot + epi_pt_bray_control_plot 
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-S7_", today(), ".jpg", sep = "")),
-#        plot = comm_comp_control,
-#        height = 10, width = 16, units = "cm",
-#        dpi = 300)
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-S7_", today(), ".jpg", sep = "")),
+       plot = comm_comp_control,
+       height = 10, width = 16, units = "cm",
+       dpi = 300)
 
 
 
