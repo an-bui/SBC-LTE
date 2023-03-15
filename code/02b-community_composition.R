@@ -406,6 +406,10 @@ anova_together_tables <- cbind(anova_2yrs_tables, anova_3yrs_tables) %>%
     style = cell_text(weight = "bold"),
     locations = cells_row_groups()
   ) %>% 
+  sub_missing(
+    columns = everything(),
+    missing_text = "--"
+  ) %>% 
   tab_options(table.font.names = "Times New Roman") 
 anova_together_tables
 
