@@ -317,7 +317,7 @@ lm_vs_kelp_summary_tables <- tbl_stack(
   tab_options(table.font.names = "Times New Roman") 
 
 # gtsave(lm_vs_kelp_summary_tables,
-#        here::here("tables", "ms-tables", paste("tbl-S2_", today(), ".png", sep = "")),
+#        here::here("tables", "ms-tables", paste("tbl-S3_", today(), ".png", sep = "")),
 #        vwidth = 1500, vheight = 1000)
 
 ##########################################################################-

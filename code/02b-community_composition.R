@@ -129,8 +129,11 @@ simper_algae <- simper(comm_mat_algae, comm_meta_algae$treatment)
 summary(simper_algae)
 
 # permanova
-algae_pt_perma <- adonis2(comm_mat_algae ~ treatment*comp_2yrs, data = comm_meta)
-algae_pt_perma
+algae_pt_perma_2yrs <- adonis2(comm_mat_algae ~ treatment*comp_2yrs, data = comm_meta)
+algae_pt_perma_2yrs
+
+algae_pt_perma_3yrs <- adonis2(comm_mat_algae ~ treatment*comp_3yrs, data = comm_meta)
+algae_pt_perma_3yrs # same as 2 yrs
 
 # beta dispersion
 algae_pt_dist <- vegdist(comm_mat_algae, "bray")
@@ -251,8 +254,11 @@ simper_epi <- simper(comm_mat_epi, comm_meta$treatment)
 summary(simper_epi)
 
 # permanova
-epi_pt_perma <- adonis2(comm_mat_epi ~ treatment*comp_2yrs, data = comm_meta)
-epi_pt_perma
+epi_pt_perma_2yrs <- adonis2(comm_mat_epi ~ treatment*comp_2yrs, data = comm_meta)
+epi_pt_perma_2yrs
+
+epi_pt_perma_3yrs <- adonis2(comm_mat_epi ~ treatment*comp_3yrs, data = comm_meta)
+epi_pt_perma_3yrs # same as 2 years
 
 # beta dispersion
 epi_pt_dist <- vegdist(comm_mat_epi, "bray")
@@ -324,7 +330,92 @@ epi_pt_bray_both_plot <- nmds_plot_fxn(
 epi_pt_bray_both_plot
 
 ##########################################################################-
-# 3. manuscript figures ---------------------------------------------------
+# 3. manuscript tables ----------------------------------------------------
+##########################################################################-
+
+anova_2yrs_tables <- rbind(anova_summary_fxn(algae_pt_perma_2yrs), anova_summary_fxn(epi_pt_perma_2yrs)) %>% 
+  rename_with(., .fn = ~paste(., "_2yrs", sep = "", .cols = everything(cols)))
+anova_2yrs_tables 
+
+anova_3yrs_tables <- rbind(anova_summary_fxn(algae_pt_perma_3yrs), anova_summary_fxn(epi_pt_perma_3yrs)) %>% 
+  rename_with(., .fn = ~paste(., "_3yrs", sep = "", .cols = everything(cols)))
+anova_3yrs_tables
+
+anova_together_tables <- cbind(anova_2yrs_tables, anova_3yrs_tables) %>% 
+  # take out unwanted columns
+  select(!c("model_2yrs1", "model_3yrs1", 
+            "SumOfSqs_2yrs1", "SumOfSqs_3yrs1",
+            "R2_2yrs1", "R2_3yrs1")) %>% 
+  # turn the whole thing into a gt
+  gt() %>% 
+  # group labels
+  tab_row_group(
+    label = "Epilithic invertebrates", rows = 6:10
+  ) %>% 
+  tab_row_group(
+    label = "Algae", rows = 1:5
+  ) %>% 
+  # 2 and 3 year comparisons
+  tab_spanner(
+    label = "2 year comparison",
+    columns = c(variables_2yrs1, Df_2yrs1, F_2yrs1, p_2yrs1)
+  ) %>% 
+  tab_spanner(
+    label = "3 year comparison",
+    columns = c(variables_3yrs1, Df_3yrs1, F_3yrs1, p_3yrs1)
+  ) %>% 
+  # change column names
+  cols_label(
+    variables_2yrs1 = "Source of variation",
+    Df_2yrs1 = "df",
+    F_2yrs1 = "pseudo-F",
+    p_2yrs1 = "p", 
+    variables_3yrs1 = "Source of variation",
+    Df_3yrs1 = "df",
+    F_3yrs1 = "pseudo-F",
+    p_3yrs1 = "p"
+  ) %>% 
+  # increase spacing between cells
+  tab_style(
+    style = "padding-left:15px;padding-right:15px;",
+    locations = cells_body()
+  ) %>% 
+  # align columns
+  cols_align(columns = everything(),
+             align = "center") %>% 
+  # bold p < 0.05
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_2yrs1,
+      rows = p_2yrs1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_3yrs1,
+      rows = p_3yrs1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()
+  ) %>% 
+  tab_options(table.font.names = "Times New Roman") 
+anova_together_tables
+
+# gtsave(anova_together_tables,
+#        here::here("tables", "ms-tables", paste("tbl-S4_", today(), ".png", sep = "")),
+#        vwidth = 1500, vheight = 1000)
+
+
+##########################################################################-
+# 4. manuscript figures ---------------------------------------------------
 ##########################################################################-
 
 # ⟞ a. continual removal --------------------------------------------------

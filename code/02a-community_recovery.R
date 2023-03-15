@@ -263,7 +263,7 @@ check_model(anova_algae_3yrs)
 
 # summary
 summary(anova_algae_2yrs)
-summary(anova_algae_3yrs)
+summary(anova_algae_3yrs) # same as 2 years
 
 # least squares comparison
 difflsmeans(anova_algae_2yrs, test.effs = "Group", ddf = "Kenward-Roger")
@@ -316,7 +316,7 @@ check_model(anova_epi_3yrs)
 
 # summary
 summary(anova_epi_2yrs)
-summary(anova_epi_3yrs)
+summary(anova_epi_3yrs) # same as 2 years
 
 # least squares comparison
 difflsmeans(anova_epi_2yrs, test.effs = "Group", ddf = "Kenward-Roger")
@@ -348,7 +348,7 @@ check_model(anova_endo_3yrs)
 
 # summary
 summary(anova_endo_2yrs)
-summary(anova_endo_3yrs)
+summary(anova_endo_3yrs) # same as 2 years
 
 # extract predicted values
 anova_endo_2yrs_df <- ggpredict(anova_endo_2yrs, terms = "comp_2yrs", type = "fixed") %>% 

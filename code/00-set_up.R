@@ -379,6 +379,25 @@ comparison_column_continual <- function(df) {
     unite("sample_ID", site, date, quarter, remove = FALSE)
 }
 
+anova_summary_fxn <- function(adonis2.obj) {
+  # turn object name into string
+  name <- deparse(substitute(adonis2.obj))
+  
+  adonis2.obj %>% 
+    # turn adonis2 result into data frame
+    as.data.frame() %>% 
+    # make rownames "variables"
+    rownames_to_column("variables") %>% 
+    # rename Pr(>F) column into something intelligible
+    rename(p = `Pr(>F)`) %>% 
+    # round values to 2 decimal points
+    mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
+    # replace comp_.yrs with time period
+    mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
+    # make object name column
+    mutate(model = name) 
+}
+
 ##########################################################################-
 # 4. data -----------------------------------------------------------------
 ##########################################################################-

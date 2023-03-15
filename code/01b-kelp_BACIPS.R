@@ -364,12 +364,13 @@ model_selection_summary_table <- cbind(
              aic.val = "AIC",
              aic.diff = "\U0394 AIC",
              aic.rl = "Relative likelihood",
-             aic.weights = "AIC weight")
+             aic.weights = "AIC weight") %>% 
+  tab_options(table.font.names = "Times New Roman") 
 model_selection_summary_table
 
 # gtsave(model_selection_summary_table,
-#        here::here("tables", "ms-tables", paste("model_selection_summary_table_", today(), ".png", sep = "")),
-#        vwidth = 1500, vheight = 3000)
+#        here::here("tables", "ms-tables", paste("tbl-S2_", today(), ".png", sep = "")),
+#        vwidth = 500, vheight = 1000)
 
 ##########################################################################-
 # 4. manuscript figures ---------------------------------------------------
