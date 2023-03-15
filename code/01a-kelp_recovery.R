@@ -225,10 +225,15 @@ lm_kelp_during_gls_car1 <- nlme::gls(
 df <- delta_continual %>% 
   filter(exp_dates == "during") %>% 
   cbind(., residuals(lm_kelp_during_lmer)) %>% 
-  dplyr::rename(resid = 'residuals(lm_kelp_during_lmer)')
+  dplyr::rename(resid_m1 = 'residuals(lm_kelp_during_lmer)') %>% 
+  cbind(., residuals(lm_kelp_during_season)) %>% 
+  dplyr::rename(resid_m2 = 'residuals(lm_kelp_during_season)') %>% 
+  cbind(., residuals(lm_kelp_during_lme_ar4_season)) %>% 
+  dplyr::rename(resid_m3 = 'residuals(lm_kelp_during_lme_ar4_season)')
 
-ggplot(df, aes(x = time_since_end, y = resid)) +
-  geom_point()
+ggplot(df, aes(x = time_since_end, y = resid_m3)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
 
 # diagnostics
 # normal model
@@ -274,7 +279,6 @@ resid_plot_fxn(lm_kelp_during_lme_ar4)
 qqnorm(residuals(lm_kelp_during_lme_ar4))
 qqline(residuals(lm_kelp_during_lme_ar4))
 ks.test(residuals(lm_kelp_during_lme_ar4), "pnorm")
-testDispersion(lm_kelp_during_lme_ar4)
 
 # ARMA 4 with season
 resid_plot_fxn(lm_kelp_during_lme_ar4_season)
@@ -321,7 +325,7 @@ r.squaredGLMM(lm_kelp_during_lme_ar4)
 summary(lm_kelp_during_lmer) # significant slope
 summary(lm_kelp_during_lme_car1) # significant slope
 summary(lm_kelp_during_gls_car1) # non significant slope
-summary(lm_kelp_during_lme_ar4)
+summary(lm_kelp_during_lme_ar4) # significant slope
 summary(lm_kelp_during_lme_ar4_season)
 lm_kelp_during_summary <- lm_kelp_during_lmer %>% 
   tbl_regression() %>% 
