@@ -127,8 +127,7 @@ delta_algae_vs_kelp_lm <- delta_algae_continual %>%
         legend.key.size = unit(0.25, units = "cm"), 
         legend.position = c(0.2, 0.16), 
         plot.margin = margin(0.2, 0.22, 0.2, 0.2, unit = "cm"),
-        plot.title = element_text(size = 10),
-        plot.subtitle = element_text(size = 10),
+        plot.title = element_text(size = 8),
         plot.title.position = "plot") 
 delta_algae_vs_kelp_lm
 
@@ -274,8 +273,7 @@ delta_epi_vs_kelp_lm <- delta_epi_continual %>%
         axis.text = element_text(size = 7),
         legend.position = "none", 
         plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
-        plot.title = element_text(size = 10),
-        plot.subtitle = element_text(size = 10),
+        plot.title = element_text(size = 8),
         plot.title.position = "plot") 
 delta_epi_vs_kelp_lm
 
@@ -332,8 +330,8 @@ algae_vs_kelp_spearman
 
 group_vs_kelp <- plot_grid(delta_algae_vs_kelp_lm, delta_epi_vs_kelp_lm, ncol = 2)
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-4_", today(), ".jpg", sep = "")),
-       plot = group_vs_kelp,
-       height = 7, width = 14, units = "cm",
-       dpi = 400)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-4_", today(), ".jpg", sep = "")),
+#        plot = group_vs_kelp,
+#        height = 7, width = 14, units = "cm",
+#        dpi = 400)
