@@ -301,29 +301,16 @@ summary(anova_epi_3yrs)
 difflsmeans(anova_epi_2yrs, test.effs = "Group", ddf = "Kenward-Roger")
 difflsmeans(anova_epi_3yrs, test.effs = "Group", ddf = "Kenward-Roger")
 
-# anova with random effect
-anova_epi_2yrs <- lmer(delta_continual_epi ~ comp_2yrs + (1|site), 
-                       data = delta_epi_continual %>% drop_na(comp_2yrs))
-anova_epi_3yrs <- lmer(delta_continual_epi ~ comp_3yrs + (1|site), 
-                       data = delta_epi_continual %>% drop_na(comp_3yrs))
-
-# diagnostics
-plot(simulateResiduals(anova_epi_2yrs))
-check_model(anova_epi_2yrs)
-
-plot(simulateResiduals(anova_epi_3yrs))
-check_model(anova_epi_3yrs)
-
-# summary
-summary(anova_epi_2yrs)
-summary(anova_epi_3yrs) # same as 2 years
-
-# least squares comparison
-difflsmeans(anova_epi_2yrs, test.effs = "Group", ddf = "Kenward-Roger")
-difflsmeans(anova_epi_3yrs, test.effs = "Group", ddf = "Kenward-Roger")
-
 # extract predicted values
 anova_epi_2yrs_df <- ggpredict(anova_epi_2yrs, terms = "comp_2yrs", type = "fixed") %>% 
+  mutate(x = case_when(
+    x == "start" ~ "Start of removal",
+    x == "during" ~ "End of removal",
+    x == "after" ~ "Recovery period"
+  )) %>% 
+  mutate(x = fct_relevel(x, "Start of removal", "End of removal", "Recovery period"))
+
+anova_epi_3yrs_df <- ggpredict(anova_epi_3yrs, terms = "comp_3yrs", type = "fixed") %>% 
   mutate(x = case_when(
     x == "start" ~ "Start of removal",
     x == "during" ~ "End of removal",
@@ -410,6 +397,28 @@ sda_epi_biomass <- ggplot(anova_epi_2yrs_df) +
        y = expression(Biomass~(dry~g/m^{"2"})),
        title = "(c)")
 sda_epi_biomass
+
+ggplot(anova_epi_3yrs_df) +
+  # horizontal line at 0
+  geom_hline(yintercept = 0, lty = 2) +
+  # points and error bars
+  geom_point(aes(x = x, y = predicted), size = 2) +
+  # annotate("rect", xmin = 0, xmax = 4, ymin = 20.1, ymax = 24, fill = "#FFFFFF") +
+  geom_errorbar(aes(x = x, ymin = predicted - std.error, ymax = predicted + std.error), width = 0.2) +
+  # path between time periods
+  geom_line(aes(x = x, y = predicted, group = 1)) +
+  # add in post-hoc comparisons
+  annotate("text", x = 1, y = 20, label = "a", size = 3) +
+  annotate("text", x = 2, y = 20, label = "b", size = 3) +
+  annotate("text", x = 3, y = 20, label = "c", size = 3) +
+  # annotate("text", x = 0.68, y = 23, label = "Epilithic invertebrates", size = 10) +
+  # aesthetics
+  scale_x_discrete(labels = wrap_format(10)) +
+  scale_y_continuous(limits = c(-13, 22), expand = c(0, 0)) +
+  sda_biomass_theme() +
+  labs(x = "Time period", 
+       y = expression(Biomass~(dry~g/m^{"2"})),
+       title = "(c)")
 
 # ⟞ ⟞ iii. endo inverts --------------------------------------------------
 
