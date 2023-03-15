@@ -624,11 +624,11 @@ mean_kelp_all_sites <- delta_continual %>%
   ungroup()
 
 rec_time <- tribble(
-  ~site, ~time_to_recovery, ~pred_int_low, ~pred_int_high,
-  "aque",       3.80,          -3.5,         12,
-  "napl",       3.42,          -4,           11.5,
-  "mohk",       5.4,           -1.6,         14.4,
-  "carp",       3.33,          -4.1,         11.4
+  ~site, ~time_to_recovery, ~pi_time_low, ~pi_time_high, ~pi_kelp_low, ~pi_kelp_high, 
+  "aque",       3.80,          -3.5,         12,           -742.81,       773.27,
+  "napl",       3.42,          -4,           11.5,         -754.33,       756.62,
+  "mohk",       5.4,           -1.6,         14.4,         -729.58,       823.53,
+  "carp",       3.33,          -4.1,         11.4,         -836.07,       674.14
 ) %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
@@ -639,7 +639,7 @@ rec_time <- tribble(
 
 rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, shape = site, fill = site)) +
   geom_errorbar(aes(xmin = mean_control - se_control, xmax = mean_control + se_control), width = 1) +
-  geom_errorbar(aes(ymin = pred_int_low, ymax = pred_int_high)) +
+  geom_errorbar(aes(ymin = pi_time_low, ymax = pi_time_high)) +
   geom_point(size = 4) +
   # geom_text_repel(aes(label = site_full), seed = 666,
   #                 size = 7, point.padding = 35, nudge_y = 0.1) +
@@ -657,6 +657,25 @@ rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, sh
         legend.position = "none")
 
 rec_time_plot
+
+rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, shape = site, fill = site)) +
+  geom_errorbar(aes(xmin = mean_control - pi_kelp_low, xmax = mean_control + se_control), width = 1) +
+  geom_errorbar(aes(ymin = pi_time_low, ymax = pi_time_high)) +
+  geom_point(size = 4) +
+  # geom_text_repel(aes(label = site_full), seed = 666,
+  #                 size = 7, point.padding = 35, nudge_y = 0.1) +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  theme_bw() +
+  # scale_y_continuous(breaks = c(seq(3, 6, by = 1)), limits = c(3, 6)) +
+  labs(x = expression(Mean~giant~kelp~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Predicted time to recovery (years)") +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 7),
+        legend.position = "none")
 
 ##########################################################################-
 # 5. control vs removal kelp biomass plot ---------------------------------
