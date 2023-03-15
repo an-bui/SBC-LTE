@@ -426,21 +426,21 @@ anova_together_tables
 
 comm_comp_together <- algae_pt_bray_continual_plot + epi_pt_bray_continual_plot 
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-3_", today(), ".jpg", sep = "")),
-       plot = comm_comp_together,
-       height = 8, width = 16, units = "cm",
-       dpi = 300)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-3_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_together,
+#        height = 8, width = 16, units = "cm",
+#        dpi = 300)
 
 # ⟞ b. control ------------------------------------------------------------
 
 comm_comp_control <- algae_pt_bray_control_plot + epi_pt_bray_control_plot 
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-S7_", today(), ".jpg", sep = "")),
-       plot = comm_comp_control,
-       height = 10, width = 16, units = "cm",
-       dpi = 300)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S7_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_control,
+#        height = 10, width = 16, units = "cm",
+#        dpi = 300)
 
 
 
