@@ -181,7 +181,7 @@ delta_continual_sites_algae_raw <- delta_algae_continual %>%
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
   site_raw_biomass_theme() +
   labs(x = "Time since end of experiment (years)", 
-       y = expression(Understory~algae~biomass~(dry~g/m^{"2"}))) +
+       y = expression(Understory~macroalgae~biomass~(dry~g/m^{"2"}))) +
   facet_wrap(~strip, scales = "free_y")
 delta_continual_sites_algae_raw
 
