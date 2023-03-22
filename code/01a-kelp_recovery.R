@@ -113,9 +113,9 @@ delta_continual_plot
 delta_continual_sites_raw <- delta_continual %>% 
   mutate(strip = case_when(
     site == "aque" ~ paste("(a) ", site_full, sep = ""),
-    site == "napl" ~ paste("(b) ", site_full),
-    site == "mohk" ~ paste("(c) ", site_full),
-    site == "carp" ~ paste("(d) ", site_full)
+    site == "napl" ~ paste("(b) ", site_full, sep = ""),
+    site == "mohk" ~ paste("(c) ", site_full, sep = ""),
+    site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
   ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
@@ -221,6 +221,17 @@ lm_kelp_during_gls_car1 <- nlme::gls(
   data = delta_continual %>% filter(exp_dates == "during"), 
   correlation = corCAR1(form = ~ 1|site)
 )
+# linear transformation: multiply by -1, add 8
+transform <- delta_continual %>% 
+  mutate(delta_continual_tf = delta_continual*-1 + 8) %>% 
+  filter(exp_dates == "during")
+lm_kelp_during_tf <- glmer(
+  delta_continual_tf ~ time_since_end + (1|site),
+  data = transform,
+  family = Gamma(link = "inverse"),
+  na.action = na.pass
+)
+
 
 df <- delta_continual %>% 
   filter(exp_dates == "during") %>% 
@@ -329,7 +340,12 @@ summary(lm_kelp_during_lme_ar4) # significant slope
 summary(lm_kelp_during_lme_ar4_season)
 lm_kelp_during_summary <- lm_kelp_during_lmer %>% 
   tbl_regression() %>% 
-  bold_p(t = 0.05)
+  bold_p(t = 0.05) %>% 
+  modify_header(
+    label = " ",
+    estimate = "**Slope**",
+    df = "**df**"
+  ) 
 lm_kelp_during_summary
 
 # AIC comparison
@@ -417,7 +433,12 @@ summary(lm_kelp_recovery_lme_ar1)
 summary(lm_kelp_recovery_gls_ar1)
 lm_kelp_recovery_summary <- lm_kelp_recovery_lmer %>% 
   tbl_regression() %>% 
-  bold_p(t = 0.05)
+  bold_p(t = 0.05) %>% 
+  modify_header(
+    label = " ",
+    estimate = "**Slope**",
+    df = "**df**"
+  ) 
 lm_kelp_recovery_summary
 
 # AIC comparisons
@@ -623,12 +644,43 @@ mean_kelp_all_sites <- delta_continual %>%
             se_delta = se(delta_continual)) %>% 
   ungroup()
 
+lm_kelp_recovery_raw <- lmerTest::lmer(
+  control ~ time_since_end + (1|site),
+  data = delta_continual %>% filter(exp_dates == "after"),
+  na.action = na.pass
+)
+
+plot(ggpredict(lm_kelp_recovery_raw, terms = ~ time_since_end, type = "fixed"))
+lm_kelp_recovery_raw_aque <- ggpredict(lm_kelp_recovery_raw, terms = "time_since_end [3.7:3.9 by = 0.01]", type = "random", condition = c(site = "aque")) %>% 
+  filter(x == "3.8") %>% 
+  as_tibble() %>% 
+  mutate(site = "aque")
+ggpredict(lm_kelp_recovery_raw, terms = "time_since_end [3.7:3.9 by = 0.01]", type = "fixed")
+lm_kelp_recovery_raw_napl <- ggpredict(lm_kelp_recovery_raw, terms = "time_since_end [3.41:3.43 by = 0.01]", type = "random", condition = c(site = "napl")) %>% 
+  filter(x == "3.42") %>% 
+  as_tibble() %>% 
+  mutate(site = "napl")
+lm_kelp_recovery_raw_mohk <- ggpredict(lm_kelp_recovery_raw, terms = "time_since_end [5.3:5.4 by = 0.01]", type = "random", condition = c(site = "mohk")) %>% 
+  filter(x == "5.4") %>% 
+  as_tibble() %>% 
+  mutate(site = "mohk")
+lm_kelp_recovery_raw_carp <- ggpredict(lm_kelp_recovery_raw, terms = "time_since_end [3.3:3.4 by = 0.01]", type = "random", condition = c(site = "carp")) %>% 
+  filter(x == "3.33") %>% 
+  as_tibble() %>% 
+  mutate(site = "carp")
+rec_time_2 <- rbind(lm_kelp_recovery_raw_aque, lm_kelp_recovery_raw_napl,
+                    lm_kelp_recovery_raw_mohk, lm_kelp_recovery_raw_carp) %>% 
+  rename(pi.low = conf.low,
+         pi.high = conf.high) %>% 
+  left_join(., rec_time, by = "site")
+
+
 rec_time <- tribble(
   ~site, ~time_to_recovery, ~pi_time_low, ~pi_time_high, ~pi_kelp_low, ~pi_kelp_high, 
-  "aque",       3.80,          -3.5,         12,           -742.81,       773.27,
-  "napl",       3.42,          -4,           11.5,         -754.33,       756.62,
-  "mohk",       5.4,           -1.6,         14.4,         -729.58,       823.53,
-  "carp",       3.33,          -4.1,         11.4,         -836.07,       674.14
+  "aque",       3.80,          -3.5,         12,           -542.53,       734.94,
+  "napl",       3.42,          -4,           11.5,         -373.56,       900.80,
+  "mohk",       5.4,           -1.6,         14.4,         -309.19,       991.41,
+  "carp",       3.33,          -4.1,         11.4,         -611.64,       662.11
 ) %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
@@ -658,24 +710,12 @@ rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, sh
 
 rec_time_plot
 
-rec_time_plot <- ggplot(rec_time, aes(x = mean_control, y = time_to_recovery, shape = site, fill = site)) +
-  geom_errorbar(aes(xmin = mean_control - pi_kelp_low, xmax = mean_control + se_control), width = 1) +
-  geom_errorbar(aes(ymin = pi_time_low, ymax = pi_time_high)) +
-  geom_point(size = 4) +
-  # geom_text_repel(aes(label = site_full), seed = 666,
-  #                 size = 7, point.padding = 35, nudge_y = 0.1) +
-  scale_shape_manual(values = shape_palette_site) +
-  scale_fill_manual(values = color_palette_site) +
-  theme_bw() +
-  # scale_y_continuous(breaks = c(seq(3, 6, by = 1)), limits = c(3, 6)) +
-  labs(x = expression(Mean~giant~kelp~biomass~"("~dry~g/m^{"2"}~")"),
-       y = "Predicted time to recovery (years)") +
-  theme_bw() + 
-  theme(axis.title = element_text(size = 8),
-        axis.text = element_text(size = 7),
-        legend.text = element_text(size = 6), 
-        legend.title = element_text(size = 7),
-        legend.position = "none")
+rec_time_plot_2 <- ggplot(rec_time_2, aes(x = predicted, y = time_to_recovery)) +
+  geom_point() +
+  geom_errorbar(aes(xmin = pi.low, xmax = pi.high)) +
+  geom_errorbar(aes(ymin = pi_time_low, ymax = pi_time_high))
+rec_time_plot_2
+
 
 ##########################################################################-
 # 5. control vs removal kelp biomass plot ---------------------------------
@@ -761,11 +801,11 @@ lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery
 
 # ⟞ b. raw kelp biomass through time --------------------------------------
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-S2_", today(), ".jpg", sep = "")),
-#        plot = delta_continual_sites_raw,
-#        height = 8, width = 16, units = "cm",
-#        dpi = 300)
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-S1_", today(), ".jpg", sep = "")),
+       plot = delta_continual_sites_raw,
+       height = 8, width = 16, units = "cm",
+       dpi = 300)
 
 # ⟞ c. recovery time vs biomass -------------------------------------------
 

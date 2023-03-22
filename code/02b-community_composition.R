@@ -179,7 +179,7 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
   # ordination_theme() +
   labs(shape = "Site",
        color = "Time period", fill = "Time period",
-       title = "(a) Understory algae") +
+       title = "(a) Understory macroalgae") +
   # ellipse labels. clown shit
   # annotate("text", x = -1, y = 0.5, label = "Start of", size = 10, col = start_col) +
   # annotate("text", x = -1, y = 0.4, label = "removal", size = 10, col = start_col) +
@@ -203,7 +203,7 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
   scale_y_continuous(limits = c(-1.85, 1.5), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   labs(shape = "Site",
        color = "Time period", fill = "Time period",
-       title = "(a) Understory algae") +
+       title = "(a) Understory macroalgae") +
   # ellipse labels. clown shit
   # annotate("text", x = -1.2, y = 1.05, label = "Start of", size = 10, col = start_col) +
   # annotate("text", x = -1.2, y = 0.9, label = "removal", size = 10, col = start_col) +
@@ -353,7 +353,7 @@ anova_together_tables <- cbind(anova_2yrs_tables, anova_3yrs_tables) %>%
     label = "Epilithic invertebrates", rows = 6:10
   ) %>% 
   tab_row_group(
-    label = "Algae", rows = 1:5
+    label = "Understory macroalgae", rows = 1:5
   ) %>% 
   # 2 and 3 year comparisons
   tab_spanner(
@@ -414,7 +414,7 @@ anova_together_tables <- cbind(anova_2yrs_tables, anova_3yrs_tables) %>%
 anova_together_tables
 
 # gtsave(anova_together_tables,
-#        here::here("tables", "ms-tables", paste("tbl-S4_", today(), ".png", sep = "")),
+#        here::here("tables", "ms-tables", paste("tbl-S4_", today(), ".docx", sep = "")),
 #        vwidth = 1500, vheight = 1000)
 
 

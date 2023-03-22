@@ -70,7 +70,12 @@ summary(lm_delta_algae_kelp_after_m3)
 
 lm_delta_algae_kelp_after_summary <- lm_delta_algae_kelp_after_m2 %>% 
   tbl_regression() %>% 
-  bold_p(t = 0.05)
+  bold_p(t = 0.05) %>% 
+  modify_header(
+    label = " ",
+    estimate = "**Slope**",
+    df = "**df**"
+  ) 
 
 summary(lm_algae_kelp_after_m1)
 summary(lm_algae_kelp_after_m2)
@@ -116,8 +121,8 @@ delta_algae_vs_kelp_lm <- delta_algae_continual %>%
   geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), linewidth = 1) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 understory algae biomass \n (treatment - control)",
-       title = "(a) Understory algae",
+       y = "\U0394 understory macroalgae biomass \n (treatment - control)",
+       title = "(a) Understory macroalgae",
        fill = "Site", shape = "Site") +
   theme_bw() + 
   theme(axis.title = element_text(size = 8),
@@ -147,7 +152,7 @@ delta_algae_vs_kelp_pearson <- delta_algae_continual %>%
   scale_fill_manual(values = c("During removal" = "#FFFFFF", "Recovery period" = under_col)) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
   labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 understory algae biomass (treatment - control)") +
+       y = "\U0394 understory macroalgae biomass (treatment - control)") +
   theme_bw() + 
   theme(axis.title = element_text(size = 18),
         plot.title = element_text(size = 18),
@@ -219,8 +224,13 @@ summary(lm_delta_epi_kelp_after_m2)
 summary(lm_delta_epi_kelp_after_m3)
 
 lm_delta_epi_kelp_after_summary <- lm_delta_epi_kelp_after_m1 %>% 
-tbl_regression() %>% 
-  bold_p(t = 0.05)
+  tbl_regression() %>% 
+  bold_p(t = 0.05) %>% 
+  modify_header(
+    label = " ",
+    estimate = "**Slope**"
+  ) 
+lm_delta_epi_kelp_after_summary
 
 summary(lm_epi_kelp_after_m1)
 summary(lm_epi_kelp_after_m2)
@@ -309,14 +319,14 @@ epi_vs_kelp_pearson
 
 lm_vs_kelp_summary_tables <- tbl_stack(
   tbls = list(lm_delta_algae_kelp_after_summary, lm_delta_epi_kelp_after_summary),
-  group_header = c("Understory algae", "Epilithic invertebrates"),
+  group_header = c("Understory macroalgae", "Epilithic invertebrates"),
   quiet = TRUE) %>% 
-  as_gt() %>% 
-  tab_options(table.font.names = "Times New Roman") 
+  as_flex_table() %>% 
+  font(fontname = "Times New Roman", part = "all")
 
-# gtsave(lm_vs_kelp_summary_tables,
-#        here::here("tables", "ms-tables", paste("tbl-S3_", today(), ".png", sep = "")),
-#        vwidth = 1500, vheight = 1000)
+# lm_vs_kelp_summary_tables %>%
+#   save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S5_", today(), ".docx", sep = "")))
+
 
 ##########################################################################-
 # 4. manuscript figures ---------------------------------------------------

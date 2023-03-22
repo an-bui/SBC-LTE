@@ -305,7 +305,7 @@ carp_bacips_plot
 ##########################################################################-
 
 model_selection_summary_table <- cbind(
-  model = list("Step", "Linear", "Asymptotic", "Sigmoid"),
+  model = c("Step", "Linear", "Asymptotic", "Sigmoid"),
   deg.free = aque_continual_bacips_results$aicc.test.results.df,
   aic.val = round(aque_continual_bacips_results$aicc.test.results.AIC, 2),
   aic.diff = round(aque_continual_bacips_results$aicc.test.results.diff, 2),
@@ -316,7 +316,7 @@ model_selection_summary_table <- cbind(
   mutate(site = aque_full) %>% 
   rbind(
     cbind(
-      model = list("Step", "Linear", "Asymptotic", "Sigmoid"),
+      model = c("Step", "Linear", "Asymptotic", "Sigmoid"),
       deg.free = napl_continual_bacips_results$aicc.test.results.df,
       aic.val = round(napl_continual_bacips_results$aicc.test.results.AIC, 2),
       aic.diff = round(napl_continual_bacips_results$aicc.test.results.diff, 2),
@@ -328,7 +328,7 @@ model_selection_summary_table <- cbind(
   ) %>% 
   rbind(
     cbind(
-      model = list("Step", "Linear", "Asymptotic", "Sigmoid"),
+      model = c("Step", "Linear", "Asymptotic", "Sigmoid"),
       deg.free = mohk_continual_bacips_results$aicc.test.results.df,
       aic.val = round(mohk_continual_bacips_results$aicc.test.results.AIC, 2),
       aic.diff = round(mohk_continual_bacips_results$aicc.test.results.diff, 2),
@@ -340,7 +340,7 @@ model_selection_summary_table <- cbind(
   ) %>% 
   rbind(
     cbind(
-      model = list("Step", "Linear", "Asymptotic", "Sigmoid"),
+      model = c("Step", "Linear", "Asymptotic", "Sigmoid"),
       deg.free = carp_continual_bacips_results$aicc.test.results.df,
       aic.val = round(carp_continual_bacips_results$aicc.test.results.AIC, 2),
       aic.diff = round(carp_continual_bacips_results$aicc.test.results.diff, 2),
@@ -366,11 +366,74 @@ model_selection_summary_table <- cbind(
              aic.rl = "Relative likelihood",
              aic.weights = "AIC weight") %>% 
   tab_options(table.font.names = "Times New Roman") 
-model_selection_summary_table
+model_selection_summary_table %>% 
+  as_flextable() 
 
 # gtsave(model_selection_summary_table,
-#        here::here("tables", "ms-tables", paste("tbl-S2_", today(), ".png", sep = "")),
+#        here::here("tables", "ms-tables", paste("tbl-S2_", today(), ".docx", sep = "")),
 #        vwidth = 500, vheight = 1000)
+
+model_selection_summary_table_v2 <- cbind(
+  model = c("Step", "Linear", "Asymptotic", "Sigmoid"),
+  deg.free = aque_continual_bacips_results$aicc.test.results.df,
+  aic.val = round(aque_continual_bacips_results$aicc.test.results.AIC, 2),
+  aic.diff = round(aque_continual_bacips_results$aicc.test.results.diff, 2),
+  aic.rl = round(aque_continual_bacips_results$aicc.test.results.RL, 2),
+  aic.weights = round(aque_continual_bacips_results$aicc.test.results.aicWeights, 2)
+) %>% 
+  as.data.frame() %>% 
+  mutate(site = aque_full) %>% 
+  rbind(
+    cbind(
+      model = c("Step", "Linear", "Asymptotic", "Sigmoid"),
+      deg.free = napl_continual_bacips_results$aicc.test.results.df,
+      aic.val = round(napl_continual_bacips_results$aicc.test.results.AIC, 2),
+      aic.diff = round(napl_continual_bacips_results$aicc.test.results.diff, 2),
+      aic.rl = round(napl_continual_bacips_results$aicc.test.results.RL, 2),
+      aic.weights = round(napl_continual_bacips_results$aicc.test.results.aicWeights, 2)
+    ) %>% 
+      as.data.frame() %>% 
+      mutate(site = napl_full) 
+  ) %>% 
+  rbind(
+    cbind(
+      model = c("Step", "Linear", "Asymptotic", "Sigmoid"),
+      deg.free = mohk_continual_bacips_results$aicc.test.results.df,
+      aic.val = round(mohk_continual_bacips_results$aicc.test.results.AIC, 2),
+      aic.diff = round(mohk_continual_bacips_results$aicc.test.results.diff, 2),
+      aic.rl = round(mohk_continual_bacips_results$aicc.test.results.RL, 2),
+      aic.weights = round(mohk_continual_bacips_results$aicc.test.results.aicWeights, 2)
+    ) %>% 
+      as.data.frame() %>% 
+      mutate(site = mohk_full) 
+  ) %>% 
+  rbind(
+    cbind(
+      model = c("Step", "Linear", "Asymptotic", "Sigmoid"),
+      deg.free = carp_continual_bacips_results$aicc.test.results.df,
+      aic.val = round(carp_continual_bacips_results$aicc.test.results.AIC, 2),
+      aic.diff = round(carp_continual_bacips_results$aicc.test.results.diff, 2),
+      aic.rl = round(carp_continual_bacips_results$aicc.test.results.RL, 2),
+      aic.weights = round(carp_continual_bacips_results$aicc.test.results.aicWeights, 2)
+    ) %>% 
+      as.data.frame() %>% 
+      mutate(site = carp_full) 
+  ) %>% 
+  as.data.frame() %>% 
+  as_grouped_data(groups = c("site")) %>% 
+  as_flextable(hide_grouplabel = TRUE) %>% 
+  set_header_labels(model = "Model",
+                    deg.free = "Degrees of freedom",
+                    aic.val = "AIC",
+                    aic.diff = "\U0394 AIC",
+                    aic.rl = "Relative likelihood",
+                    aic.weights = "AIC weight") %>% 
+  bold(~ aic.diff == 0, 1) %>% 
+  font(fontname = "Times New Roman", part = "all") %>% 
+  width(width = 1, unit = "in")
+
+model_selection_summary_table_v2 %>% 
+  save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S2_", today(), ".docx", sep = "")))
 
 ##########################################################################-
 # 4. manuscript figures ---------------------------------------------------

@@ -36,7 +36,7 @@ library(AICcmodavg) # calculate second order AIC (AICc)
 library(MuMIn)
 library(boot)
 library(lmerTest) # also loads `lme4`
-library(glmmTMB)
+# library(glmmTMB)
 library(nlme)
 library(DHARMa)
 library(performance)
@@ -398,6 +398,18 @@ anova_summary_fxn <- function(adonis2.obj) {
     mutate(model = name) 
 }
 
+difflsmeans_summary_fxn <- function(anova.obj) {
+  anova.obj %>% 
+    difflsmeans(test.effs = "Group", ddf = "Kenward-Roger") %>% 
+    as.data.frame() %>% 
+    clean_names() %>% 
+    rownames_to_column("rowname") %>% 
+    select(levels, estimate, std_error, df, t_value, pr_t) %>% 
+    mutate(across(c(estimate, std_error, t_value, pr_t), ~round(., digits = 3))) %>% 
+    mutate(levels = fct_relevel(levels, c("start - during", "during - after", "start - after"))) %>% 
+    arrange(levels)
+}
+
 ##########################################################################-
 # 4. data -----------------------------------------------------------------
 ##########################################################################-
@@ -746,7 +758,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
                      aes(x = 0, y = 0,
                          xend = NMDS1, yend = NMDS2),
                      arrow = arrow(length = unit(0.1, "cm")), 
-                     color = "#C70000", size = 0.5) 
+                     color = "#C70000", linewidth = 0.5) 
     }
   } else if(treatment == "control") {
     point_aesthetics <- function() {
@@ -758,7 +770,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
         geom_point(aes(shape = site_full, fill = comp_2yrs), size = 1, alpha = 0.9) +
         # ellipse
-        stat_ellipse(aes(color = comp_2yrs), size = 0.5, linetype = treatment_linetype) 
+        stat_ellipse(aes(color = comp_2yrs), linewidth = 0.5, linetype = treatment_linetype) 
     }
   } else if(treatment == "both") {
     point_aesthetics <- function() {
@@ -770,7 +782,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
         geom_point(aes(shape = site_full, fill = comp_2yrs, alpha = treatment), size = 1) +
         # ellipse
-        stat_ellipse(aes(color = comp_2yrs, linetype = treatment), size = 0.5) +
+        stat_ellipse(aes(color = comp_2yrs, linetype = treatment), linewidth = 0.5) +
         scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5)) +
         scale_linetype_manual(values = c("continual" = 1, "control" = 2))
     }
@@ -813,9 +825,12 @@ resid_plot_fxn <- function(lm) {
 
 raw_biomass_plot_theme <- function() {
     theme_bw() +
-    theme(axis.title = element_text(size = 8),
+    theme(text = element_text(family = "Times New Roman"),
+          axis.title = element_text(size = 8),
           plot.title = element_text(size = 8),
           axis.text = element_text(size = 7),
+          strip.text = element_text(size = 8, hjust = 0),
+          strip.background = element_rect(fill = "#FFFFFF", color = "#FFFFFF"),
           legend.text = element_text(size = 7),
           legend.position = "none",
           panel.grid.minor = element_line(color = "#FFFFFF")) 
