@@ -10,7 +10,8 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
     ├── code/                        # all analysis code
     │   └── 00-set_up.R                                     
     │   └── 01a-kelp_recovery.R                             
-    │   └── 01b-kelp_BACIPS                                  
+    │   └── 01b-kelp_BACIPS.R
+    │   └── 01c-kelp_recovery_control.R
     │   └── 02a-community_recovery.R                        
     |   └── 02b-community_composition.R 
     |   └── 03a-algae_epi_kelp.R   
