@@ -1,6 +1,6 @@
 # Kelp recovery
 
-**last updated: 2023-02-15**  
+**last updated: 2023-03-22**  
 
 This is a repository for analyzing kelp and kelp-associated community recovery dynamics from the long term kelp removal experiment in the Santa Barbara Coastal Long Term Ecological Research (SBC LTER) network. All data are from the [SBC LTER Data Catalog](https://sbclter.msi.ucsb.edu/data/catalog/).
 
