@@ -10,8 +10,6 @@ library(janitor)
 library(lubridate)
 library(patchwork)
 library(cowplot)
-library(calecopal)
-library(PNWColors)
 library(ggrepel)
 library(plotly)
 library(fuzzyjoin)
@@ -29,7 +27,6 @@ library(vegan)
 library(vegclust)
 library(ecotraj)
 library(FD)
-# library(BiodiversityR)
 library(minpack.lm) # Fitting non-linear models
 library(nls2) # Fitting non-linear models
 library(AICcmodavg) # calculate second order AIC (AICc)
@@ -577,12 +574,12 @@ site_quality <- tribble(
 # 7.  plot aesthetics -----------------------------------------------------
 
 # ⟞ a. site colors and shapes --------------------------------------------
-
-aque_col <- '#0f85a0'
-napl_col <- '#dd4124'
-ivee_col <- '#ed8b00'
-mohk_col <- '#edd746'
-carp_col <- '#00496f'
+          
+aque_col <- '#D46F10'
+napl_col <- '#4CA49E'
+ivee_col <- '#69B9FA'
+mohk_col <- '#6B6D9F'
+carp_col <- '#4B8FF7'
 
 color_palette_site <- c("aque" = aque_col, 
                         "napl" = napl_col, 
@@ -690,7 +687,7 @@ sites_continual_full <- setNames(c("Arroyo Quemado",
                          "mohk",
                          "carp"))
 
-# ⟞ X. delta timeseries ---------------------------------------------------
+# ⟞ f. delta timeseries ---------------------------------------------------
 
 delta_timeseries_theme <- function(group) {
   if(group == "algae") {
@@ -715,7 +712,7 @@ delta_timeseries_theme <- function(group) {
           plot.title.position = "plot") 
 }
 
-# ⟞ f. ordinations --------------------------------------------------------
+# ⟞ g. ordinations --------------------------------------------------------
 
 nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
   
@@ -810,7 +807,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
          fill = "Time period")
 }
 
-# ⟞ g. model residuals in ggplot ------------------------------------------
+# ⟞ h. model residuals in ggplot ------------------------------------------
 
 # function
 
@@ -821,12 +818,11 @@ resid_plot_fxn <- function(lm) {
     geom_smooth(aes(x = fitted(lm), y = resid(lm)))
 }
 
-# ⟞ h. raw biomass plots --------------------------------------------------
+# ⟞ i. raw biomass plots --------------------------------------------------
 
 raw_biomass_plot_theme <- function() {
     theme_bw() +
-    theme(text = element_text(family = "Times New Roman"),
-          axis.title = element_text(size = 8),
+    theme(axis.title = element_text(size = 8),
           plot.title = element_text(size = 8),
           axis.text = element_text(size = 7),
           strip.text = element_text(size = 8, hjust = 0),
@@ -835,7 +831,44 @@ raw_biomass_plot_theme <- function() {
           legend.position = "none",
           panel.grid.minor = element_line(color = "#FFFFFF")) 
 }
-  
 
+# ⟞ j. arrow plots --------------------------------------------------------
+
+arrow_plot_fxn <- function(site) {
+  
+  if(site == "aque") {
+    col <- aque_col
+  } else if(site == "napl") {
+    col <- napl_col
+  } else if(site == "mohk") {
+    col <- mohk_col
+  } else if(site == "carp") {
+    col <- carp_col
+  } else {
+    warning("Check your arguments! You may have specified the wrong site.")
+    return(NA)
+  }
+  
+  delta_continual %>% 
+    filter(site == {{ site }} & exp_dates == "after") %>% 
+    ggplot() +
+    geom_abline(slope = 1, lty = 2) +
+    geom_segment(
+      aes(x = control, y = continual,
+          xend = c(tail(control, n = -1), NA),
+          yend = c(tail(continual, n = -1), NA)),
+      color = col,
+      arrow = arrow(length = unit(0.1, "cm"))
+    ) +
+    scale_x_continuous(limits = c(0, 1600)) +
+    scale_y_continuous(limits = c(0, 2000)) +
+    theme_bw() +
+    theme(axis.title = element_blank(),
+          plot.title = element_text(size = 8),
+          plot.title.position = "plot",
+          axis.text = element_text(size = 7),
+          panel.grid.minor = element_line(color = "#FFFFFF")) 
+
+}
 
 
