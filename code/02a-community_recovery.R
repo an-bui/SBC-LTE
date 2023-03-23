@@ -55,7 +55,8 @@ delta_algae_continual <- delta_algae_biomass %>%
   full_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID") %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria"))
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
 
 # ⟞ b. epilithic invertebrates -------------------------------------------
 
@@ -103,7 +104,8 @@ delta_epi_continual <- delta_epi_biomass %>%
   full_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID") %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria"))
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
 
 # ⟞ c. endolithic invertebrates ------------------------------------------
 
@@ -149,7 +151,8 @@ delta_endo_continual <- delta_endo_biomass %>%
   full_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID") %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria"))
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
 
 ##########################################################################-
 # 2. timeseries plots -----------------------------------------------------
@@ -870,9 +873,9 @@ lm_summary_tables <- tbl_stack(
 # tbl_stack(
 #   tbls = list(lm_kelp_tables, lm_algae_tables, lm_epi_tables, lm_endo_tables),
 #   group_header = c("Kelp", "Understory macroalgae", "Epilithic invertebrates", "Endolithic invertebrates"),
-#   quiet = TRUE) %>% 
+#   quiet = TRUE) %>%
 #   as_gt() %>%
-#   tab_options(table.font.names = "Times New Roman") %>% 
+#   tab_options(table.font.names = "Times New Roman") %>%
 #   gtsave(here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".png", sep = "")),
 #          vwidth = 1500, vheight = 1000)
 
@@ -924,11 +927,6 @@ sda_together_tables <- cbind(sda_2yrs_tables, sda_3yrs_tables) %>%
     t_value_3yrs1 = "t-value", 
     pr_t_3yrs1 = "p-value",
   ) %>% 
-  # increase spacing between cells
-  tab_style(
-    style = "padding-left:15px;padding-right:15px;",
-    locations = cells_body()
-  ) %>% 
   # align columns
   cols_align(columns = everything(),
              align = "center") %>% 
@@ -956,11 +954,10 @@ sda_together_tables <- cbind(sda_2yrs_tables, sda_3yrs_tables) %>%
     locations = cells_row_groups()
   ) %>% 
   tab_options(table.font.names = "Times New Roman") 
-sda_together_tables
 
-gtsave(sda_together_tables,
-       here::here("tables", "ms-tables", paste("tbl-S3_", today(), ".png", sep = "")),
-       vwidth = 1500, vheight = 1000)
+# gtsave(sda_together_tables,
+#        here::here("tables", "ms-tables", paste("tbl-S3_", today(), ".docx", sep = "")),
+#        vwidth = 1500, vheight = 1000)
 
 ##########################################################################-
 # 6. manuscript figures ---------------------------------------------------
@@ -1000,7 +997,6 @@ endo <- plot_grid(endo_label, bottom, ncol = 1, rel_heights = c(1, 12))
 # putting plots together
 algae_epi <- plot_grid(algae, epi, ncol = 1)
 sda_time_together <- plot_grid(algae_epi, endo, ncol = 1, rel_heights = c(2, 1))
-sda_time_together
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-2_", today(), ".jpg", sep = "")),
@@ -1027,7 +1023,6 @@ sda_time_together
 #        plot = delta_continual_sites_endo_raw,
 #        height = 8, width = 16, units = "cm",
 #        dpi = 300)
-
 
 # ⟞ c. s-d-a with 3 year comparison ---------------------------------------
 
