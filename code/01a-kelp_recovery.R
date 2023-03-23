@@ -64,6 +64,7 @@ delta_continual <- biomass %>%
   time_since_columns_continual() %>% 
   kelp_year_column() %>% 
   comparison_column_continual() %>% 
+  left_join(., site_quality, by = "site") %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
   mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
@@ -452,7 +453,7 @@ MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1, lm_kelp_recovery_lm
 # all sites
 predicted_kelp_after_overall <- ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end", type = "fixed")
 # predicted line crosses 0 at 4.0
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.9:4.1 by = 0.01]", type = "fixed")
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.9:4.0 by = 0.01]", type = "fixed")
 # upper bound crosses 0 at 2.6
 ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [2.4:2.7 by = 0.001]", type = "fixed")
 # lower bound crosses 0 at 6.5
@@ -460,40 +461,24 @@ ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [6.4:6.5 by = 0.001]", 
 
 # aque: 3.8 years
 predicted_kelp_after_aque <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
-plot(predicted_kelp_after_aque)
 # predicted time to recovery: 3.8 years
 ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.7:3.8 by = 0.001]", type = "random", condition = c(site = "aque")) 
-# upper bound crosses 0 at -3.5 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [-3.5:-3.4 by = 0.001]", type = "random", condition = c(site = "aque"))
-# lower bound crosses 0 at 12.0 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [12.0:12.1 by = 0.001]", type = "random", condition = c(site = "aque"))
 
 # napl: 3.4 years
 predicted_kelp_after_napl <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "napl"))
 # predicted time to recovery: 3.4 years
 ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.3:3.5 by = 0.001]", type = "random", condition = c(site = "napl"))
-# PI: -3.8 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [-3.9:-3.8 by = 0.001]", type = "random", condition = c(site = "napl"))
-# PI: 11.5 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [11.4:11.5 by = 0.001]", type = "random", condition = c(site = "napl"))
 
 # mohk: 5.4 years
 predicted_kelp_after_mohk <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "mohk"))
 # predicted time to recovery: 5.4 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [4.9:5.1 by = 0.01]", type = "random", condition = c(site = "mohk"))
-# PI: -1.8 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [-1.9:-1.8 by = 0.01]", type = "random", condition = c(site = "mohk"))
-# PI: 14 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [13.9:14 by = 0.01]", type = "random", condition = c(site = "mohk"))
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [5.3:5.5 by = 0.01]", type = "random", condition = c(site = "mohk"))
 
-# carp: 4 years
+# carp: 3.3 years
 predicted_kelp_after_carp <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
-# predicted time to recovery: 4.0 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.9:4.1 by = 0.01]", type = "random", condition = c(site = "carp"))
-# PI: -3.0 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [-3.1:-3 by = 0.01]", type = "random", condition = c(site = "carp"))
-# PI: 12.4 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [12.4:12.5 by = 0.01]", type = "random", condition = c(site = "carp"))
+# predicted time to recovery: 3.3 years
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.3:3.4 by = 0.01]", type = "random", condition = c(site = "carp"))
+
 
 # ⟞ c. figures -------------------------------------------------------------
 
