@@ -98,6 +98,23 @@ kelp_recovery_nocarp_overall_plot
 # 3. model of control biomass in post-removal period ----------------------
 ##########################################################################-
 
+lm_kelp_control <- lmerTest::lmer(
+  control ~ year + (1|site) + (1|quarter),
+  data = delta_continual,
+  na.action = na.pass
+)
+
+check_model(lm_kelp_control)
+plot(DHARMa::simulateResiduals(lm_kelp_control))
+check_convergence(lm_kelp_control)
+summary(lm_kelp_control)
+ggpredict(lm_kelp_control, terms = ~year, type = "fixed") %>% 
+  plot() +
+  geom_point(data = delta_continual, aes(x = year, y = control))
+
+ggplot(data = delta_continual, aes(x = year, y = continual)) +
+  geom_point()
+
 lm_kelp_control_during1 <- lmerTest::lmer(
   control ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "during"),
