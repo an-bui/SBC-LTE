@@ -233,6 +233,16 @@ lm_kelp_during_tf <- glmer(
   family = Gamma(link = "inverse"),
   na.action = na.pass
 )
+lm_kelp_during_tf <- glmmTMB::glmmTMB(
+  delta_continual_tf ~ time_since_end + (1|site),
+  data = transform, 
+  na.action = na.pass,
+  family = "Gamma") 
+lm_kelp_during_tf_season <- glmmTMB::glmmTMB(
+  delta_continual_tf ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+  data = transform, 
+  na.action = na.pass,
+  family = Gamma) 
 
 
 df <- delta_continual %>% 
