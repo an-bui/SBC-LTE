@@ -33,10 +33,11 @@ library(AICcmodavg) # calculate second order AIC (AICc)
 library(MuMIn)
 library(boot)
 library(lmerTest) # also loads `lme4`
-# library(glmmTMB)
+library(glmmTMB) # as of 2023-04-28 got this to work, thank Christ never update R
 library(nlme)
 library(DHARMa)
 library(performance)
+library(ggeffects)
 library(emmeans)
 library(gtsummary)
 
