@@ -12,8 +12,7 @@ source(here::here("code", "02a-community_recovery.R"))
 # ⟞ a. continual removal communities --------------------------------------
 
 comm_df <- biomass %>% 
-  new_group_column() %>% 
-  # select columns of interest
+  # select columns of interest 
   dplyr::select(site, year, month, treatment, date, new_group, sp_code, dry_gm2) %>% 
   exp_dates_column_continual() %>% 
   time_since_columns_continual() %>% 
@@ -46,6 +45,69 @@ comm_meta_control <- comm_meta %>%
   filter(treatment == "control") %>% 
   # weird point?
   filter(sample_ID != "mohk_control_2020-08-12") 
+
+# making a nested data frame
+comm_df_nested <- comm_df %>% 
+  # take out giant kelp
+  filter(sp_code != "MAPY") %>% 
+  # create nested columns
+  nest(data = everything(), .by = new_group) %>% 
+  # get data into community matrix format
+  mutate(comm_mat = map(data, 
+                        ~ # select columns of interest
+                          select(.x, sample_ID, sp_code, dry_gm2) %>% 
+                          # get into wide format for community analysis
+                          pivot_wider(names_from = sp_code, values_from = dry_gm2) %>% 
+                          # make the sample_ID column row names
+                          column_to_rownames("sample_ID") %>% 
+                          replace(is.na(.), 0))) %>% 
+  # get metadata
+  mutate(comm_meta = map(data, 
+                         ~ select(.x, sample_ID, site, date, year, month, treatment,
+                                  exp_dates, quarter, time_yrs, time_since_start,
+                                  time_since_end, kelp_year, comp_2yrs, comp_3yrs,
+                                  quality, site_full) %>% 
+                           unique()
+                         )) %>% 
+  # find species that do occur (exclude species that never occur)
+  mutate(keepspp = map(comm_mat, 
+                       ~ colSums(.x, na.rm = FALSE) %>% 
+                         enframe() %>% 
+                         filter(value > 0) %>% 
+                         pull(name))) %>% 
+  # find surveys where there was actually something there
+  mutate(keepsurveys = map(comm_mat,
+                           ~ rowSums(.x, na.rm = FALSE) %>% 
+                             enframe() %>% 
+                             filter(value > 0) %>% 
+                             pull(name))) %>% 
+  # only retain species that do occur
+  mutate(comm_mat_step1 = map2(comm_mat, keepspp,
+                                 ~ select(.x, .y))) %>% 
+  # only retain surveys where there was something there
+  mutate(comm_mat_filtered = map2(comm_mat_step1, keepsurveys,
+                                  ~ rownames_to_column(.x, "surveys") %>% 
+                                    filter(surveys %in% .y) %>% 
+                                    column_to_rownames("surveys"))) %>% 
+  # filter metadata
+  mutate(comm_meta_filtered = map2(comm_meta, comm_mat_filtered, 
+                           ~ filter(.x, sample_ID %in% rownames(.y))))
+
+
+comm_analyses <- comm_df_nested %>% 
+  select(new_group, comm_mat_filtered, comm_meta_filtered) %>% 
+  # bray-curtis: will get a warning for fish and endolithic inverts
+  mutate(nmds_bray = map(comm_mat_filtered, 
+                         ~ metaMDS(.x, "bray"))) %>% 
+  # mutate(nmds_bray_plot = map(nmds_bray,
+  #                             ~ plot(.x))) %>% 
+  # # jaccard
+  # mutate(nmds_jacc = map(comm_mat_filtered,
+  #                         ~ metaMDS(.x, "jacc"))) %>% 
+  # mutate(nmds_jacc_plot = map(nmds_jacc,
+  #                             ~ plot(.x))) %>% 
+  mutate(simper = map2(comm_mat_filtered, comm_meta_filtered,
+                      ~ simper(.x, .y$treatment)))
 
 # ⟞ b. widening function --------------------------------------------------
 
