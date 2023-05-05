@@ -147,16 +147,35 @@ delta_continual_sites_raw
 
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
 
+delta_hist <- delta_continual %>% 
+  filter(exp_dates == "during") %>% 
+  ggplot(aes(x = delta_continual)) +
+  geom_histogram(bins = 10)
+delta_hist
+
 # model
 # normal model
 lm_kelp_during_lmer <- lmerTest::lmer(
   delta_continual ~ time_since_end + (1|site),
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
+# normal model using glmmTMB with tweedie structure
+lm_kelp_during_tweedie <- glmmTMB(
+  delta_continual ~ time_since_end + (1|site),
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  family = tweedie(),
+  na.action = na.pass, 
+  REML = TRUE)
 # normal model with season
 lm_kelp_during_season <- lmerTest::lmer(
   delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
   data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass)
+# normal model with season using glmmTM with tweedie structure
+lm_kelp_during_season_tweedie <- glmmTMB(
+  delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  family = tweedie(),
   na.action = na.pass)
 # normal model with season as random effect (failed to converge)
 lm_kelp_during_season_re <- lmerTest::lmer(
@@ -205,12 +224,25 @@ lm_kelp_during_lme_ar4 <- nlme::lme(
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass,
   correlation = corARMA(p = 4, q = 0)) 
+# with season no autoregressive
+lm_kelp_during_glmmtmb_season <- glmmTMB(
+  delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  family = tweedie(),
+  na.action = na.pass) 
+
 # ARMA 4 with season
 lm_kelp_during_lme_ar4_season <- nlme::lme(
   delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
   data = delta_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass,
   correlation = corARMA(p = 4, q = 0)) 
+# with season
+lm_kelp_during_glmmTMB_season <- glmmTMB(
+  delta_continual ~ quarter + ar1(time_since_end + 0 |site),
+  data = delta_continual %>% filter(exp_dates == "during") %>% mutate(time_since_end = as_factor(time_since_end)), 
+  family = tweedie(),
+  na.action = na.pass) 
 # ARMA 4 with season as random effect
 lm_kelp_during_lme_ar4_season_re <- nlme::lme(
   delta_continual ~ time_since_end, random = list(site = ~1, quarter = ~1),
@@ -227,22 +259,24 @@ lm_kelp_during_gls_car1 <- nlme::gls(
 transform <- delta_continual %>% 
   mutate(delta_continual_tf = delta_continual*-1 + 8) %>% 
   filter(exp_dates == "during")
-lm_kelp_during_tf <- glmer(
+ggplot(transform, aes(x = delta_continual_tf)) +
+  geom_histogram(bins = 10)
+lm_kelp_during_tf_gamma <- glmmTMB::glmmTMB(
   delta_continual_tf ~ time_since_end + (1|site),
   data = transform,
-  family = Gamma(link = "inverse"),
-  na.action = na.pass
-)
-lm_kelp_during_tf <- glmmTMB::glmmTMB(
+  na.action = na.pass,
+  family = Gamma(link = "log"))
+lm_kelp_during_tf_tweedie <- glmmTMB::glmmTMB(
   delta_continual_tf ~ time_since_end + (1|site),
   data = transform, 
   na.action = na.pass,
-  family = "Gamma") 
-lm_kelp_during_tf_season <- glmmTMB::glmmTMB(
-  delta_continual_tf ~ time_since_end + quarter + time_since_end*quarter + (1|site),
-  data = transform, 
-  na.action = na.pass,
-  family = Gamma) 
+  family = tweedie(link = "log")) 
+# lm_kelp_during_tf_season <- glmmTMB::glmmTMB(
+#   delta_continual_tf ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+#   data = transform, 
+#   na.action = na.pass,
+#   family = Gamma(link = "inverse"),
+#   start = list(psi = c(-1, 1))) 
 
 
 df <- delta_continual %>% 
@@ -365,7 +399,7 @@ MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_season, lm_kelp_during_season_re
             lm_kelp_during_lme_car1, lm_kelp_during_lme_car1_season, lm_kelp_during_lme_car1_season_re,
             lm_kelp_during_lme_ar1, lm_kelp_during_lme_ar1_season, lm_kelp_during_lme_ar1_season_re,
             lm_kelp_during_lme_ar4, lm_kelp_during_lme_ar4_season, lm_kelp_during_lme_ar4_season_re,
-            lm_kelp_during_gls_car1) %>% 
+            lm_kelp_during_gls_car1, lm_kelp_during_tweedie, lm_kelp_during_season_tweedie) %>% 
   arrange(AICc)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
