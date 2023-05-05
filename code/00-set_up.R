@@ -416,7 +416,9 @@ difflsmeans_summary_fxn <- function(anova.obj) {
 
 guilds <- read_csv(here::here("code", "resources", "castorani", "LTE_guild_data.csv")) %>% 
   mutate(sp.code = replace_na(sp.code, "Nandersoniana")) %>% 
-  rename("new_group" = biomass.guild)
+  rename("new_group" = biomass.guild) %>% 
+  # for whatever reason Yellowtail Rockfish are not in the guild csv
+  add_row(sp.code = "SFLA", new_group = "fish", diversity.guild = "fish")
 
 
 # ⟞ b. LTE all species biomass --------------------------------------------
