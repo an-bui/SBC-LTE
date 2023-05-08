@@ -620,14 +620,14 @@ lm_algae_recovery_summary
 
 predicted_algae_recovery <- ggpredict(lm_algae_recovery_lmer, terms = ~time_since_end, type = "fixed")
 
-# algae decreases to control in 4.7 years on average
-ggpredict(lm_algae_recovery_lmer, terms = "time_since_end [4.6:4.7 by = 0.001]", type = "fixed")
+# algae decreases to control in 5.3 years on average
+ggpredict(lm_algae_recovery_lmer, terms = "time_since_end [5:6 by = 0.001]", type = "fixed")
 
-# lower bound of 95% conf int: 2.6 years
-ggpredict(lm_algae_recovery_lmer, terms = "time_since_end [2.6:2.7 by = 0.001]", type = "fixed")
+# lower bound of 95% conf int: 3.4 years
+ggpredict(lm_algae_recovery_lmer, terms = "time_since_end [3:3.5 by = 0.001]", type = "fixed")
 
-# upper bound of 95% conf int: 7.7 years
-ggpredict(lm_algae_recovery_lmer, terms = "time_since_end [7.6:7.7 by = 0.001]", type = "fixed")
+# upper bound of 95% conf int: 7.9 years
+ggpredict(lm_algae_recovery_lmer, terms = "time_since_end [7.5:8 by = 0.001]", type = "fixed")
 
 # ⟞ c. figure ------------------------------------------------------------
 
@@ -739,6 +739,8 @@ epi_time <- ggplot() +
   # geom_ribbon(data = predicted_epi_after, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   geom_line(data = predicted_epi_during, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
   geom_ribbon(data = predicted_epi_during, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
+  geom_line(data = predicted_epi_recovery, aes(x = x, y = predicted), linewidth = 1, alpha = 0.7) +
+  geom_ribbon(data = predicted_epi_recovery, aes(x = x, ymax = conf.high, ymin = conf.low), alpha = 0.2) +
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
   # scale_y_continuous(breaks = seq(-250, 750, by = 250), limits = c(-250, 750)) +
   delta_timeseries_theme("epi") +

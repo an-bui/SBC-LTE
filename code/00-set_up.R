@@ -21,6 +21,7 @@ library(ggnewscale)
 library(scales)
 library(ggpubr)
 library(webshot2)
+library(flextable)
 
 # analysis
 library(vegan)
@@ -423,7 +424,7 @@ guilds <- read_csv(here::here("code", "resources", "castorani", "LTE_guild_data.
 
 # ⟞ b. LTE all species biomass --------------------------------------------
 
-biomass <- read_csv(here::here("data", "all-species-biomass", "LTE_All_Species_Biomass_at_transect_20220314.csv")) %>% 
+biomass <- read_csv(here::here("data", "all-species-biomass", "LTE_All_Species_Biomass_at_transect_20230323.csv")) %>% 
   clean_names() %>% 
   # ANOB is incorrectly coded as having "SESSILE" mobility
   mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 

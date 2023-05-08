@@ -496,32 +496,32 @@ MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1, lm_kelp_recovery_lm
 
 # all sites
 predicted_kelp_after_overall <- ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end", type = "fixed")
-# predicted line crosses 0 at 4.0
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.9:4.0 by = 0.01]", type = "fixed")
-# upper bound crosses 0 at 2.6
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [2.4:2.7 by = 0.001]", type = "fixed")
-# lower bound crosses 0 at 6.5
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [6.4:6.5 by = 0.001]", type = "fixed")
+# predicted line crosses 0 at 4.6
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [4:5 by = 0.01]", type = "fixed")
+# upper bound crosses 0 at 3.1
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3:4 by = 0.01]", type = "fixed")
+# lower bound crosses 0 at 6.8
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [6.7:7 by = 0.001]", type = "fixed")
 
-# aque: 3.8 years
+# aque: 4.2 years
 predicted_kelp_after_aque <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "aque"))
-# predicted time to recovery: 3.8 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.7:3.8 by = 0.001]", type = "random", condition = c(site = "aque")) 
+# predicted time to recovery: 4.2 years
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [4:5 by = 0.001]", type = "random", condition = c(site = "aque")) 
 
-# napl: 3.4 years
+# napl: 4.1 years
 predicted_kelp_after_napl <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "napl"))
-# predicted time to recovery: 3.4 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.3:3.5 by = 0.001]", type = "random", condition = c(site = "napl"))
+# predicted time to recovery: 4.1 years
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [4:5 by = 0.001]", type = "random", condition = c(site = "napl"))
 
-# mohk: 5.4 years
+# mohk: 5.9 years
 predicted_kelp_after_mohk <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "mohk"))
-# predicted time to recovery: 5.4 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [5.3:5.5 by = 0.01]", type = "random", condition = c(site = "mohk"))
+# predicted time to recovery: 5.9 years
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [5.5:6.5 by = 0.01]", type = "random", condition = c(site = "mohk"))
 
-# carp: 3.3 years
+# carp: 3.9 years
 predicted_kelp_after_carp <- ggpredict(lm_kelp_recovery_lmer, terms = ~ time_since_end, type = "random", condition = c(site = "carp"))
-# predicted time to recovery: 3.3 years
-ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.3:3.4 by = 0.01]", type = "random", condition = c(site = "carp"))
+# predicted time to recovery: 3.9 years
+ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.5:4 by = 0.01]", type = "random", condition = c(site = "carp"))
 
 
 # ⟞ c. figures -------------------------------------------------------------
@@ -685,13 +685,13 @@ lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery
 #   plot_layout(widths = c(2, 2.1)) +
 #   plot_annotation(tag_levels = "a", tag_suffix = ")") &
 #   theme(plot.tag = element_text(size = 12))
-
+# 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S4_", today(), ".jpg", sep = "")),
 #        plot = rec_time_plot,
 #        height = 8, width = 12, units = "cm",
 #        dpi = 300)
-
+# 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S4_panels_", today(), ".jpg", sep = "")),
 #        plot = s4_panels,
