@@ -107,7 +107,20 @@ comm_analyses <- comm_df_nested %>%
   # mutate(nmds_jacc_plot = map(nmds_jacc,
   #                             ~ plot(.x))) %>% 
   mutate(simper = map2(comm_mat_filtered, comm_meta_filtered,
-                      ~ simper(.x, .y$treatment)))
+                      ~ simper(.x, .y$treatment, ordered = TRUE)))
+
+# putting in separate df because it takes a while
+simper_analysis <- comm_analyses %>% 
+  # create a vector of species identified as important in SIMPER analyses
+  mutate(simper_spp = map(simper, 
+                          ~ .x$control_continual$cusum %>% 
+                            enframe() %>% 
+                            head(10) %>% 
+                            pull(name))) %>% 
+  mutate(simper_spp_info = map(simper_spp,
+                               ~ spp_names %>% 
+                                 filter(sp_code %in% .x)))
+
 
 # ⟞ b. widening function --------------------------------------------------
 
@@ -154,16 +167,16 @@ comm_mat_control_algae <- comm_df %>%
 
 comm_mat_epi <- comm_df %>% 
   # eplithic inverts only
-  filter(new_group == "epi_inverts") %>% 
+  filter(new_group == "epilithic.sessile.invert") %>% 
   widen()
 
 comm_mat_continual_epi <- comm_df %>% 
-  filter(new_group == "epi_inverts") %>% 
+  filter(new_group == "epilithic.sessile.invert") %>% 
   filter(sample_ID %in% comm_meta_continual$sample_ID) %>% 
   widen()
 
 comm_mat_control_epi <- comm_df %>% 
-  filter(new_group == "epi_inverts") %>% 
+  filter(new_group == "epilithic.sessile.invert") %>% 
   filter(sample_ID %in% comm_meta_control$sample_ID) %>% 
   widen()
 
@@ -191,10 +204,14 @@ simper_algae <- simper(comm_mat_algae, comm_meta_algae$treatment)
 summary(simper_algae)
 
 # permanova
-algae_pt_perma_2yrs <- adonis2(comm_mat_algae ~ treatment*comp_2yrs, data = comm_meta)
+algae_pt_perma_2yrs <- adonis2(comm_mat_algae ~ treatment*comp_2yrs, 
+                               data = comm_meta,
+                               strata = comm_meta$site)
 algae_pt_perma_2yrs
 
-algae_pt_perma_3yrs <- adonis2(comm_mat_algae ~ treatment*comp_3yrs, data = comm_meta)
+algae_pt_perma_3yrs <- adonis2(comm_mat_algae ~ treatment*comp_3yrs, 
+                               data = comm_meta,
+                               strata = comm_meta$site)
 algae_pt_perma_3yrs # same as 2 yrs
 
 # beta dispersion
@@ -316,10 +333,14 @@ simper_epi <- simper(comm_mat_epi, comm_meta$treatment)
 summary(simper_epi)
 
 # permanova
-epi_pt_perma_2yrs <- adonis2(comm_mat_epi ~ treatment*comp_2yrs, data = comm_meta)
+epi_pt_perma_2yrs <- adonis2(comm_mat_epi ~ treatment*comp_2yrs, 
+                             data = comm_meta,
+                             strata = comm_meta$site)
 epi_pt_perma_2yrs
 
-epi_pt_perma_3yrs <- adonis2(comm_mat_epi ~ treatment*comp_3yrs, data = comm_meta)
+epi_pt_perma_3yrs <- adonis2(comm_mat_epi ~ treatment*comp_3yrs,
+                             data = comm_meta,
+                             strata = comm_meta$site)
 epi_pt_perma_3yrs # same as 2 years
 
 # beta dispersion
