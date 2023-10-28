@@ -356,13 +356,22 @@ comparison_column_annual <- function(df) {
 
 comparison_column_continual <- function(df) {
   df %>% 
+    # create a column for the points to compare for "1 year interval"
+    mutate(comp_1yr = case_when(
+      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011") ~ "start",
+      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016") ~ "during", 
+      site == "ivee" & kelp_year %in% c("kelp_2011-2012") ~ "start",
+      site == "ivee" & kelp_year %in% c("kelp_2015-2016") ~ "during",
+      kelp_year %in% c("kelp_2022-2023") ~ "after"
+    )) %>% 
+    mutate(comp_1yr = fct_relevel(comp_1yr, "start", "during", "after")) %>% 
     # create a column for the points to compare for "2 year interval"
     mutate(comp_2yrs = case_when(
       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
       site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
       site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
-      kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+      kelp_year %in% c("kelp_2021-2022", "kelp_2022-2023") ~ "after"
     )) %>% 
     mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
     # create a column for the points to compare for "3 year interval"
@@ -371,7 +380,7 @@ comparison_column_continual <- function(df) {
       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
       site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
       site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
-      kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+      kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022", "kelp_2022-2023") ~ "after"
     )) %>% 
     mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
     # create a new sample ID that is site, date, quarter
@@ -393,6 +402,7 @@ anova_summary_fxn <- function(adonis2.obj) {
     mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
     # replace comp_.yrs with time period
     mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
+    mutate(variables = str_replace(variables, "comp_.yr", "time period")) %>% 
     # make object name column
     mutate(model = name) 
 }
@@ -641,9 +651,9 @@ shape_palette <- c("annual" = annual_shape,
 
 # ⟞ d. start-during-after -------------------------------------------------
 
-start_col <- "#FFBF00"
-during_col <- "#54662C"
-after_col <- "#114C54"
+start_col <- "#BE5A47"
+during_col <- "#604A76"
+after_col <- "#84A6A2"
   
 sda_biomass_theme <- function() {
     theme_bw() +
@@ -742,48 +752,48 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
   if(treatment == "continual"){
     point_aesthetics <- function() {
       df %>% 
-        mutate(comp_2yrs = recode(comp_2yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
+        mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
         ggplot(aes(x = NMDS1, y = NMDS2)) +
         coord_fixed() +
         geom_vline(xintercept = 0, color = "grey", lty = 2) +
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = site_full, fill = comp_2yrs), size = 1, alpha = 0.9) +
+        geom_point(aes(shape = site_full, fill = comp_3yrs), size = 1, alpha = 0.9) +
         # ellipse
-        stat_ellipse(aes(color = comp_2yrs), linewidth = 0.5, linetype = treatment_linetype) +
-        # arrows for species from SIMPER
-        geom_text_repel(data = simper_spp, 
-                        aes(x = NMDS1, y = NMDS2, 
-                            label = stringr::str_wrap(scientific_name, 4, width = 40)),
-                        color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 2) +
-        geom_segment(data = simper_spp,
-                     aes(x = 0, y = 0,
-                         xend = NMDS1, yend = NMDS2),
-                     arrow = arrow(length = unit(0.1, "cm")), 
-                     color = "#C70000", linewidth = 0.5) 
+        stat_ellipse(aes(color = comp_3yrs), linewidth = 0.5, linetype = treatment_linetype) 
+        # # arrows for species from SIMPER
+        # geom_text_repel(data = simper_spp, 
+        #                 aes(x = NMDS1, y = NMDS2, 
+        #                     label = stringr::str_wrap(scientific_name, 4, width = 40)),
+        #                 color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 2) +
+        # geom_segment(data = simper_spp,
+        #              aes(x = 0, y = 0,
+        #                  xend = NMDS1, yend = NMDS2),
+        #              arrow = arrow(length = unit(0.1, "cm")), 
+        #              color = "#C70000", linewidth = 0.5) 
     }
   } else if(treatment == "control") {
     point_aesthetics <- function() {
       df %>% 
-        mutate(comp_2yrs = recode(comp_2yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
+        mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
         ggplot(aes(x = NMDS1, y = NMDS2)) +
         coord_fixed() +
         geom_vline(xintercept = 0, color = "grey", lty = 2) +
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = site_full, fill = comp_2yrs), size = 1, alpha = 0.9) +
+        geom_point(aes(shape = site_full, fill = comp_3yrs), size = 1, alpha = 0.9) +
         # ellipse
-        stat_ellipse(aes(color = comp_2yrs), linewidth = 0.5, linetype = treatment_linetype) 
+        stat_ellipse(aes(color = comp_3yrs), linewidth = 0.5, linetype = treatment_linetype) 
     }
   } else if(treatment == "both") {
     point_aesthetics <- function() {
       df %>% 
-        mutate(comp_2yrs = recode(comp_2yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
+        mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
         ggplot(aes(x = NMDS1, y = NMDS2)) +
         coord_fixed() +
         geom_vline(xintercept = 0, color = "grey", lty = 2) +
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = site_full, fill = comp_2yrs, alpha = treatment), size = 1) +
+        geom_point(aes(shape = site_full, fill = comp_3yrs, alpha = treatment), size = 1) +
         # ellipse
-        stat_ellipse(aes(color = comp_2yrs, linetype = treatment), linewidth = 0.5) +
+        stat_ellipse(aes(color = comp_3yrs, linetype = treatment), linewidth = 0.5) +
         scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5)) +
         scale_linetype_manual(values = c("continual" = 1, "control" = 2))
     }
