@@ -419,7 +419,7 @@ model_selection_summary_table_v2 <- cbind(
   ) %>% 
   as.data.frame() %>% 
   as_grouped_data(groups = c("site")) %>% 
-  as_flextable(hide_grouplabel = TRUE) %>% 
+  flextable::as_flextable(hide_grouplabel = TRUE) %>% 
   set_header_labels(model = "Model",
                     deg.free = "Degrees of freedom",
                     aic.val = "AIC",
