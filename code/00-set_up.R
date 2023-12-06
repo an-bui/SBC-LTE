@@ -637,8 +637,8 @@ site_raw_biomass_theme <- function() {
 # ⟞ b. treatment colors and shapes ----------------------------------------
 
 color_palette <- c("annual" = annual_col, 
-                   "continual" = continual_col, 
-                   "control" = control_col)
+                   "continual" = removal_col, 
+                   "control" = reference_col)
 
 annual_shape <- 19
 continual_shape <- 17
