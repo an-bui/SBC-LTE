@@ -845,9 +845,9 @@ all_plots <- plot_grid(algae_labelled, epi_labelled, ncol = 2,
 final_plot <- plot_grid(all_plots, legend, ncol = 2, rel_widths = c(1, 0.3))
 
 # saving
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-3_", today(), ".jpg", sep = "")),
-       plot = final_plot,
-       height = 13, width = 15, units = "cm",
-       dpi = 300)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-3_", today(), ".jpg", sep = "")),
+#        plot = final_plot,
+#        height = 13, width = 15, units = "cm",
+#        dpi = 300)
 
