@@ -664,8 +664,15 @@ lm_algae_during_lmer <- lmer(
   data = delta_algae_continual %>% filter(exp_dates == "during"), 
   na.action = na.pass)
 
-lm_raw_algae_during_zigamma <- glmmTMB(
+lm_raw_algae_during_zigamma_01 <- glmmTMB(
   algae_biomass ~ time_since_end*treatment + (1|site), 
+  data = algae_continual_long %>% filter(exp_dates == "during"), 
+  na.action = na.pass,
+  family = ziGamma(link = "log"),
+  ziformula = ~1)
+
+lm_raw_algae_during_zigamma_02 <- glmmTMB(
+  algae_biomass ~ time_since_end*treatment + (1|site) + (1|year), 
   data = algae_continual_long %>% filter(exp_dates == "during"), 
   na.action = na.pass,
   family = ziGamma(link = "log"),
@@ -676,8 +683,10 @@ lm_raw_algae_during_zigamma <- glmmTMB(
 plot(simulateResiduals(lm_algae_during_lmer))
 check_model(lm_algae_during_lmer)
 
-plot(simulateResiduals(lm_raw_algae_during_zigamma))
-check_convergence(lm_raw_algae_during_zigamma)
+plot(simulateResiduals(lm_raw_algae_during_zigamma_01))
+check_convergence(lm_raw_algae_during_zigamma_01)
+
+plot(simulateResiduals(lm_raw_algae_during_zigamma_02))
 
 # Rsquared
 r.squaredGLMM(lm_algae_during_lmer)
@@ -694,7 +703,7 @@ lm_algae_during_summary <- lm_algae_during_lmer %>%
   ) 
 lm_algae_during_summary
 
-lm_raw_algae_during_zigamma_summary <- lm_raw_algae_during_zigamma %>% 
+lm_raw_algae_during_zigamma_summary <- lm_raw_algae_during_zigamma_02 %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05) %>% 
   modify_header(
@@ -722,7 +731,7 @@ lm_raw_algae_during_zigamma_summary
 
 predicted_algae_during <- ggpredict(lm_algae_during_lmer, terms = ~ time_since_end, type = "fixed")
 
-predicted_raw_algae_during <- ggpredict(lm_raw_algae_during_zigamma, terms = c("time_since_end", "treatment"), type = "fixed")
+predicted_raw_algae_during <- ggpredict(lm_raw_algae_during_zigamma_02, terms = c("time_since_end", "treatment"), type = "fixed")
 
 # ⟞ b. recovery period ----------------------------------------------------
 
@@ -734,8 +743,15 @@ lm_algae_recovery_lmer <- lmer(
   data = delta_algae_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass)
 
-lm_raw_algae_recovery_zigamma <- glmmTMB(
+lm_raw_algae_recovery_zigamma_01 <- glmmTMB(
   algae_biomass ~ time_since_end*treatment + (1|site), 
+  data = algae_continual_long %>% filter(exp_dates == "after"), 
+  na.action = na.pass,
+  family = ziGamma(link = "log"),
+  ziformula = ~1)
+
+lm_raw_algae_recovery_zigamma_02 <- glmmTMB(
+  algae_biomass ~ time_since_end*treatment + (1|site) + (1|year), 
   data = algae_continual_long %>% filter(exp_dates == "after"), 
   na.action = na.pass,
   family = ziGamma(link = "log"),
@@ -745,7 +761,9 @@ lm_raw_algae_recovery_zigamma <- glmmTMB(
 plot(simulateResiduals(lm_algae_recovery_lmer))
 check_model(lm_algae_recovery_lmer)
 
-plot(simulateResiduals(lm_raw_algae_recovery_zigamma))
+plot(simulateResiduals(lm_raw_algae_recovery_zigamma_01))
+
+plot(simulateResiduals(lm_raw_algae_recovery_zigamma_02))
 
 # Rsquared
 r.squaredGLMM(lm_algae_recovery_lmer)
@@ -762,7 +780,7 @@ lm_algae_recovery_summary <- lm_algae_recovery_lmer %>%
   ) 
 lm_algae_recovery_summary
 
-lm_raw_algae_recovery_zigamma_summary <- lm_raw_algae_recovery_zigamma %>% 
+lm_raw_algae_recovery_zigamma_summary <- lm_raw_algae_recovery_zigamma_02 %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05) %>% 
   modify_header(
@@ -790,7 +808,7 @@ lm_raw_algae_recovery_zigamma_summary
 
 predicted_algae_recovery <- ggpredict(lm_algae_recovery_lmer, terms = ~time_since_end, type = "fixed")
 
-predicted_raw_algae_recovery <- ggpredict(lm_raw_algae_recovery_zigamma, terms = c("time_since_end", "treatment"), type = "fixed")
+predicted_raw_algae_recovery <- ggpredict(lm_raw_algae_recovery_zigamma_02, terms = c("time_since_end", "treatment"), type = "fixed")
 
 # algae decreases to control in 5.3 years on average
 ggpredict(lm_algae_recovery_lmer, terms = "time_since_end [5:6 by = 0.001]", type = "fixed")
@@ -826,6 +844,11 @@ algae_time <- ggplot() +
 
 algae_time
 
+
+# ⟞ ⟞ new model -----------------------------------------------------------
+
+
+
 raw_algae_time <- ggplot() +
   # reference lines
   geom_vline(xintercept = 0, lty = 2) +
@@ -833,16 +856,14 @@ raw_algae_time <- ggplot() +
   
   # raw data
   geom_point(data = algae_continual_long, 
-             aes(x = time_since_end, y = algae_biomass, fill = site, shape = site, alpha = treatment), size = 2) +
-  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
-  scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
-  scale_alpha_manual(values = c(reference = 0.4, removal = 0.8), guide = "none") +
+             aes(x = time_since_end, y = algae_biomass, color = treatment), shape = 1, size = 1, alpha = 0.4) +
   
   # model predictions
-  geom_line(data = predicted_raw_algae_recovery, aes(x = x, y = predicted, lty = group), linewidth = 1, alpha = 0.7) +
-  geom_ribbon(data = predicted_raw_algae_recovery, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
-  geom_line(data = predicted_raw_algae_during, aes(x = x, y = predicted, lty = group), linewidth = 1, alpha = 0.7) +
-  geom_ribbon(data = predicted_raw_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  geom_line(data = predicted_raw_algae_recovery, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_ribbon(data = predicted_raw_algae_recovery, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.1) +
+  geom_line(data = predicted_raw_algae_during, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_ribbon(data = predicted_raw_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.1) +
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col)) +
   scale_linetype_manual(values = c(reference = 2, removal = 1)) +
   
   # theming
@@ -854,7 +875,7 @@ raw_algae_time <- ggplot() +
         legend.text = element_text(size = 6), 
         legend.title = element_text(size = 6),
         # plot.margin = margin(0, 0, 0, 0),
-        legend.position = c(0.89, 0.78),
+        legend.position = c(0.86, 0.88),
         legend.key.size = unit(0.5, units = "cm"),
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.01, "cm"),
@@ -866,12 +887,135 @@ raw_algae_time <- ggplot() +
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
        y = expression(Macroalgae~biomass~"("~dry~g/m^{"2"}~")"), 
-       fill = "Site",
-       shape = "Site",
+       color = "Plot",
        linetype = "Plot",
-       title = "(a) Macroalgae")
+       title = "(a)")
 
 raw_algae_time
+
+raw_algae_removal <- ggplot() +
+  # x at 0 and y at 0 lines
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  
+  # raw data points
+  geom_point(data = algae_continual_long %>% filter(treatment == "removal"), aes(x = time_since_end, y = algae_biomass), shape = 1, size = 1, alpha = 0.4, color = removal_col) +
+  
+  # prediction lines
+  geom_line(data = predicted_raw_algae_during %>% filter(group == "removal"), aes(x = x, y = predicted), linewidth = 1, color = removal_col) +
+  geom_line(data = predicted_raw_algae_recovery %>% filter(group == "removal"), aes(x = x, y = predicted), linewidth = 1, color = removal_col) +
+  
+  # confidence intervals
+  geom_ribbon(data = predicted_raw_algae_during %>% filter(group == "removal"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  geom_ribbon(data = predicted_raw_algae_recovery %>% filter(group == "removal"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  
+  theme_bw() + 
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_y_continuous(limits = c(-10, 800)) +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        # plot.margin = margin(0, 0, 0, 0),
+        legend.position = c(0.88, 0.73),
+        legend.key.size = unit(0.5, units = "cm"),
+        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
+        legend.spacing.y = unit(0.1, units = "cm"),
+        panel.grid = element_blank(),
+        plot.title.position = "plot") +
+  guides(color = guide_legend(keyheight = 0.6),
+         shape = guide_legend(keyheight = 0.6),
+         lty = guide_legend(keyheight = 0.6),
+         keyheight = 1) +
+  labs(x = "Time since end of removal (years)", 
+       y = expression(Understory~macroalgae~biomass~"("~dry~g/m^{"2"}~")"),
+       title = "(a) Removal")
+
+raw_algae_reference <- ggplot() +
+  # x at 0 and y at 0 lines
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  
+  # raw data points
+  geom_point(data = algae_continual_long %>% filter(treatment == "reference"), aes(x = time_since_end, y = algae_biomass), shape = 1, size = 1, alpha = 0.4, color = reference_col) +
+  
+  # prediction lines
+  geom_line(data = predicted_raw_algae_during %>% filter(group == "reference"), aes(x = x, y = predicted), linewidth = 1, color = reference_col) +
+  geom_line(data = predicted_raw_algae_recovery %>% filter(group == "reference"), aes(x = x, y = predicted), linewidth = 1, color = reference_col) +
+  
+  # confidence intervals
+  geom_ribbon(data = predicted_raw_algae_during %>% filter(group == "reference"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  geom_ribbon(data = predicted_raw_algae_recovery %>% filter(group == "reference"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  
+  theme_bw() + 
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_y_continuous(limits = c(-10, 800)) +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        # plot.margin = margin(0, 0, 0, 0),
+        legend.position = c(0.88, 0.73),
+        legend.key.size = unit(0.5, units = "cm"),
+        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
+        legend.spacing.y = unit(0.1, units = "cm"),
+        panel.grid = element_blank(),
+        plot.title.position = "plot") +
+  guides(color = guide_legend(keyheight = 0.6),
+         shape = guide_legend(keyheight = 0.6),
+         lty = guide_legend(keyheight = 0.6),
+         keyheight = 1) +
+  labs(x = "Time since end of reference (years)", 
+       y = expression(Understory~macroalgae~biomass~"("~dry~g/m^{"2"}~")"),
+       title = "(b) Reference")
+
+# data frame of predictions
+delta_algae_predictions_during <- predicted_raw_algae_during %>% 
+  as.data.frame() %>% 
+  select(x, group, predicted) %>% 
+  pivot_wider(names_from = group, values_from = predicted) %>% 
+  mutate(delta = removal - reference) %>% 
+  mutate(exp_dates = "during")
+
+delta_algae_predictions_after <- predicted_raw_algae_recovery %>% 
+  as.data.frame() %>% 
+  select(x, group, predicted) %>% 
+  pivot_wider(names_from = group, values_from = predicted) %>% 
+  mutate(delta = removal - reference) %>% 
+  mutate(exp_dates = "after")
+
+overall_algae_predictions <- ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_algae_continual,
+             aes(x = time_since_end, y = delta_continual_algae), shape = 2, size = 1, alpha = 0.4) +
+  
+  # overall
+  geom_line(data = delta_algae_predictions_during, aes(x = x, y = delta), linewidth = 1) +
+  geom_line(data = delta_algae_predictions_after, aes(x = x, y = delta), linewidth = 1) +
+  
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_y_continuous(breaks = seq(-250, 800, by = 200), limits = c(-250, 775)) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        # plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title.position = "plot") +
+  labs(x = "Time since end of removal (years)", 
+       y = bquote(atop("\U0394 understory macroalgae biomass",
+                       "(removal - reference, "~dry~g/m^{"2"}~")")), 
+       fill = "Site",
+       shape = "Site",
+       title = "(c) Removal - reference")
+
+overall_algae_predictions
+
+algae_title/raw_algae_removal/raw_algae_reference/overall_algae_predictions +
+  plot_layout(heights = c(3, 20, 20, 20))
 
 ##########################################################################-
 # 5. epi. invert linear model ---------------------------------------------
@@ -892,8 +1036,16 @@ lm_raw_epi_during_lmer <- lmer(
   data = epi_continual_long %>% filter(exp_dates == "during"), 
   na.action = na.pass)
 
-lm_raw_epi_during_zigamma <- glmmTMB(
+lm_raw_epi_during_zigamma_01 <- glmmTMB(
   epi_biomass ~ time_since_end*treatment + (1|site),
+  data = epi_continual_long %>% filter(exp_dates == "during"),
+  na.action = na.pass,
+  family = ziGamma(link = "log"),
+  ziformula = ~1
+)
+
+lm_raw_epi_during_zigamma_02 <- glmmTMB(
+  epi_biomass ~ time_since_end*treatment + (1|site) + (1|year),
   data = epi_continual_long %>% filter(exp_dates == "during"),
   na.action = na.pass,
   family = ziGamma(link = "log"),
@@ -907,7 +1059,9 @@ check_model(lm_epi_during_lmer)
 plot(simulateResiduals(lm_raw_epi_during_lmer))
 check_model(lm_raw_epi_during_lmer)
 
-plot(simulateResiduals(lm_raw_epi_during_zigamma))
+plot(simulateResiduals(lm_raw_epi_during_zigamma_01))
+
+plot(simulateResiduals(lm_raw_epi_during_zigamma_02))
 
 # R2
 r.squaredGLMM(lm_epi_during_lmer)
@@ -924,7 +1078,7 @@ lm_epi_during_summary <- lm_epi_during_lmer %>%
   ) 
 lm_epi_during_summary
 
-lm_raw_epi_during_zigamma_summary <- lm_raw_epi_during_zigamma %>% 
+lm_raw_epi_during_zigamma_summary <- lm_raw_epi_during_zigamma_02 %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05) %>% 
   modify_header(
@@ -947,13 +1101,13 @@ lm_raw_epi_during_zigamma_summary$table_body$label <- c(
 
 # final table 
 lm_raw_epi_during_zigamma_summary
-summary(lm_raw_epi_during_zigamma)
+summary(lm_raw_epi_during_zigamma_02)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
 predicted_epi_during <- ggpredict(lm_epi_during_lmer, terms = ~ time_since_end, type = "fixed")
 
-predicted_raw_epi_during <- ggpredict(lm_raw_epi_during_zigamma, terms = c("time_since_end", "treatment"), type = "fixed")
+predicted_raw_epi_during <- ggpredict(lm_raw_epi_during_zigamma_02, terms = c("time_since_end", "treatment"), type = "fixed")
 
 # ⟞ b. recovery period ----------------------------------------------------
 
@@ -970,8 +1124,16 @@ lm_raw_epi_recovery_lmer <- lmer(
   data = delta_epi_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass)
 
-lm_raw_epi_recovery_zigamma <- glmmTMB(
+lm_raw_epi_recovery_zigamma_01 <- glmmTMB(
   epi_biomass ~ time_since_end*treatment + (1|site),
+  data = epi_continual_long %>% filter(exp_dates == "after"),
+  na.action = na.pass,
+  family = ziGamma(link = "log"),
+  ziformula = ~1
+)
+
+lm_raw_epi_recovery_zigamma_02 <- glmmTMB(
+  epi_biomass ~ time_since_end*treatment + (1|site) + (1|year),
   data = epi_continual_long %>% filter(exp_dates == "after"),
   na.action = na.pass,
   family = ziGamma(link = "log"),
@@ -983,7 +1145,8 @@ lm_raw_epi_recovery_zigamma <- glmmTMB(
 plot(simulateResiduals(lm_epi_recovery_lmer))
 check_model(lm_epi_recovery_lmer)
 
-plot(simulateResiduals(lm_raw_epi_recovery_zigamma))
+plot(simulateResiduals(lm_raw_epi_recovery_zigamma_01))
+plot(simulateResiduals(lm_raw_epi_recovery_zigamma_02))
 
 # R2
 MuMIn::r.squaredGLMM(lm_epi_recovery_lmer)
@@ -1000,7 +1163,7 @@ lm_epi_recovery_summary <- lm_epi_recovery_lmer %>%
   ) 
 lm_epi_recovery_summary
 
-lm_raw_epi_recovery_zigamma_summary <- lm_raw_epi_recovery_zigamma %>% 
+lm_raw_epi_recovery_zigamma_summary <- lm_raw_epi_recovery_zigamma_02 %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05) %>% 
   modify_header(
@@ -1023,13 +1186,13 @@ lm_raw_epi_recovery_zigamma_summary$table_body$label <- c(
 
 # final table 
 lm_raw_epi_recovery_zigamma_summary
-summary(lm_raw_epi_recovery_zigamma)
+summary(lm_raw_epi_recovery_zigamma_02)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
 predicted_epi_recovery <- ggpredict(lm_epi_recovery_lmer, terms = ~ time_since_end, type = "fixed")
 
-predicted_raw_epi_recovery <- ggpredict(lm_raw_epi_recovery_zigamma, terms = c("time_since_end", "treatment"), type = "fixed")
+predicted_raw_epi_recovery <- ggpredict(lm_raw_epi_recovery_zigamma_02, terms = c("time_since_end", "treatment"), type = "fixed")
 
 # ⟞ c. figure ------------------------------------------------------------
 
@@ -1056,6 +1219,8 @@ epi_time <- ggplot() +
        subtitle = "(d)")
 epi_time
 
+# ⟞ ⟞ new model -----------------------------------------------------------
+
 raw_epi_time <- ggplot() +
   # reference lines
   geom_vline(xintercept = 0, lty = 2) +
@@ -1063,44 +1228,167 @@ raw_epi_time <- ggplot() +
   
   # raw data
   geom_point(data = epi_continual_long, 
-             aes(x = time_since_end, y = epi_biomass, fill = site, shape = site, alpha = treatment), size = 2) +
-  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
-  scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
-  scale_alpha_manual(values = c(reference = 0.4, removal = 0.8), guide = "none") +
+             aes(x = time_since_end, y = epi_biomass, color = treatment), shape = 1, size = 1, alpha = 0.4) +
   
   # model predictions
-  geom_line(data = predicted_raw_epi_recovery, aes(x = x, y = predicted, lty = group), linewidth = 1, alpha = 0.7) +
-  geom_ribbon(data = predicted_raw_epi_recovery, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
-  geom_line(data = predicted_raw_epi_during, aes(x = x, y = predicted, lty = group), linewidth = 1, alpha = 0.7) +
-  geom_ribbon(data = predicted_raw_epi_during, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  geom_line(data = predicted_raw_epi_recovery, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_ribbon(data = predicted_raw_epi_recovery, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.1) +
+  geom_line(data = predicted_raw_epi_during, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_ribbon(data = predicted_raw_epi_during, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.1) +
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col)) +
   scale_linetype_manual(values = c(reference = 2, removal = 1)) +
   
   # theming
   theme_bw() + 
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
-  coord_cartesian(ylim = c(5, 150)) +
+  coord_cartesian(ylim = c(5, 155)) +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        # plot.margin = margin(0, 0, 0, 0),
+        # legend.position = c(0.89, 0.78),
+        legend.position = "none",
+        legend.key.size = unit(0.5, units = "cm"),
+        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
+        legend.spacing.y = unit(0.01, "cm"),
+        panel.grid = element_blank(),
+        plot.title.position = "plot") +
+  guides(color = guide_legend(keyheight = 0.6),
+         shape = guide_legend(keyheight = 0.6),
+         lty = guide_legend(keyheight = 0.6),
+         keyheight = 1) +
+  labs(x = "Time since end of removal (years)", 
+       y = expression(Sessile~invertebrate~biomass~"("~dry~g/m^{"2"}~")"), 
+       color = "Treatment",
+       linetype = "Treatment",
+       title = "(c)")
+
+raw_epi_time
+
+raw_epi_removal <- ggplot() +
+  # x at 0 and y at 0 lines
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  
+  # raw data points
+  geom_point(data = epi_continual_long %>% filter(treatment == "removal"), aes(x = time_since_end, y = epi_biomass), shape = 1, size = 1, alpha = 0.4, color = removal_col) +
+  
+  # prediction lines
+  geom_line(data = predicted_raw_epi_during %>% filter(group == "removal"), aes(x = x, y = predicted), linewidth = 1, color = removal_col) +
+  geom_line(data = predicted_raw_epi_recovery %>% filter(group == "removal"), aes(x = x, y = predicted), linewidth = 1, color = removal_col) +
+  
+  # confidence intervals
+  geom_ribbon(data = predicted_raw_epi_during %>% filter(group == "removal"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  geom_ribbon(data = predicted_raw_epi_recovery %>% filter(group == "removal"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  
+  theme_bw() + 
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  coord_cartesian(ylim = c(4, 155)) +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        # plot.margin = margin(0, 0, 0, 0),
+        legend.position = c(0.88, 0.73),
+        legend.key.size = unit(0.5, units = "cm"),
+        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
+        legend.spacing.y = unit(0.1, units = "cm"),
+        panel.grid = element_blank(),
+        plot.title.position = "plot") +
+  guides(color = guide_legend(keyheight = 0.6),
+         shape = guide_legend(keyheight = 0.6),
+         lty = guide_legend(keyheight = 0.6),
+         keyheight = 1) +
+  labs(x = "Time since end of removal (years)", 
+       y = expression(Sessile~invertebrate~biomass~"("~dry~g/m^{"2"}~")"),
+       title = "(d) Removal")
+raw_epi_removal
+
+raw_epi_reference <- ggplot() +
+  # x at 0 and y at 0 lines
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  
+  # raw data points
+  geom_point(data = epi_continual_long %>% filter(treatment == "reference"), aes(x = time_since_end, y = epi_biomass), shape = 1, size = 1, alpha = 0.4, color = reference_col) +
+  
+  # prediction lines
+  geom_line(data = predicted_raw_epi_during %>% filter(group == "reference"), aes(x = x, y = predicted), linewidth = 1, linetype = 2, color = reference_col) +
+  geom_line(data = predicted_raw_epi_recovery %>% filter(group == "reference"), aes(x = x, y = predicted), linewidth = 1, linetype = 2, color = reference_col) +
+  
+  # confidence intervals
+  geom_ribbon(data = predicted_raw_epi_during %>% filter(group == "reference"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  geom_ribbon(data = predicted_raw_epi_recovery %>% filter(group == "reference"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
+  
+  theme_bw() + 
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  # scale_y_continuous(limits = c(-10, 155)) +
+  coord_cartesian(ylim = c(4, 155)) +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        # plot.margin = margin(0, 0, 0, 0),
+        legend.position = c(0.88, 0.73),
+        legend.key.size = unit(0.5, units = "cm"),
+        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
+        legend.spacing.y = unit(0.1, units = "cm"),
+        panel.grid = element_blank(),
+        plot.title.position = "plot") +
+  guides(color = guide_legend(keyheight = 0.6),
+         shape = guide_legend(keyheight = 0.6),
+         lty = guide_legend(keyheight = 0.6),
+         keyheight = 1) +
+  labs(x = "Time since end of reference (years)", 
+       y = expression(Sessile~invertebrate~biomass~"("~dry~g/m^{"2"}~")"),
+       title = "(e) Reference")
+raw_epi_reference
+
+# data frame of predictions
+delta_epi_predictions_during <- predicted_raw_epi_during %>% 
+  as.data.frame() %>% 
+  select(x, group, predicted) %>% 
+  pivot_wider(names_from = group, values_from = predicted) %>% 
+  mutate(delta = removal - reference) %>% 
+  mutate(exp_dates = "during")
+
+delta_epi_predictions_after <- predicted_raw_epi_recovery %>% 
+  as.data.frame() %>% 
+  select(x, group, predicted) %>% 
+  pivot_wider(names_from = group, values_from = predicted) %>% 
+  mutate(delta = removal - reference) %>% 
+  mutate(exp_dates = "after")
+
+overall_epi_predictions <- ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point(data = delta_epi_continual,
+             aes(x = time_since_end, y = delta_continual_epi), shape = 2, size = 1, alpha = 0.4) +
+  
+  # overall
+  geom_line(data = delta_epi_predictions_during, aes(x = x, y = delta), linewidth = 1) +
+  geom_line(data = delta_epi_predictions_after, aes(x = x, y = delta), linewidth = 1) +
+  
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  coord_cartesian(ylim = c(-40, 75)) +
+  theme_bw() + 
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
         legend.text = element_text(size = 6), 
         legend.title = element_text(size = 6),
         # plot.margin = margin(0, 0, 0, 0),
         legend.position = "none",
-        legend.key.size = unit(0.5, units = "cm"),
-        legend.box.margin = margin(0.1, 0.1, 0.1, 0.1),
         panel.grid = element_blank(),
         plot.title.position = "plot") +
-  guides(color = guide_legend(keyheight = 0.8),
-         shape = guide_legend(keyheight = 0.8),
-         lty = guide_legend(keyheight = 0.8),
-         keyheight = 2) +
   labs(x = "Time since end of removal (years)", 
-       y = expression(Epilithic~invertebrate~biomass~"("~dry~g/m^{"2"}~")"), 
+       y = bquote(atop("\U0394 sessile invertebrate biomass",
+                       "(removal - reference, "~dry~g/m^{"2"}~")")), 
        fill = "Site",
        shape = "Site",
-       linetype = "Plot",
-       title = "(b) Epilithic invertebrates")
+       title = "(f) Removal - reference")
 
-raw_epi_time
+overall_epi_predictions
 
 ##########################################################################-
 # 6. endo. invert linear model --------------------------------------------
@@ -1244,13 +1532,13 @@ lm_ep_zigamma_tables <- tbl_merge(tbls = list(lm_raw_epi_during_zigamma_summary,
 # stack tables
 lm_zigamma_summary_tables <- tbl_stack(
   tbls = list(lm_kelp_zigamma_tables, lm_algae_zigamma_tables, lm_ep_zigamma_tables),
-  group_header = c("Kelp", "Understory macroalgae", "Epilithic invertebrates"),
+  group_header = c("Giant kelp", "Understory macroalgae", "Sessile invertebrates"),
   quiet = TRUE) %>% 
   as_flex_table() %>% 
   font(fontname = "Times New Roman", part = "all")
 
-# lm_zigamma_summary_tables %>%
-#   save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
+lm_zigamma_summary_tables %>%
+  save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
 
 # ⟞ b. s-d-a summary tables -----------------------------------------------
 
@@ -1410,12 +1698,37 @@ sda_time_together <- plot_grid(algae_epi, endo, ncol = 1, rel_heights = c(2, 1))
 
 # ⟞ d. raw algae and epi model --------------------------------------------
 
-raw_groups <- raw_algae_time / raw_epi_time
+fig2_v1 <-  (algae_title + epi_title) /
+            (raw_algae_time + raw_epi_time) /
+            (overall_algae_predictions + overall_epi_predictions) +
+  plot_layout(heights = c(1, 10, 10))
+fig2_v1
+
+fig2_v2 <- (algae_title + epi_title) /
+  (raw_algae_removal + raw_epi_removal) /
+  (raw_algae_reference + raw_epi_reference) /
+  (overall_algae_predictions + overall_epi_predictions) +
+  plot_layout(heights = c(1, 10, 10, 10))
+fig2_v2
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-2_new-model_", today(), ".jpg", sep = "")),
 #        plot = raw_groups,
 #        height = 18, width = 14, units = "cm",
 #        dpi = 400)
+
+# v1: legend position c(0.86, 0.88)
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-2_new-model_v1_", today(), ".jpg", sep = "")),
+       plot = fig2_v1,
+       height = 15, width = 18, units = "cm",
+       dpi = 400)
+
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-2_new-model_v2_", today(), ".jpg", sep = "")),
+       plot = fig2_v2,
+       height = 24, width = 18, units = "cm",
+       dpi = 400)
+
 
 
