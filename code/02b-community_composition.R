@@ -338,7 +338,7 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
        shape = "Time period") +
   theme(legend.position = c(0.85, 0.9), 
         panel.grid = element_blank()) 
-algae_pt_bray_continual_plot
+algae_pt_bray_continual_plot 
 
 algae_pt_bray_continual_plot_arrows <- algae_pt_bray_continual_plot +
   geom_text_repel(data = algae_pt_bray_species,
