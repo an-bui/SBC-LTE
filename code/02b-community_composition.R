@@ -28,12 +28,12 @@ comm_df <- biomass %>%
   mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>%
   # create new sample ID with treatment
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
-  # only include 2 year sampling sites
-  drop_na(comp_2yrs)
+  # only include 3 year sampling sites
+  drop_na(comp_3yrs)
 
 # metadata for all plots
 comm_meta <- comm_df %>% 
-  select(sample_ID, site, date, year, month, treatment, exp_dates, quarter, time_yrs, time_since_start, time_since_end, kelp_year, comp_2yrs, comp_3yrs, quality, site_full) %>% 
+  select(sample_ID, site, date, year, month, treatment, exp_dates, quarter, time_yrs, time_since_start, time_since_end, kelp_year, comp_1yr, comp_2yrs, comp_3yrs, quality, site_full) %>% 
   unique()
 
 # metadata for continual removal plots
@@ -42,9 +42,9 @@ comm_meta_continual <- comm_meta %>%
 
 # metadata for control plots
 comm_meta_control <- comm_meta %>% 
-  filter(treatment == "control") %>% 
-  # weird point?
-  filter(sample_ID != "mohk_control_2020-08-12") 
+  filter(treatment == "control")
+# weird point?
+# filter(sample_ID != "mohk_control_2020-08-12") 
 
 # making a nested data frame
 comm_df_nested <- comm_df %>% 
@@ -68,7 +68,7 @@ comm_df_nested <- comm_df %>%
                                   time_since_end, kelp_year, comp_2yrs, comp_3yrs,
                                   quality, site_full) %>% 
                            unique()
-                         )) %>% 
+  )) %>% 
   # find species that do occur (exclude species that never occur)
   mutate(keepspp = map(comm_mat, 
                        ~ colSums(.x, na.rm = FALSE) %>% 
@@ -83,7 +83,7 @@ comm_df_nested <- comm_df %>%
                              pull(name))) %>% 
   # only retain species that do occur
   mutate(comm_mat_step1 = map2(comm_mat, keepspp,
-                                 ~ select(.x, .y))) %>% 
+                               ~ select(.x, .y))) %>% 
   # only retain surveys where there was something there
   mutate(comm_mat_filtered = map2(comm_mat_step1, keepsurveys,
                                   ~ rownames_to_column(.x, "surveys") %>% 
@@ -91,7 +91,7 @@ comm_df_nested <- comm_df %>%
                                     column_to_rownames("surveys"))) %>% 
   # filter metadata
   mutate(comm_meta_filtered = map2(comm_meta, comm_mat_filtered, 
-                           ~ filter(.x, sample_ID %in% rownames(.y))))
+                                   ~ filter(.x, sample_ID %in% rownames(.y))))
 
 
 comm_analyses <- comm_df_nested %>% 
@@ -107,7 +107,7 @@ comm_analyses <- comm_df_nested %>%
   # mutate(nmds_jacc_plot = map(nmds_jacc,
   #                             ~ plot(.x))) %>% 
   mutate(simper = map2(comm_mat_filtered, comm_meta_filtered,
-                      ~ simper(.x, .y$treatment, ordered = TRUE)))
+                       ~ simper(.x, .y$treatment, ordered = TRUE)))
 
 # putting in separate df because it takes a while
 simper_analysis <- comm_analyses %>% 
@@ -199,27 +199,99 @@ stressplot(algae_pt_bray)
 # preliminary plot
 plot(algae_pt_bray)
 
-# SIMPER analysis
-simper_algae <- simper(comm_mat_algae, comm_meta_algae$treatment)
-summary(simper_algae)
-
 # permanova
-algae_pt_perma_2yrs <- adonis2(comm_mat_algae ~ treatment*comp_2yrs, 
-                               data = comm_meta,
-                               strata = comm_meta$site)
+comp_1yr_meta <- comm_meta %>% 
+  drop_na(comp_1yr)
+comp_1yr_sampleID <- comp_1yr_meta %>% 
+  pull(sample_ID)
+comp_1yr_algae <- comm_mat_algae[comp_1yr_sampleID, ]
+
+algae_pt_perma_1yr <- adonis2(comp_1yr_algae ~ treatment*comp_1yr, 
+                              data = comp_1yr_meta,
+                              strata = comp_1yr_meta$site)
+algae_pt_perma_1yr
+
+comp_2yrs_meta <- comm_meta %>% 
+  drop_na(comp_2yrs)
+comp_2yrs_sampleID <- comp_2yrs_meta %>% 
+  pull(sample_ID)
+comp_2yrs_algae <- comm_mat_algae[comp_2yrs_sampleID, ]
+algae_pt_perma_2yrs <- adonis2(comp_2yrs_algae ~ treatment*comp_2yrs, 
+                               data = comp_2yrs_meta,
+                               strata = comp_2yrs_meta$site)
 algae_pt_perma_2yrs
 
-algae_pt_perma_3yrs <- adonis2(comm_mat_algae ~ treatment*comp_3yrs, 
-                               data = comm_meta,
-                               strata = comm_meta$site)
-algae_pt_perma_3yrs # same as 2 yrs
+comp_3yrs_meta <- comm_meta %>% 
+  drop_na(comp_3yrs) %>% 
+  unite("combo", comp_3yrs, treatment, sep = "-", remove = FALSE)
+comp_3yrs_sampleID <- comp_3yrs_meta %>% 
+  pull(sample_ID)
+comp_3yrs_algae <- comm_mat_algae[comp_3yrs_sampleID, ]
+algae_pt_perma_3yrs <- adonis2(comp_3yrs_algae ~ treatment*comp_3yrs, 
+                               data = comp_3yrs_meta,
+                               strata = comp_3yrs_meta$site)
+algae_pt_perma_3yrs 
 
 # beta dispersion
-algae_pt_dist <- vegdist(comm_mat_algae, "bray")
-algae_betadisper <- betadisper(algae_pt_dist, comm_meta$comp_2yrs)
+algae_pt_dist <- vegdist(comp_3yrs_algae, "bray")
+algae_betadisper <- betadisper(algae_pt_dist, comp_3yrs_meta$combo)
+permutest(algae_betadisper, pairwise = TRUE)
 anova(algae_betadisper)
+# not significantly different dispersions
 
-# ⟞ ⟞ ⟞  2. plotting ------------------------------------------------------
+# ⟞ ⟞ ⟞ 2. SIMPER ---------------------------------------------------------
+
+# three year comparison
+comp_3yrs_sampleID_continual <- comp_3yrs_meta %>% 
+  filter(treatment == "continual") %>% 
+  pull(sample_ID)
+
+# comparing continual removal plots across time periods
+simper_algae_3yrs <- simper(
+  # subset algae matrix to only include continual removal plots
+  comm = comp_3yrs_algae[comp_3yrs_sampleID_continual, ], 
+  # only 2 year comparisons
+  group = comp_3yrs_meta %>% 
+    filter(treatment == "continual") %>% 
+    pull(comp_3yrs)
+)
+
+algae_SA_comp3yrs <- simper_algae_3yrs$start_after %>% 
+  as_tibble() %>% 
+  # arrange by greatest to least contribution to dissimilarity
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "start-after")
+# PTCA, CYOS, CO, CC, EC, DL, R, POLA, EGME, RAT
+algae_SD_comp3yrs <- simper_algae_3yrs$start_during %>% 
+  as_tibble() %>% 
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "start-during")
+# CYOS, PTCA, CC, EGME, DL, R, EC, SAMU, RAT, POLA
+algae_DA_comp3yrs <- simper_algae_3yrs$during_after %>% 
+  as_tibble() %>% 
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "during-after")
+# PTCA, CYOS, CO, EC, EGME, CC, R, SAMU, DL, RAT
+
+algae_comp3yrs <- rbind(algae_SA_comp3yrs, algae_SD_comp3yrs, algae_DA_comp3yrs)
+
+# comparing treatment plots across time periods
+simper_algae_treatment <- simper(
+  comm = comp_3yrs_algae, 
+  group = comp_3yrs_meta$treatment
+)
+
+algae_simper_treatment <- simper_algae_treatment$control_continual %>% 
+  as_tibble() %>% 
+  # arrange by greatest to least contribution to dissimilarity
+  arrange(-average) %>% 
+  head(10)
+# PTCA, CYOS, DL, CC, EC, CO, R, POLA, RAT, EGME
+
+# ⟞ ⟞ ⟞ 3. plotting -------------------------------------------------------
 
 # points into data frame for plotting
 algae_pt_bray_plotdf <- scores(algae_pt_bray, display = "sites") %>% 
@@ -227,16 +299,8 @@ algae_pt_bray_plotdf <- scores(algae_pt_bray, display = "sites") %>%
   # join with metadata
   left_join(., comm_meta, by = "sample_ID")
 
-# create data frame from simper analysis
-simper_algae_df <- simper_algae$control_continual %>% 
-  as_tibble() %>% 
-  # arrange by greatest to least contribution to dissimilarity
-  arrange(-average)
-
 # pull top species from simper analysis
-simper_algae_spp <- simper_algae_df %>% 
-  # take top 10 species
-  head(10) %>% 
+simper_algae_spp <- algae_comp3yrs %>% 
   pull(species)
 
 # get species points
@@ -249,7 +313,7 @@ algae_pt_bray_species <- scores(algae_pt_bray, display = "species", tidy = TRUE)
 # continual removal plots only
 algae_pt_bray_continual_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "continual", algae_pt_bray_species
-  ) +
+) +
   # axis limits
   scale_x_continuous(limits = c(-1.5, 1.6), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   scale_y_continuous(limits = c(-1.6, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
@@ -268,8 +332,26 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
   # annotate("text", x = 0.85, y = -1, label = "period", size = 10, col = after_col) +
   # stress annotation
   annotate("text", x = -1.15, y = -1.51, label = "Stress = 0.2", size = 2) +
-  theme(legend.position = "none")
+  labs(title = "(a) Removal",
+       fill = "Time period",
+       color = "Time period",
+       shape = "Time period") +
+  theme(legend.position = c(0.85, 0.9), 
+        panel.grid = element_blank()) 
 algae_pt_bray_continual_plot
+
+algae_pt_bray_continual_plot_arrows <- algae_pt_bray_continual_plot +
+  geom_text_repel(data = algae_pt_bray_species,
+                  aes(x = NMDS1, y = NMDS2,
+                      label = stringr::str_wrap(scientific_name, 4, width = 40)),
+                  color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 1.5) +
+  geom_segment(data = algae_pt_bray_species,
+               aes(x = 0, y = 0,
+                   xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.1, "cm")),
+               color = "#C70000", linewidth = 0.5)
+
+algae_pt_bray_continual_plot_arrows
 
 
 # control plots only
@@ -278,11 +360,11 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
 ) +
   # plot aesthetics
   # ordination_theme() +
-  scale_x_continuous(limits = c(-1.5, 6.5), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(-1.85, 1.5), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  # scale_x_continuous(limits = c(-1.5, 6.5), expand = c(0, 0)) +
+  # scale_y_continuous(limits = c(-1.85, 1.5), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   labs(shape = "Site",
        color = "Time period", fill = "Time period",
-       title = "(a) Understory macroalgae") +
+       title = "(b) Reference") +
   # ellipse labels. clown shit
   # annotate("text", x = -1.2, y = 1.05, label = "Start of", size = 10, col = start_col) +
   # annotate("text", x = -1.2, y = 0.9, label = "removal", size = 10, col = start_col) +
@@ -291,8 +373,12 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
   # annotate("text", x = -1.4, y = 1.05, label = "Recovery", size = 10, col = after_col) +
   # annotate("text", x = -1.4, y = 0.9, label = "period", size = 10, col = after_col) +
   # stress annotation
-  annotate("text", x = -0.9, y = -1.75, label = "Stress = 0.2", size = 2) +
-  theme(legend.position = "none")
+  annotate("text", x = -1.5, y = -1.5, label = "Stress = 0.2", size = 2) +
+  coord_cartesian(xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5)) +
+  labs(color = "Time period",
+       shape = "Time period") +
+  theme(panel.grid = element_blank(),
+        legend.position = "none")
 algae_pt_bray_control_plot
 
 # both treatments together
@@ -328,28 +414,95 @@ stressplot(epi_pt_bray)
 # preliminary plot
 plot(epi_pt_bray)
 
-# SIMPER analysis
-simper_epi <- simper(comm_mat_epi, comm_meta$treatment)
-summary(simper_epi)
-
 # permanova
-epi_pt_perma_2yrs <- adonis2(comm_mat_epi ~ treatment*comp_2yrs, 
-                             data = comm_meta,
-                             strata = comm_meta$site)
+comp_1yr_meta <- comm_meta %>% 
+  drop_na(comp_1yr)
+comp_1yr_sampleID <- comp_1yr_meta %>% 
+  pull(sample_ID)
+comp_1yr_epi <- comm_mat_epi[comp_1yr_sampleID, ]
+epi_pt_perma_1yr <- adonis2(comp_1yr_epi ~ treatment*comp_1yr, 
+                            data = comp_1yr_meta,
+                            strata = comp_1yr_meta$site)
+epi_pt_perma_1yr
+
+comp_2yrs_meta <- comm_meta %>% 
+  drop_na(comp_2yrs)
+comp_2yrs_sampleID <- comp_2yrs_meta %>% 
+  pull(sample_ID)
+comp_2yrs_epi <- comm_mat_epi[comp_2yrs_sampleID, ]
+epi_pt_perma_2yrs <- adonis2(comp_2yrs_epi ~ treatment*comp_2yrs, 
+                             data = comp_2yrs_meta,
+                             strata = comp_2yrs_meta$site)
 epi_pt_perma_2yrs
 
+comp_3yrs_meta <- comm_meta %>% 
+  drop_na(comp_3yrs) %>% 
+  unite("combo", comp_3yrs, treatment, sep = "-", remove = FALSE)
+comp_3yrs_sampleID <- comp_3yrs_meta %>% 
+  pull(sample_ID)
+comp_3yrs_epi <- comm_mat_epi[comp_3yrs_sampleID, ]
 epi_pt_perma_3yrs <- adonis2(comm_mat_epi ~ treatment*comp_3yrs,
-                             data = comm_meta,
-                             strata = comm_meta$site)
+                             data = comp_3yrs_meta,
+                             strata = comp_3yrs_meta$site)
 epi_pt_perma_3yrs # same as 2 years
 
 # beta dispersion
 epi_pt_dist <- vegdist(comm_mat_epi, "bray")
-epi_betadisper <- betadisper(epi_pt_dist, comm_meta$comp_2yrs)
+epi_betadisper <- betadisper(epi_pt_dist, comp_3yrs_meta$combo)
 anova(epi_betadisper)
-# not significantly different dispersions
+permutest(epi_betadisper, pairwise = TRUE)
+TukeyHSD(epi_betadisper, which = "group", ordered = FALSE,
+         conf.level = 0.95)
+# significantly different dispersions
 
-# ⟞ ⟞ ⟞  2. plotting ------------------------------------------------------
+# ⟞ ⟞ ⟞ 2. SIMPER ---------------------------------------------------------
+
+# comparing continual removal plots across time periods
+simper_epi_3yrs <- simper(
+  # subset epi matrix to only include continual removal plots
+  comm = comp_3yrs_epi[comp_3yrs_sampleID_continual, ], 
+  # only 2 year comparisons
+  group = comp_3yrs_meta %>% 
+    filter(treatment == "continual") %>% 
+    pull(comp_3yrs)
+)
+
+epi_SA_comp3yrs <- simper_epi_3yrs$start_after %>% 
+  as_tibble() %>% 
+  # arrange by greatest to least contribution to dissimilarity
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "start-after")
+# MUCA, TEAU, ANSP, CRGI, URLO, STMO, DIOR, ES, DC, PRUB
+epi_SD_comp3yrs <- simper_epi_3yrs$start_during %>% 
+  as_tibble() %>% 
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "start-during")
+# TEAU, MUCA, ANSP, URLO, STMO, BAEL, CRGI, DIOR, BA, PRUB
+epi_DA_comp3yrs <- simper_epi_3yrs$during_after %>% 
+  as_tibble() %>% 
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "during-after")
+# MUCA, CRGI, TEAU, ANSP, URLO, DIOR, ES, DC, BAEL, TC
+
+epi_comp3yrs <- rbind(epi_SA_comp3yrs, epi_SD_comp3yrs, epi_DA_comp3yrs)
+
+# comparing treatment plots across time periods
+simper_epi_treatment <- simper(
+  comm = comp_3yrs_epi, 
+  group = comp_3yrs_meta$treatment
+)
+
+epi_simper_treatment <- simper_epi_treatment$control_continual %>% 
+  as_tibble() %>% 
+  # arrange by greatest to least contribution to dissimilarity
+  arrange(-average) %>% 
+  head(10)
+# MUCA, ANSP, TEAU, CRGI, STMO, URLO, CUSP, DIOR, ES, BAEL
+
+# ⟞ ⟞ ⟞ 3. plotting -------------------------------------------------------
 
 # points into data frame for plotting
 epi_pt_bray_plotdf <- scores(epi_pt_bray, display = "sites") %>% 
@@ -357,16 +510,8 @@ epi_pt_bray_plotdf <- scores(epi_pt_bray, display = "sites") %>%
   # join with metadata
   left_join(., comm_meta, by = "sample_ID")
 
-# create data frame from simper analysis
-simper_epi_df <- simper_epi$control_continual %>% 
-  as_tibble() %>% 
-  # arrange by greatest to least contribution to dissimilarity
-  arrange(-average)
-
 # pull top species from simper analysis
-simper_epi_spp <- simper_epi_df %>% 
-  # take top 10 species
-  head(10) %>% 
+simper_epi_spp <- epi_comp3yrs %>% 
   pull(species)
 
 # get species points
@@ -386,11 +531,23 @@ epi_pt_bray_continual_plot <- nmds_plot_fxn(
   scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) + # length = 3.15
   annotate("text", x = -1.4, y = -1.6, label = "Stress = 0.2", size = 2) +
-  theme(legend.position = "none") +
-  labs(title = "(b) Epilithic invertebrates") +
-  theme(legend.position = "right")
+  theme(legend.position = "none",
+        panel.grid = element_blank()) +
+  labs(title = "(c) Removal")
 epi_pt_bray_continual_plot
 
+epi_pt_bray_continual_plot_arrows <- epi_pt_bray_continual_plot +
+  # arrows
+  geom_text_repel(data = epi_pt_bray_species,
+                  aes(x = NMDS1, y = NMDS2,
+                      label = stringr::str_wrap(scientific_name, 4, width = 40)),
+                  color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 1.5) +
+  geom_segment(data = epi_pt_bray_species,
+               aes(x = 0, y = 0,
+                   xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.1, "cm")),
+               color = "#C70000", linewidth = 0.5) 
+epi_pt_bray_continual_plot_arrows
 
 # control plots only
 epi_pt_bray_control_plot <- nmds_plot_fxn(
@@ -398,10 +555,10 @@ epi_pt_bray_control_plot <- nmds_plot_fxn(
 ) +
   scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
-  annotate("text", x = -1.2, y = -1.6, label = "Stress = 0.2", size = 2) +
-  labs(title = "(b) Epilithic invertebrates") 
+  annotate("text", x = -1.1, y = -1.5, label = "Stress = 0.2", size = 2) +
+  labs(title = "(c) Reference") +
+  theme(legend.position = "none")
 epi_pt_bray_control_plot
-
 
 # both treatments together
 epi_pt_bray_both_plot <- nmds_plot_fxn(
@@ -413,8 +570,117 @@ epi_pt_bray_both_plot <- nmds_plot_fxn(
 epi_pt_bray_both_plot
 
 ##########################################################################-
-# 3. manuscript tables ----------------------------------------------------
+# 3. individual species ---------------------------------------------------
 ##########################################################################-
+
+# ⟞ a. algae species ------------------------------------------------------
+
+algae_comp3yrs_spp <- algae_comp3yrs %>% 
+  select(species) %>% 
+  unique() %>% 
+  pull()
+
+algae_biomass_time_df <- biomass %>% 
+  filter(treatment == "continual") %>% 
+  # select columns of interest 
+  dplyr::select(site, year, month, treatment, date, new_group, sp_code, dry_gm2) %>% 
+  exp_dates_column_continual() %>% 
+  time_since_columns_continual() %>% 
+  kelp_year_column() %>% 
+  comparison_column_continual() %>% 
+  filter(sp_code %in% algae_comp3yrs_spp) %>% 
+  drop_na(dry_gm2) %>% 
+  left_join(., algae_spp_names, by = "sp_code") %>% 
+  mutate(scientific_name = case_match(
+    scientific_name, 
+    "Chondracanthus corymbiferus; Chondracanthus exasperatus" ~ "Chondracanthus spp.", 
+    .default = scientific_name)
+  )
+
+algae_biomass_time_plot <- ggplot(data = algae_biomass_time_df,
+                                  aes(x = time_since_end, y = dry_gm2)) +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_line(aes(col = site), linewidth = 2) +
+  geom_point(aes(shape = site, col = site), fill = "#FFFFFF", size = 1) +
+  # continual
+  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full), guide = "none") +
+  scale_color_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
+  facet_wrap(~scientific_name, scales = "free_y") +
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        # plot.margin = margin(0, 0, 0, 0),
+        # legend.position = "none",
+        panel.grid = element_blank(),
+        strip.background = element_blank()) +
+  labs(x = "Time since end of removal (years)", 
+       y = expression(Biomass~"("~dry~g/m^{"2"}~")"), 
+       color = "Site")
+
+algae_biomass_time_plot
+
+# ⟞ b. epi invert species -------------------------------------------------
+
+epi_comp3yrs_spp <- epi_comp3yrs %>% 
+  select(species) %>% 
+  unique() %>% 
+  pull()
+
+epi_biomass_time_df <- biomass %>% 
+  filter(treatment == "continual") %>% 
+  # select columns of interest 
+  dplyr::select(site, year, month, treatment, date, new_group, sp_code, dry_gm2) %>% 
+  exp_dates_column_continual() %>% 
+  time_since_columns_continual() %>% 
+  kelp_year_column() %>% 
+  comparison_column_continual() %>% 
+  filter(sp_code %in% epi_comp3yrs_spp) %>% 
+  drop_na(dry_gm2) %>% 
+  left_join(., epi_spp_names, by = "sp_code") %>% 
+  mutate(scientific_name = case_match(
+    scientific_name, 
+    "Unidentified Demospongiae spp." ~ "Demospongiae spp.", 
+    .default = scientific_name)
+  )
+
+epi_biomass_time_plot <- ggplot(data = epi_biomass_time_df,
+                                aes(x = time_since_end, y = dry_gm2)) +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_line(aes(col = site), linewidth = 2) +
+  geom_point(aes(shape = site, col = site), fill = "#FFFFFF", size = 1) +
+  # continual
+  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full), guide = "none") +
+  scale_color_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
+  facet_wrap(~scientific_name, scales = "free_y") +
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        # plot.margin = margin(0, 0, 0, 0),
+        # legend.position = "none",
+        panel.grid = element_blank(),
+        strip.background = element_blank()) +
+  labs(x = "Time since end of removal (years)", 
+       y = expression(Biomass~"("~dry~g/m^{"2"}~")"), 
+       color = "Site")
+
+epi_biomass_time_plot
+
+
+##########################################################################-
+# 4. manuscript tables ----------------------------------------------------
+##########################################################################-
+
+anova_1yr_tables <- rbind(anova_summary_fxn(algae_pt_perma_1yr), anova_summary_fxn(epi_pt_perma_1yr)) %>% 
+  rename_with(., .fn = ~paste(., "_1yr", sep = "", .cols = everything(cols)))
+anova_1yr_tables 
 
 anova_2yrs_tables <- rbind(anova_summary_fxn(algae_pt_perma_2yrs), anova_summary_fxn(epi_pt_perma_2yrs)) %>% 
   rename_with(., .fn = ~paste(., "_2yrs", sep = "", .cols = everything(cols)))
@@ -424,11 +690,11 @@ anova_3yrs_tables <- rbind(anova_summary_fxn(algae_pt_perma_3yrs), anova_summary
   rename_with(., .fn = ~paste(., "_3yrs", sep = "", .cols = everything(cols)))
 anova_3yrs_tables
 
-anova_together_tables <- cbind(anova_2yrs_tables, anova_3yrs_tables) %>% 
+anova_together_tables <- cbind(anova_1yr_tables, anova_2yrs_tables, anova_3yrs_tables) %>% 
   # take out unwanted columns
-  select(!c("model_2yrs1", "model_3yrs1", 
-            "SumOfSqs_2yrs1", "SumOfSqs_3yrs1",
-            "R2_2yrs1", "R2_3yrs1")) %>% 
+  select(!c("model_1yr1", "model_2yrs1", "model_3yrs1", 
+            "SumOfSqs_1yr1", "SumOfSqs_2yrs1", "SumOfSqs_3yrs1",
+            "R2_1yr1", "R2_2yrs1", "R2_3yrs1")) %>% 
   # turn the whole thing into a gt
   gt() %>% 
   # group labels
@@ -438,7 +704,11 @@ anova_together_tables <- cbind(anova_2yrs_tables, anova_3yrs_tables) %>%
   tab_row_group(
     label = "Understory macroalgae", rows = 1:5
   ) %>% 
-  # 2 and 3 year comparisons
+  # 1, 2, and 3 year comparisons
+  tab_spanner(
+    label = "1 year comparison",
+    columns = c(variables_1yr1, Df_1yr1, F_1yr1, p_1yr1)
+  ) %>% 
   tab_spanner(
     label = "2 year comparison",
     columns = c(variables_2yrs1, Df_2yrs1, F_2yrs1, p_2yrs1)
@@ -449,6 +719,10 @@ anova_together_tables <- cbind(anova_2yrs_tables, anova_3yrs_tables) %>%
   ) %>% 
   # change column names
   cols_label(
+    variables_1yr1 = "Source of variation",
+    Df_1yr1 = "df",
+    F_1yr1 = "pseudo-F",
+    p_1yr1 = "p", 
     variables_2yrs1 = "Source of variation",
     Df_2yrs1 = "df",
     F_2yrs1 = "pseudo-F",
@@ -467,6 +741,15 @@ anova_together_tables <- cbind(anova_2yrs_tables, anova_3yrs_tables) %>%
   cols_align(columns = everything(),
              align = "center") %>% 
   # bold p < 0.05
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_1yr1,
+      rows = p_1yr1 < 0.05
+    )
+  ) %>% 
   tab_style(
     style = list(
       cell_text(weight = "bold")
@@ -502,18 +785,26 @@ anova_together_tables
 
 
 ##########################################################################-
-# 4. manuscript figures ---------------------------------------------------
+# 5. manuscript figures ---------------------------------------------------
 ##########################################################################-
 
 # ⟞ a. continual removal --------------------------------------------------
 
 comm_comp_together <- algae_pt_bray_continual_plot + epi_pt_bray_continual_plot 
 
+comm_comp_together_arrows <- algae_pt_bray_continual_plot_arrows + epi_pt_bray_continual_plot_arrows
+
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-3_", today(), ".jpg", sep = "")),
 #        plot = comm_comp_together,
 #        height = 8, width = 16, units = "cm",
 #        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S8_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_together_arrows,
+#        height = 8, width = 16, units = "cm",
+#        dpi = 400)
 
 # ⟞ b. control ------------------------------------------------------------
 
@@ -522,8 +813,26 @@ comm_comp_control <- algae_pt_bray_control_plot + epi_pt_bray_control_plot
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S7_", today(), ".jpg", sep = "")),
 #        plot = comm_comp_control,
-#        height = 10, width = 16, units = "cm",
+#        height = 6, width = 16, units = "cm",
 #        dpi = 300)
 
 
+# ⟞ c. raw species biomass ------------------------------------------------
 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S9_", today(), ".jpg", sep = "")),
+#        plot = algae_biomass_time_plot,
+#        height = 18, width = 24, units = "cm",
+#        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S10_", today(), ".jpg", sep = "")),
+#        plot = epi_biomass_time_plot,
+#        height = 18, width = 24, units = "cm",
+#        dpi = 300)
+
+# ⟞ d. reference and removal plots together -------------------------------
+
+
+
+s
