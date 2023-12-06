@@ -1056,22 +1056,22 @@ overall_epi_predictions
 # ⟞ a. model summary tables -----------------------------------------------
 
 # individual group tables
-lm_algae_tables <- tbl_merge(tbls = list(lm_algae_during_summary, lm_algae_recovery_summary),
-                             tab_spanner = c("**Removal**", "**Recovery**")) 
+# lm_algae_tables <- tbl_merge(tbls = list(lm_algae_during_summary, lm_algae_recovery_summary),
+#                              tab_spanner = c("**Removal**", "**Recovery**")) 
 
-lm_epi_tables <- tbl_merge(tbls = list(lm_epi_during_summary, lm_epi_recovery_summary),
-                           tab_spanner = c("**Removal**", "**Recovery**")) 
+# lm_epi_tables <- tbl_merge(tbls = list(lm_epi_during_summary, lm_epi_recovery_summary),
+#                            tab_spanner = c("**Removal**", "**Recovery**")) 
 
-lm_endo_tables <- tbl_merge(tbls = list(lm_endo_during_summary, lm_endo_recovery_summary),
-                            tab_spanner = c("**Removal**", "**Recovery**")) 
+# lm_endo_tables <- tbl_merge(tbls = list(lm_endo_during_summary, lm_endo_recovery_summary),
+#                             tab_spanner = c("**Removal**", "**Recovery**")) 
 
 # stack tables
-lm_summary_tables <- tbl_stack(
-  tbls = list(lm_kelp_tables, lm_algae_tables, lm_epi_tables, lm_endo_tables),
-  group_header = c("Kelp", "Understory macroalgae", "Epilithic invertebrates", "Endolithic invertebrates"),
-  quiet = TRUE) %>% 
-  as_flex_table() %>% 
-  font(fontname = "Times New Roman", part = "all")
+# lm_summary_tables <- tbl_stack(
+#   tbls = list(lm_kelp_tables, lm_algae_tables, lm_epi_tables, lm_endo_tables),
+#   group_header = c("Kelp", "Understory macroalgae", "Epilithic invertebrates", "Endolithic invertebrates"),
+#   quiet = TRUE) %>% 
+#   as_flex_table() %>% 
+#   font(fontname = "Times New Roman", part = "all")
 
 # lm_summary_tables %>%
 #   save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
@@ -1100,135 +1100,14 @@ lm_zigamma_summary_tables <- tbl_stack(
   as_flex_table() %>% 
   font(fontname = "Times New Roman", part = "all")
 
-lm_zigamma_summary_tables %>%
-  save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
-
-# ⟞ b. s-d-a summary tables -----------------------------------------------
-
-sda_2yrs_tables <- rbind(anova_algae_2yrs_summary, anova_epi_2yrs_summary, anova_endo_2yrs_summary) %>% 
-  rename_with(., .fn = ~paste(., "_2yrs", sep = "", .cols = everything(cols)))
-
-sda_3yrs_tables <- rbind(anova_algae_3yrs_summary, anova_epi_3yrs_summary, anova_endo_3yrs_summary) %>% 
-  rename_with(., .fn = ~paste(., "_3yrs", sep = "", .cols = everything(cols)))
-
-sda_together_tables <- cbind(sda_2yrs_tables, sda_3yrs_tables) %>% 
-  select(-levels_3yrs1) %>% 
-  # turn the whole thing into a gt
-  gt() %>% 
-  # group labels
-  tab_row_group(
-    label = "Understory macroalgae", rows = 1:3
-  ) %>% 
-  tab_row_group(
-    label = "Epilithic invertebrates", rows = 4:6
-  ) %>% 
-  tab_row_group(
-    label = "Endolithic invertebrates", rows = 7:9
-  ) %>% 
-  row_group_order(groups = c("Understory macroalgae", "Epilithic invertebrates", "Endolithic invertebrates")) %>% 
-  # spanner labels
-  tab_spanner(
-    label = "2 year comparison",
-    id = "2 year comparison",
-    columns = c(estimate_2yrs1, std_error_2yrs1, df_2yrs1, t_value_2yrs1, pr_t_2yrs1)
-  ) %>%
-  tab_spanner(
-    label = "3 year comparison",
-    id = "3 year comparison",
-    columns = c(estimate_3yrs1, std_error_3yrs1, df_3yrs1, t_value_3yrs1, pr_t_3yrs1)
-  ) %>% 
-  # change column names
-  cols_label(
-    levels_2yrs1 = "",
-    estimate_2yrs1 = "Estimated difference",
-    std_error_2yrs1 = "SE",
-    df_2yrs1 = "df",
-    t_value_2yrs1 = "t-value", 
-    pr_t_2yrs1 = "p-value",
-    estimate_3yrs1 = "Estimated difference",
-    std_error_3yrs1 = "SE",
-    df_3yrs1 = "df",
-    t_value_3yrs1 = "t-value", 
-    pr_t_3yrs1 = "p-value",
-  ) %>% 
-  # align columns
-  cols_align(columns = everything(),
-             align = "center") %>% 
-  # bold p < 0.05
-  tab_style(
-    style = list(
-      cell_text(weight = "bold")
-    ),
-    locations = cells_body(
-      columns = pr_t_2yrs1,
-      rows = pr_t_2yrs1 < 0.05
-    )
-  ) %>% 
-  tab_style(
-    style = list(
-      cell_text(weight = "bold")
-    ),
-    locations = cells_body(
-      columns = pr_t_3yrs1,
-      rows = pr_t_3yrs1 < 0.05
-    )
-  ) %>% 
-  tab_style(
-    style = cell_text(weight = "bold"),
-    locations = cells_row_groups()
-  ) %>% 
-  tab_options(table.font.names = "Times New Roman") 
-
-# gtsave(sda_together_tables,
-#        here::here("tables", "ms-tables", paste("tbl-S3_", today(), ".docx", sep = "")),
-#        vwidth = 1500, vheight = 1000)
+# lm_zigamma_summary_tables %>%
+#   save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
 
 ##########################################################################-
 # 6. manuscript figures ---------------------------------------------------
 ##########################################################################-
 
-# ⟞ a. s-d-a and model predictions ----------------------------------------
-
-# making labels
-algae_label <- ggplot(data.frame(l = "Understory macroalgae", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), fontface = "bold") + 
-  theme_void() +
-  theme(plot.margin = margin(0, 0, 0, 0)) +
-  coord_cartesian(clip = "off")
-
-epi_label <- ggplot(data.frame(l = "Epilithic invertebrates", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), fontface = "bold") + 
-  theme_void() +
-  theme(plot.margin = margin(0, 0, 0, 0)) +
-  coord_cartesian(clip = "off")
-
-endo_label <- ggplot(data.frame(l = "Endolithic invertebrates", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), fontface = "bold") + 
-  theme_void() +
-  theme(plot.margin = margin(0, 0, 0, 0)) +
-  coord_cartesian(clip = "off")
-
-# putting group plots together
-top <- plot_grid(sda_algae_biomass, algae_time, ncol = 2)
-middle <- plot_grid(sda_epi_biomass, epi_time, ncol = 2)
-bottom <- plot_grid(sda_endo_biomass, endo_time, ncol = 2)
-
-# putting group plots with labels
-algae <- plot_grid(algae_label, top, ncol = 1, rel_heights = c(1, 12))
-epi <- plot_grid(epi_label, middle, ncol = 1, rel_heights = c(1, 12))
-endo <- plot_grid(endo_label, bottom, ncol = 1, rel_heights = c(1, 12))
-
-# putting plots together
-algae_epi <- plot_grid(algae, epi, ncol = 1)
-sda_time_together <- plot_grid(algae_epi, endo, ncol = 1, rel_heights = c(2, 1))
-
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-2_", today(), ".jpg", sep = "")),
-#        plot = sda_time_together,
-#        height = 18, width = 16, units = "cm",
-#        dpi = 400)
-
-# ⟞ b. raw biomass through time -------------------------------------------
+# ⟞ a. raw biomass through time -------------------------------------------
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S4_", today(), ".jpg", sep = "")),
@@ -1248,18 +1127,7 @@ sda_time_together <- plot_grid(algae_epi, endo, ncol = 1, rel_heights = c(2, 1))
 #        height = 8, width = 16, units = "cm",
 #        dpi = 300)
 
-# ⟞ c. s-d-a with 3 year comparison ---------------------------------------
-
-# sda_3yrs <- sda_algae_biomass_3yrs / sda_epi_biomass_3yrs / sda_endo_biomass_3yrs
-# 
-# ggsave(here::here("figures", "ms-figures",
-#        paste("fig-S7_", today(), ".jpg", sep = ")),
-#        plot = sda_3yrs,
-#        height = 18, width = 9, units = "cm",
-#        dpi = 400)
-
-
-# ⟞ d. raw algae and epi model --------------------------------------------
+# ⟞ b. raw algae and epi model --------------------------------------------
 
 fig2_v1 <-  (algae_title + epi_title) /
             (raw_algae_time + raw_epi_time) /

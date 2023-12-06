@@ -2115,3 +2115,115 @@ endo_time <- ggplot() +
        y = "\U0394 biomass \n (treatment - control)",
        subtitle = "(f)")
 endo_time
+
+# ⟞ b. s-d-a summary tables -----------------------------------------------
+
+sda_2yrs_tables <- rbind(anova_algae_2yrs_summary, anova_epi_2yrs_summary, anova_endo_2yrs_summary) %>% 
+  rename_with(., .fn = ~paste(., "_2yrs", sep = "", .cols = everything(cols)))
+
+sda_3yrs_tables <- rbind(anova_algae_3yrs_summary, anova_epi_3yrs_summary, anova_endo_3yrs_summary) %>% 
+  rename_with(., .fn = ~paste(., "_3yrs", sep = "", .cols = everything(cols)))
+
+sda_together_tables <- cbind(sda_2yrs_tables, sda_3yrs_tables) %>% 
+  select(-levels_3yrs1) %>% 
+  # turn the whole thing into a gt
+  gt() %>% 
+  # group labels
+  tab_row_group(
+    label = "Understory macroalgae", rows = 1:3
+  ) %>% 
+  tab_row_group(
+    label = "Epilithic invertebrates", rows = 4:6
+  ) %>% 
+  tab_row_group(
+    label = "Endolithic invertebrates", rows = 7:9
+  ) %>% 
+  row_group_order(groups = c("Understory macroalgae", "Epilithic invertebrates", "Endolithic invertebrates")) %>% 
+  # spanner labels
+  tab_spanner(
+    label = "2 year comparison",
+    id = "2 year comparison",
+    columns = c(estimate_2yrs1, std_error_2yrs1, df_2yrs1, t_value_2yrs1, pr_t_2yrs1)
+  ) %>%
+  tab_spanner(
+    label = "3 year comparison",
+    id = "3 year comparison",
+    columns = c(estimate_3yrs1, std_error_3yrs1, df_3yrs1, t_value_3yrs1, pr_t_3yrs1)
+  ) %>% 
+  # change column names
+  cols_label(
+    levels_2yrs1 = "",
+    estimate_2yrs1 = "Estimated difference",
+    std_error_2yrs1 = "SE",
+    df_2yrs1 = "df",
+    t_value_2yrs1 = "t-value", 
+    pr_t_2yrs1 = "p-value",
+    estimate_3yrs1 = "Estimated difference",
+    std_error_3yrs1 = "SE",
+    df_3yrs1 = "df",
+    t_value_3yrs1 = "t-value", 
+    pr_t_3yrs1 = "p-value",
+  ) %>% 
+  # align columns
+  cols_align(columns = everything(),
+             align = "center") %>% 
+  # bold p < 0.05
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = pr_t_2yrs1,
+      rows = pr_t_2yrs1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = pr_t_3yrs1,
+      rows = pr_t_3yrs1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()
+  ) %>% 
+  tab_options(table.font.names = "Times New Roman") 
+
+# gtsave(sda_together_tables,
+#        here::here("tables", "ms-tables", paste("tbl-S3_", today(), ".docx", sep = "")),
+#        vwidth = 1500, vheight = 1000)
+
+# ⟞ a. s-d-a and model predictions ----------------------------------------
+
+# putting group plots together
+top <- plot_grid(sda_algae_biomass, algae_time, ncol = 2)
+middle <- plot_grid(sda_epi_biomass, epi_time, ncol = 2)
+bottom <- plot_grid(sda_endo_biomass, endo_time, ncol = 2)
+
+# putting group plots with labels
+algae <- plot_grid(algae_label, top, ncol = 1, rel_heights = c(1, 12))
+epi <- plot_grid(epi_label, middle, ncol = 1, rel_heights = c(1, 12))
+endo <- plot_grid(endo_label, bottom, ncol = 1, rel_heights = c(1, 12))
+
+# putting plots together
+algae_epi <- plot_grid(algae, epi, ncol = 1)
+sda_time_together <- plot_grid(algae_epi, endo, ncol = 1, rel_heights = c(2, 1))
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-2_", today(), ".jpg", sep = "")),
+#        plot = sda_time_together,
+#        height = 18, width = 16, units = "cm",
+#        dpi = 400)
+
+# ⟞ c. s-d-a with 3 year comparison ---------------------------------------
+
+# sda_3yrs <- sda_algae_biomass_3yrs / sda_epi_biomass_3yrs / sda_endo_biomass_3yrs
+# 
+# ggsave(here::here("figures", "ms-figures",
+#        paste("fig-S7_", today(), ".jpg", sep = ")),
+#        plot = sda_3yrs,
+#        height = 18, width = 9, units = "cm",
+#        dpi = 400)
