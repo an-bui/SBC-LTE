@@ -1690,7 +1690,7 @@ sda_time_together <- plot_grid(algae_epi, endo, ncol = 1, rel_heights = c(2, 1))
 # sda_3yrs <- sda_algae_biomass_3yrs / sda_epi_biomass_3yrs / sda_endo_biomass_3yrs
 # 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-S7_", today(), ".jpg", sep = "")),
+#        paste("fig-S7_", today(), ".jpg", sep = ")),
 #        plot = sda_3yrs,
 #        height = 18, width = 9, units = "cm",
 #        dpi = 400)
