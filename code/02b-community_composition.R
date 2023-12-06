@@ -324,7 +324,7 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
        fill = "Time period",
        title = "(a) Removal") +
   theme(legend.position = "none", # c(0.2, 0.8), 
-        # panel.grid = element_blank(),
+        panel.grid = element_blank(),
         legend.background = element_blank())
 algae_pt_bray_continual_plot 
 
@@ -355,9 +355,7 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
        title = "(b) Reference") +
   # theme
   theme(legend.position = "none",
-        aspect.ratio = 1
-        #panel.grid = element_blank()
-        ) 
+        panel.grid = element_blank()) 
 algae_pt_bray_control_plot
 
 # both treatments together
@@ -506,8 +504,8 @@ epi_pt_bray_continual_plot <- nmds_plot_fxn(
 ) +
   scale_x_continuous(limits = c(-1.6, 1.2)) +
   scale_y_continuous(limits = c(-1.6, 1.2)) +
-  theme(legend.position = "none"
-        # panel.grid = element_blank()
+  theme(legend.position = "none",
+        panel.grid = element_blank()
         ) +
   labs(title = "(c) Removal") 
 epi_pt_bray_continual_plot
@@ -532,9 +530,8 @@ epi_pt_bray_control_plot <- nmds_plot_fxn(
   scale_x_continuous(limits = c(-1.3, 1.3), breaks = seq(-1, 1, by = 1)) +
   scale_y_continuous(limits = c(-1.25, 1.35), breaks = seq(-1, 1, by = 1)) +
   labs(title = "(d) Reference") +
-  theme(legend.position = "none"
-        # panel.grid = element_blank()
-        ) 
+  theme(legend.position = "none",
+        panel.grid = element_blank()) 
 epi_pt_bray_control_plot
 
 # both treatments together
