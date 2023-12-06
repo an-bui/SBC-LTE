@@ -11,34 +11,34 @@ source(here::here("code", "00-set_up.R"))
 
 # ⟞ a. annual removal deltas ----------------------------------------------
 
-delta_annual <- biomass %>% 
-  filter(sp_code == "MAPY" & treatment %in% c("control", "annual")) %>% 
-  dplyr::select(-sp_code) %>% 
-  dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
-  pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
-  # fill in values for sampling dates where control and annual were surveyed on different days
-  mutate(control = case_when(
-    site == "aque" & date == "2008-03-07" ~ 106.82000,
-    site == "napl" & date == "2012-09-26" ~ 143.22088,
-    TRUE ~ control
-  )) %>% 
-  mutate(delta_annual = annual - control) %>%  
-  # missing dates are from AQUE 2008-03-05, NAPL 2012-09-25, NAPL 2008-10-10
-  drop_na(delta_annual) %>% 
-  mutate(exp_dates = case_when(
-    # after removal ended:
-    site == "aque" & date >= aque_after_date_annual ~ "after",
-    site == "napl" & date >= napl_after_date_annual ~ "after",
-    site == "ivee" & date >= ivee_after_date_annual ~ "after", 
-    site == "mohk" & date >= mohk_after_date_annual ~ "after",
-    site == "carp" & date >= carp_after_date_annual ~ "after",
-    # everything else is "during" removal
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_annual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_annual() 
+# delta_annual <- biomass %>% 
+#   filter(sp_code == "MAPY" & treatment %in% c("control", "annual")) %>% 
+#   dplyr::select(-sp_code) %>% 
+#   dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
+#   pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
+#   # fill in values for sampling dates where control and annual were surveyed on different days
+#   mutate(control = case_when(
+#     site == "aque" & date == "2008-03-07" ~ 106.82000,
+#     site == "napl" & date == "2012-09-26" ~ 143.22088,
+#     TRUE ~ control
+#   )) %>% 
+#   mutate(delta_annual = annual - control) %>%  
+#   # missing dates are from AQUE 2008-03-05, NAPL 2012-09-25, NAPL 2008-10-10
+#   drop_na(delta_annual) %>% 
+#   mutate(exp_dates = case_when(
+#     # after removal ended:
+#     site == "aque" & date >= aque_after_date_annual ~ "after",
+#     site == "napl" & date >= napl_after_date_annual ~ "after",
+#     site == "ivee" & date >= ivee_after_date_annual ~ "after", 
+#     site == "mohk" & date >= mohk_after_date_annual ~ "after",
+#     site == "carp" & date >= carp_after_date_annual ~ "after",
+#     # everything else is "during" removal
+#     TRUE ~ "during"
+#   ),
+#   exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+#   time_since_columns_annual() %>% 
+#   kelp_year_column() %>% 
+#   comparison_column_annual() 
 
 # ⟞ b. continual removal deltas -------------------------------------------
 
@@ -84,39 +84,39 @@ continual_long <- delta_continual %>%
 
 # ⟞ a. delta annual plot --------------------------------------------------
 
-delta_annual_plot <- ggplot(delta_annual, aes(x = time_since_end, y = delta_annual)) +
-  geom_hline(yintercept = 0, lty = 2) +
-  geom_point(aes(col = exp_dates)) +
-  geom_smooth(method = "lm", aes(col = exp_dates)) +
-  theme_bw() + 
-  theme(legend.position = "none",
-        axis.title = element_text(size = 14),
-        plot.title = element_text(size = 18),
-        axis.text = element_text(size = 10),
-        strip.text = element_text(size = 10)) +
-  labs(x = "Time since end of experiment", y = "\U0394 biomass (removal - reference)",
-       title = "\U0394 annual") +
-  facet_wrap(~site_full, ncol = 1, scales = "free_y")
+# delta_annual_plot <- ggplot(delta_annual, aes(x = time_since_end, y = delta_annual)) +
+#   geom_hline(yintercept = 0, lty = 2) +
+#   geom_point(aes(col = exp_dates)) +
+#   geom_smooth(method = "lm", aes(col = exp_dates)) +
+#   theme_bw() + 
+#   theme(legend.position = "none",
+#         axis.title = element_text(size = 14),
+#         plot.title = element_text(size = 18),
+#         axis.text = element_text(size = 10),
+#         strip.text = element_text(size = 10)) +
+#   labs(x = "Time since end of experiment", y = "\U0394 biomass (removal - reference)",
+#        title = "\U0394 annual") +
+#   facet_wrap(~site_full, ncol = 1, scales = "free_y")
 
-delta_annual_plot
+# delta_annual_plot
 
 # ⟞ b. delta continual plot -----------------------------------------------
 
-delta_continual_plot <- ggplot(delta_continual, aes(x = time_since_end, y = delta_continual)) +
-  geom_hline(yintercept = 0, lty = 2) +
-  geom_point(aes(col = exp_dates)) +
-  geom_smooth(method = "lm", aes(col = exp_dates)) +
-  theme_bw() + 
-  theme(legend.position = "none",
-        axis.title = element_text(size = 14),
-        plot.title = element_text(size = 18),
-        axis.text = element_text(size = 10),
-        strip.text = element_text(size = 10)) +
-  labs(x = "Time since end of experiment", y = "\U0394 biomass (removal - reference)",
-       title = "\U0394 continual") +
-  facet_wrap(~site_full, ncol = 1, scales = "free_y")
-
-delta_continual_plot
+# delta_continual_plot <- ggplot(delta_continual, aes(x = time_since_end, y = delta_continual)) +
+#   geom_hline(yintercept = 0, lty = 2) +
+#   geom_point(aes(col = exp_dates)) +
+#   geom_smooth(method = "lm", aes(col = exp_dates)) +
+#   theme_bw() + 
+#   theme(legend.position = "none",
+#         axis.title = element_text(size = 14),
+#         plot.title = element_text(size = 18),
+#         axis.text = element_text(size = 10),
+#         strip.text = element_text(size = 10)) +
+#   labs(x = "Time since end of experiment", y = "\U0394 biomass (removal - reference)",
+#        title = "\U0394 continual") +
+#   facet_wrap(~site_full, ncol = 1, scales = "free_y")
+# 
+# delta_continual_plot
 
 # ⟞ c. raw biomass through time plot --------------------------------------
 
@@ -176,134 +176,134 @@ lm_kelp_during_lmer <- lmerTest::lmer(
 #   na.action = na.pass
 # )
 # normal model using glmmTMB with tweedie structure
-lm_kelp_during_tweedie <- glmmTMB(
-  delta_continual ~ time_since_end + (1|site),
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  family = tweedie(),
-  na.action = na.pass, 
-  REML = TRUE)
+# lm_kelp_during_tweedie <- glmmTMB(
+#   delta_continual ~ time_since_end + (1|site),
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   family = tweedie(),
+#   na.action = na.pass, 
+#   REML = TRUE)
 # normal model with season
-lm_kelp_during_season <- lmerTest::lmer(
-  delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass)
+# lm_kelp_during_season <- lmerTest::lmer(
+#   delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass)
 # normal model with season using glmmTM with tweedie structure
-lm_kelp_during_season_tweedie <- glmmTMB(
-  delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  family = tweedie(),
-  na.action = na.pass)
+# lm_kelp_during_season_tweedie <- glmmTMB(
+#   delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   family = tweedie(),
+#   na.action = na.pass)
 # normal model with season as random effect (failed to converge)
-lm_kelp_during_season_re <- lmerTest::lmer(
-  delta_continual ~ time_since_end + (1|site) + (1|quarter),
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass)
+# lm_kelp_during_season_re <- lmerTest::lmer(
+#   delta_continual ~ time_since_end + (1|site) + (1|quarter),
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass)
 # continuous AR1
-lm_kelp_during_lme_car1 <- nlme::lme(
-  delta_continual ~ time_since_end, random = ~1|site,
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corCAR1())
+# lm_kelp_during_lme_car1 <- nlme::lme(
+#   delta_continual ~ time_since_end, random = ~1|site,
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corCAR1())
 # continuous AR1 with season
-lm_kelp_during_lme_car1_season <- nlme::lme(
-  delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corCAR1())
+# lm_kelp_during_lme_car1_season <- nlme::lme(
+#   delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corCAR1())
 # continuous AR1 with season as random effect
-lm_kelp_during_lme_car1_season_re <- nlme::lme(
-  delta_continual ~ time_since_end, random = list(site = ~1, quarter = ~1),
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corCAR1())
+# lm_kelp_during_lme_car1_season_re <- nlme::lme(
+#   delta_continual ~ time_since_end, random = list(site = ~1, quarter = ~1),
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corCAR1())
 # AR1
-lm_kelp_during_lme_ar1 <- nlme::lme(
-  delta_continual ~ time_since_end, random = ~1|site,
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corAR1())
+# lm_kelp_during_lme_ar1 <- nlme::lme(
+#   delta_continual ~ time_since_end, random = ~1|site,
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corAR1())
 # AR1 with season
-lm_kelp_during_lme_ar1_season <- nlme::lme(
-  delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corAR1())
+# lm_kelp_during_lme_ar1_season <- nlme::lme(
+#   delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corAR1())
 # AR1 with season as random effect
-lm_kelp_during_lme_ar1_season_re <- nlme::lme(
-  delta_continual ~ time_since_end, random = list(site = ~1, quarter = ~1),
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corAR1())
+# lm_kelp_during_lme_ar1_season_re <- nlme::lme(
+#   delta_continual ~ time_since_end, random = list(site = ~1, quarter = ~1),
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corAR1())
 # ARMA 4
-lm_kelp_during_lme_ar4 <- nlme::lme(
-  delta_continual ~ time_since_end, random = ~1|site,
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corARMA(p = 4, q = 0)) 
+# lm_kelp_during_lme_ar4 <- nlme::lme(
+#   delta_continual ~ time_since_end, random = ~1|site,
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corARMA(p = 4, q = 0)) 
 # with season no autoregressive
-lm_kelp_during_glmmtmb_season <- glmmTMB(
-  delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  family = tweedie(),
-  na.action = na.pass) 
+# lm_kelp_during_glmmtmb_season <- glmmTMB(
+#   delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   family = tweedie(),
+#   na.action = na.pass) 
 
 # ARMA 4 with season
-lm_kelp_during_lme_ar4_season <- nlme::lme(
-  delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corARMA(p = 4, q = 0)) 
+# lm_kelp_during_lme_ar4_season <- nlme::lme(
+#   delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corARMA(p = 4, q = 0)) 
 # with season
-lm_kelp_during_glmmTMB_season <- glmmTMB(
-  delta_continual ~ quarter + ar1(time_since_end + 0 |site),
-  data = delta_continual %>% filter(exp_dates == "during") %>% mutate(time_since_end = as_factor(time_since_end)), 
-  family = tweedie(),
-  na.action = na.pass) 
+# lm_kelp_during_glmmTMB_season <- glmmTMB(
+#   delta_continual ~ quarter + ar1(time_since_end + 0 |site),
+#   data = delta_continual %>% filter(exp_dates == "during") %>% mutate(time_since_end = as_factor(time_since_end)), 
+#   family = tweedie(),
+#   na.action = na.pass) 
 # ARMA 4 with season as random effect
-lm_kelp_during_lme_ar4_season_re <- nlme::lme(
-  delta_continual ~ time_since_end, random = list(site = ~1, quarter = ~1),
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  na.action = na.pass,
-  correlation = corARMA(p = 4, q = 0)) 
+# lm_kelp_during_lme_ar4_season_re <- nlme::lme(
+#   delta_continual ~ time_since_end, random = list(site = ~1, quarter = ~1),
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   na.action = na.pass,
+#   correlation = corARMA(p = 4, q = 0)) 
 # GLS CAR1
-lm_kelp_during_gls_car1 <- nlme::gls(
-  delta_continual ~ time_since_end,
-  data = delta_continual %>% filter(exp_dates == "during"), 
-  correlation = corCAR1(form = ~ 1|site)
-)
+# lm_kelp_during_gls_car1 <- nlme::gls(
+#   delta_continual ~ time_since_end,
+#   data = delta_continual %>% filter(exp_dates == "during"), 
+#   correlation = corCAR1(form = ~ 1|site)
+# )
 # linear transformation: multiply by -1, add 8
-transform <- delta_continual %>% 
-  mutate(delta_continual_tf = delta_continual*-1 + 8) %>% 
-  mutate(logratio = log(continual)/log(control)) %>% 
-  filter(exp_dates == "during")
-ggplot(transform, aes(x = logratio)) +
-  geom_histogram()
-
-ggplot(transform, aes(x = control)) +
-  geom_histogram(bins = 10)
-transform_fxn <- function(x) x*-1 + 8
-backtransform <- function(x) (x-8)*-1
+# transform <- delta_continual %>% 
+#   mutate(delta_continual_tf = delta_continual*-1 + 8) %>% 
+#   mutate(logratio = log(continual)/log(control)) %>% 
+#   filter(exp_dates == "during")
+# ggplot(transform, aes(x = logratio)) +
+#   geom_histogram()
+# 
+# ggplot(transform, aes(x = control)) +
+#   geom_histogram(bins = 10)
+# transform_fxn <- function(x) x*-1 + 8
+# backtransform <- function(x) (x-8)*-1
 # taking out aque, mohk, or carp makes residuals look normal
-lm_kelp_during_tf_gamma <- glmmTMB::glmmTMB(
-  transform_fxn(delta_continual) ~ time_since_end + (1|site),
-  data = transform,
-  na.action = na.pass,
-  family = Gamma(link = "log"))
-simulateResiduals(lm_kelp_during_tf_gamma, plot = TRUE)
-summary(lm_kelp_during_tf_gamma)
-tf_pred <- ggpredict(lm_kelp_during_tf_gamma, terms = ~ time_since_end) %>% 
-  mutate(transform = backtransform(predicted),
-         tf_conf.low = backtransform(conf.low),
-         tf_conf.high = backtransform(conf.high))
-ggplot(delta_continual, aes(x = time_since_end, y = delta_continual)) +
-  geom_point() +
-  geom_line(data = tf_pred, aes(x = x, y = transform), color = "blue") +
-  geom_ribbon(data = tf_pred, aes(x = x, y = transform, ymin = tf_conf.low, ymax = tf_conf.high), alpha = 0.2)
-lm_kelp_during_tf_tweedie <- glmmTMB::glmmTMB(
-  delta_continual_tf ~ time_since_end + (1|site),
-  data = transform, 
-  na.action = na.pass,
-  family = tweedie(link = "log")) 
+# lm_kelp_during_tf_gamma <- glmmTMB::glmmTMB(
+#   transform_fxn(delta_continual) ~ time_since_end + (1|site),
+#   data = transform,
+#   na.action = na.pass,
+#   family = Gamma(link = "log"))
+# simulateResiduals(lm_kelp_during_tf_gamma, plot = TRUE)
+# summary(lm_kelp_during_tf_gamma)
+# tf_pred <- ggpredict(lm_kelp_during_tf_gamma, terms = ~ time_since_end) %>% 
+#   mutate(transform = backtransform(predicted),
+#          tf_conf.low = backtransform(conf.low),
+#          tf_conf.high = backtransform(conf.high))
+# ggplot(delta_continual, aes(x = time_since_end, y = delta_continual)) +
+#   geom_point() +
+#   geom_line(data = tf_pred, aes(x = x, y = transform), color = "blue") +
+#   geom_ribbon(data = tf_pred, aes(x = x, y = transform, ymin = tf_conf.low, ymax = tf_conf.high), alpha = 0.2)
+# lm_kelp_during_tf_tweedie <- glmmTMB::glmmTMB(
+#   delta_continual_tf ~ time_since_end + (1|site),
+#   data = transform, 
+#   na.action = na.pass,
+#   family = tweedie(link = "log")) 
 # lm_kelp_during_tf_season <- glmmTMB::glmmTMB(
 #   delta_continual_tf ~ time_since_end + quarter + time_since_end*quarter + (1|site),
 #   data = transform, 
@@ -347,54 +347,54 @@ performance::check_model(lm_kelp_during_lmer)
 performance::check_autocorrelation(lm_kelp_during_lmer) # Durbin-Watson-Test
 
 # normal model with season
-simulateResiduals(lm_kelp_during_season, plot = T)
-check_model(lm_kelp_during_season)
+# simulateResiduals(lm_kelp_during_season, plot = T)
+# check_model(lm_kelp_during_season)
 
 # normal model with season with random effect
-simulateResiduals(lm_kelp_during_season_re, plot = T)
-check_model(lm_kelp_during_season_re)
+# simulateResiduals(lm_kelp_during_season_re, plot = T)
+# check_model(lm_kelp_during_season_re)
 
 # continuous AR1
-resid_plot_fxn(lm_kelp_during_lme_car1)
-plot(density(resid(lm_kelp_during_lme_car1)))
-check_model(lm_kelp_during_lme_car1)
+# resid_plot_fxn(lm_kelp_during_lme_car1)
+# plot(density(resid(lm_kelp_during_lme_car1)))
+# check_model(lm_kelp_during_lme_car1)
 
 # continuous AR1 with season
-resid_plot_fxn(lm_kelp_during_lme_car1_season)
-plot(density(resid(lm_kelp_during_lme_car1_season)))
-check_model(lm_kelp_during_lme_car1_season)
+# resid_plot_fxn(lm_kelp_during_lme_car1_season)
+# plot(density(resid(lm_kelp_during_lme_car1_season)))
+# check_model(lm_kelp_during_lme_car1_season)
 
 # continuous AR1 with season as random effect
-resid_plot_fxn(lm_kelp_during_lme_car1_season_re)
-plot(density(resid(lm_kelp_during_lme_car1_season_re)))
-check_model(lm_kelp_during_lme_car1_season_re)
+# resid_plot_fxn(lm_kelp_during_lme_car1_season_re)
+# plot(density(resid(lm_kelp_during_lme_car1_season_re)))
+# check_model(lm_kelp_during_lme_car1_season_re)
 
 # AR1
-resid_plot_fxn(lm_kelp_during_lme_ar1)
-check_model(lm_kelp_during_lme_ar1)
+# resid_plot_fxn(lm_kelp_during_lme_ar1)
+# check_model(lm_kelp_during_lme_ar1)
 
 # AR1 with season
-resid_plot_fxn(lm_kelp_during_lme_ar1_season)
+# resid_plot_fxn(lm_kelp_during_lme_ar1_season)
 
 # AR1 with season as random effect
-resid_plot_fxn(lm_kelp_during_lme_ar1_season_re)
+# resid_plot_fxn(lm_kelp_during_lme_ar1_season_re)
 
 # ARMA 4
-resid_plot_fxn(lm_kelp_during_lme_ar4)
-qqnorm(residuals(lm_kelp_during_lme_ar4))
-qqline(residuals(lm_kelp_during_lme_ar4))
-ks.test(residuals(lm_kelp_during_lme_ar4), "pnorm")
+# resid_plot_fxn(lm_kelp_during_lme_ar4)
+# qqnorm(residuals(lm_kelp_during_lme_ar4))
+# qqline(residuals(lm_kelp_during_lme_ar4))
+# ks.test(residuals(lm_kelp_during_lme_ar4), "pnorm")
 
 # ARMA 4 with season
-resid_plot_fxn(lm_kelp_during_lme_ar4_season)
-check_model(lm_kelp_during_lme_ar4_season)
+# resid_plot_fxn(lm_kelp_during_lme_ar4_season)
+# check_model(lm_kelp_during_lme_ar4_season)
 
 # ARMA 4 with season as random effect
-resid_plot_fxn(lm_kelp_during_lme_ar4_season_re)
-check_model(lm_kelp_during_lme_ar4_season_re)
+# resid_plot_fxn(lm_kelp_during_lme_ar4_season_re)
+# check_model(lm_kelp_during_lme_ar4_season_re)
 
 # GLS CAR1
-check_model(lm_kelp_during_gls_car1)
+# check_model(lm_kelp_during_gls_car1)
 
 # model checks
 # normal model
@@ -406,20 +406,20 @@ performance::check_heteroskedasticity(lm_kelp_during_lmer) # Breusch-Pagan test
 
 # plot ACF/PACF
 # normal model
-acf(resid(lm_kelp_during_lmer))
-pacf(resid(lm_kelp_during_lmer))
+# acf(resid(lm_kelp_during_lmer))
+# pacf(resid(lm_kelp_during_lmer))
 
 # continuous AR1
-acf(resid(lm_kelp_during_lme_car1))
-pacf(resid(lm_kelp_during_lme_car1))
+# acf(resid(lm_kelp_during_lme_car1))
+# pacf(resid(lm_kelp_during_lme_car1))
 
 # ARMA 4
-acf(resid(lm_kelp_during_lme_ar4))
-pacf(resid(lm_kelp_during_lme_ar4))
+# acf(resid(lm_kelp_during_lme_ar4))
+# pacf(resid(lm_kelp_during_lme_ar4))
 
 # GLS CAR1
-acf(resid(lm_kelp_during_gls_car1))
-pacf(resid(lm_kelp_during_gls_car1))
+# acf(resid(lm_kelp_during_gls_car1))
+# pacf(resid(lm_kelp_during_gls_car1))
 
 # raw kelp biomass model
 DHARMa::simulateResiduals(lm_kelp_during_zigamma_01, plot = T)
@@ -430,17 +430,15 @@ performance::check_model(lm_kelp_during_zigamma_02)
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
-r.squaredGLMM(lm_kelp_during_lme_car1)
-r.squaredGLMM(lm_kelp_during_lme_ar4)
-r.squaredGLMM(lm_kelp_during_zigamma)
+# r.squaredGLMM(lm_kelp_during_lme_car1)
+# r.squaredGLMM(lm_kelp_during_lme_ar4)
+r.squaredGLMM(lm_kelp_during_zigamma_01)
+r.squaredGLMM(lm_kelp_during_zigamma_02)
 
 # summaries
-summary(lm_kelp_during_lmer) # significant slope
-summary(lm_kelp_during_lme_car1) # significant slope
-summary(lm_kelp_during_gls_car1) # non significant slope
-summary(lm_kelp_during_lme_ar4) # significant slope
-summary(lm_kelp_during_lme_ar4_season)
-summary(lm_kelp_during_zigamma)
+summary(lm_kelp_during_lmer)
+summary(lm_kelp_during_zigamma_01)
+summary(lm_kelp_during_zigamma_02)
 
 lm_kelp_during_zigamma_summary <- lm_kelp_during_zigamma_02 %>% 
   tbl_regression() %>% 
@@ -478,12 +476,18 @@ lm_kelp_during_summary <- lm_kelp_during_lmer %>%
 lm_kelp_during_summary
 
 # AIC comparison
-MuMIn::AICc(lm_kelp_during_lmer, lm_kelp_during_season, lm_kelp_during_season_re,
-            lm_kelp_during_lme_car1, lm_kelp_during_lme_car1_season, lm_kelp_during_lme_car1_season_re,
-            lm_kelp_during_lme_ar1, lm_kelp_during_lme_ar1_season, lm_kelp_during_lme_ar1_season_re,
-            lm_kelp_during_lme_ar4, lm_kelp_during_lme_ar4_season, lm_kelp_during_lme_ar4_season_re,
-            lm_kelp_during_gls_car1, lm_kelp_during_tweedie, lm_kelp_during_season_tweedie) %>% 
-  arrange(AICc)
+# MuMIn::AICc(lm_kelp_during_lmer, 
+#             lm_kelp_during_season, lm_kelp_during_season_re,
+#             lm_kelp_during_lme_car1, lm_kelp_during_lme_car1_season,
+#             lm_kelp_during_lme_car1_season_re, lm_kelp_during_lme_ar1,
+#             lm_kelp_during_lme_ar1_season, lm_kelp_during_lme_ar1_season_re,
+#             lm_kelp_during_lme_ar4, lm_kelp_during_lme_ar4_season,
+#             lm_kelp_during_lme_ar4_season_re, lm_kelp_during_gls_car1, 
+#             lm_kelp_during_tweedie, lm_kelp_during_season_tweedie
+#             ) %>% 
+#   arrange(AICc)
+
+MuMIn::AICc(lm_kelp_during_zigamma_01, lm_kelp_during_zigamma_02)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
@@ -508,23 +512,24 @@ lm_kelp_recovery_lmer <- lmerTest::lmer(
   data = delta_continual %>% filter(exp_dates == "after"), 
   na.action = na.pass)
 # continuous AR1
-lm_kelp_recovery_lme_ar1 <- nlme::lme(
-  delta_continual ~ time_since_end, random = ~1|site,
-  data = delta_continual %>% filter(exp_dates == "after"), 
-  na.action = na.pass,
-  correlation = corAR1())
+# lm_kelp_recovery_lme_ar1 <- nlme::lme(
+#   delta_continual ~ time_since_end, random = ~1|site,
+#   data = delta_continual %>% filter(exp_dates == "after"), 
+#   na.action = na.pass,
+#   correlation = corAR1())
 # ARMA 2
-lm_kelp_recovery_lme_ar2 <- nlme::lme(
-  delta_continual ~ time_since_end, random = ~1|site,
-  data = delta_continual %>% filter(exp_dates == "after"), 
-  na.action = na.pass,
-  correlation = corARMA(p = 2, q = 0))
+# lm_kelp_recovery_lme_ar2 <- nlme::lme(
+#   delta_continual ~ time_since_end, random = ~1|site,
+#   data = delta_continual %>% filter(exp_dates == "after"), 
+#   na.action = na.pass,
+#   correlation = corARMA(p = 2, q = 0))
 # GLS AR1
-lm_kelp_recovery_gls_ar1 <- nlme::gls(
-  delta_continual ~ time_since_end, 
-  data = delta_continual %>% filter(exp_dates == "after"), 
-  na.action = na.pass,
-  correlation = corAR1(form = ~1|site))
+# lm_kelp_recovery_gls_ar1 <- nlme::gls(
+#   delta_continual ~ time_since_end, 
+#   data = delta_continual %>% filter(exp_dates == "after"), 
+#   na.action = na.pass,
+#   correlation = corAR1(form = ~1|site))
+
 # raw kelp biomass model
 ## site random effect
 lm_kelp_recovery_zigamma_01 <- glmmTMB(
@@ -532,29 +537,31 @@ lm_kelp_recovery_zigamma_01 <- glmmTMB(
   data = continual_long %>% filter(exp_dates == "after"), 
   family = ziGamma(link = "log"), 
   ziformula = ~1)
-summary(lm_kelp_recovery_zigamma_01)
+
 ## site and year random effect
 lm_kelp_recovery_zigamma_02 <- glmmTMB(
   kelp_biomass ~ time_since_end*treatment + (1|site) + (1|year),
   data = continual_long %>% filter(exp_dates == "after"), 
   family = ziGamma(link = "log"), 
   ziformula = ~1)
-summary(lm_kelp_recovery_zigamma_02)
+
 
 # check for autocorrelation
 performance::check_autocorrelation(lm_kelp_recovery_lmer)
+performance::check_autocorrelation(lm_kelp_recovery_zigamma_01)
+performance::check_autocorrelation(lm_kelp_recovery_zigamma_02)
 
 # diagnostics
 # normal model
-plot(DHARMa::simulateResiduals(lm_kelp_recovery_lmer))
-performance::check_model(lm_kelp_recovery_lmer)
+# plot(DHARMa::simulateResiduals(lm_kelp_recovery_lmer))
+# performance::check_model(lm_kelp_recovery_lmer)
 
 # continuous AR1
-performance::check_model(lm_kelp_recovery_lme_ar1)
+# performance::check_model(lm_kelp_recovery_lme_ar1)
 
 # GLS AR1
-qqnorm(lm_kelp_recovery_gls_ar1)
-plot(fitted(lm_kelp_recovery_gls_ar1), residuals(lm_kelp_recovery_gls_ar1))
+# qqnorm(lm_kelp_recovery_gls_ar1)
+# plot(fitted(lm_kelp_recovery_gls_ar1), residuals(lm_kelp_recovery_gls_ar1))
 
 # model checks
 # normal model
@@ -564,12 +571,12 @@ check_heteroscedasticity(lm_kelp_recovery_lmer)
 
 # plot ACF
 # normal model
-acf(residuals(lm_kelp_recovery_lmer))
-pacf(residuals(lm_kelp_recovery_lmer))
+# acf(residuals(lm_kelp_recovery_lmer))
+# pacf(residuals(lm_kelp_recovery_lmer))
 
 # ARMA 2
-acf(residuals(lm_kelp_recovery_lme_ar2))
-pacf(residuals(lm_kelp_recovery_lme_ar2))
+# acf(residuals(lm_kelp_recovery_lme_ar2))
+# pacf(residuals(lm_kelp_recovery_lme_ar2))
 
 # raw kelp biomass model
 plot(simulateResiduals(lm_kelp_recovery_zigamma_01))
@@ -580,13 +587,14 @@ performance::check_model(lm_kelp_recovery_zigamma_02)
 
 # Rsquared
 MuMIn::r.squaredGLMM(lm_kelp_recovery_lmer)
-MuMIn::r.squaredGLMM(lm_kelp_recovery_lme_ar1)
-MuMIn::r.squaredGLMM(lm_kelp_recovery_zigamma)
+# MuMIn::r.squaredGLMM(lm_kelp_recovery_lme_ar1)
+MuMIn::r.squaredGLMM(lm_kelp_recovery_zigamma_01)
+MuMIn::r.squaredGLMM(lm_kelp_recovery_zigamma_02)
 
 # summary
 summary(lm_kelp_recovery_lmer)
-summary(lm_kelp_recovery_lme_ar1)
-summary(lm_kelp_recovery_gls_ar1)
+# summary(lm_kelp_recovery_lme_ar1)
+# summary(lm_kelp_recovery_gls_ar1)
 lm_kelp_recovery_summary <- lm_kelp_recovery_lmer %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05) %>% 
@@ -622,9 +630,11 @@ lm_kelp_recovery_zigamma_summary$table_body$label <- c(
 lm_kelp_recovery_zigamma_summary
 
 # AIC comparisons
-MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1, lm_kelp_recovery_lme_ar2, lm_kelp_recovery_gls_ar1) %>% 
-  arrange(AICc)
+# MuMIn::AICc(lm_kelp_recovery_lmer, lm_kelp_recovery_lme_ar1, lm_kelp_recovery_lme_ar2, lm_kelp_recovery_gls_ar1) %>% 
+#   arrange(AICc)
 # gls best model when carp is not taken out
+
+MuMIn::AICc(lm_kelp_recovery_zigamma_01, lm_kelp_recovery_zigamma_02)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
@@ -1062,29 +1072,29 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
 
 # ⟞ e. new model ----------------------------------------------------------
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-1_new-model_", today(), ".jpg", sep = "")),
-       plot = fig1_new,
-       height = 18, width = 14, units = "cm",
-       dpi = 300)
-
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-1_new-model_v2_", today(), ".jpg", sep = "")),
-       plot = fig1_new_v2,
-       height = 18, width = 14, units = "cm",
-       dpi = 300)
-
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-1_new-model_removal", today(), ".jpg", sep = "")),
-       plot = overall_kelp_removal,
-       height = 8, width = 14, units = "cm",
-       dpi = 300)
-
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-1_new-model_reference", today(), ".jpg", sep = "")),
-       plot = overall_kelp_reference,
-       height = 8, width = 14, units = "cm",
-       dpi = 300)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-1_new-model_", today(), ".jpg", sep = "")),
+#        plot = fig1_new,
+#        height = 18, width = 14, units = "cm",
+#        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-1_new-model_v2_", today(), ".jpg", sep = "")),
+#        plot = fig1_new_v2,
+#        height = 18, width = 14, units = "cm",
+#        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-1_new-model_removal", today(), ".jpg", sep = "")),
+#        plot = overall_kelp_removal,
+#        height = 8, width = 14, units = "cm",
+#        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-1_new-model_reference", today(), ".jpg", sep = "")),
+#        plot = overall_kelp_reference,
+#        height = 8, width = 14, units = "cm",
+#        dpi = 300)
 
 # Ecology max figure size: 18 x 24
 
