@@ -315,8 +315,8 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "continual", algae_pt_bray_species
 ) +
   # axis limits
-  scale_x_continuous(limits = c(-1.5, 1.6), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(-1.6, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  # scale_x_continuous(limits = c(-1.65, 1.65), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  # scale_y_continuous(limits = c(-1.65, 1.65), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   # scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
   # scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
   # ordination_theme() +
@@ -337,7 +337,8 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
        color = "Time period",
        shape = "Time period") +
   theme(legend.position = c(0.85, 0.9), 
-        panel.grid = element_blank()) 
+        panel.grid = element_blank(), 
+        plot.background = element_rect(fill = "red")) 
 algae_pt_bray_continual_plot 
 
 algae_pt_bray_continual_plot_arrows <- algae_pt_bray_continual_plot +
@@ -360,8 +361,9 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
 ) +
   # plot aesthetics
   # ordination_theme() +
-  # scale_x_continuous(limits = c(-1.5, 6.5), expand = c(0, 0)) +
-  # scale_y_continuous(limits = c(-1.85, 1.5), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  # axis limits
+  # scale_x_continuous(limits = c(-1.65, 1.65), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  # scale_y_continuous(limits = c(-1.65, 1.65), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   labs(shape = "Site",
        color = "Time period", fill = "Time period",
        title = "(b) Reference") +
@@ -374,11 +376,12 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
   # annotate("text", x = -1.4, y = 0.9, label = "period", size = 10, col = after_col) +
   # stress annotation
   annotate("text", x = -1.5, y = -1.5, label = "Stress = 0.2", size = 2) +
-  coord_cartesian(xlim = c(-1.5, 1.5), ylim = c(-1.5, 1.5)) +
+  coord_cartesian(xlim = c(-1.65, 1.65), ylim = c(-1.65, 1.65)) +
   labs(color = "Time period",
        shape = "Time period") +
   theme(panel.grid = element_blank(),
-        legend.position = "none")
+        legend.position = "none",
+        plot.background = element_rect(fill = "blue"))
 algae_pt_bray_control_plot
 
 # both treatments together
@@ -528,8 +531,8 @@ epi_pt_bray_continual_plot <- nmds_plot_fxn(
   coord_fixed() +
   # scale_x_continuous(limits = c(-1.7, 1.4), breaks = seq(-1, 1, by = 1)) + # length = 3.1
   # scale_y_continuous(limits = c(-1.3, 1), breaks = seq(-1, 1, by = 1)) +
-  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) + # length = 3.15
+  # scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  # scale_y_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) + # length = 3.15
   annotate("text", x = -1.4, y = -1.6, label = "Stress = 0.2", size = 2) +
   theme(legend.position = "none",
         panel.grid = element_blank()) +
@@ -553,11 +556,10 @@ epi_pt_bray_continual_plot_arrows
 epi_pt_bray_control_plot <- nmds_plot_fxn(
   epi_pt_bray_plotdf, "control", epi_pt_bray_species
 ) +
-  scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
   annotate("text", x = -1.1, y = -1.5, label = "Stress = 0.2", size = 2) +
-  labs(title = "(c) Reference") +
-  theme(legend.position = "none")
+  labs(title = "(d) Reference") +
+  theme(legend.position = "none",
+        panel.grid = element_blank())
 epi_pt_bray_control_plot
 
 # both treatments together
@@ -832,7 +834,13 @@ comm_comp_control <- algae_pt_bray_control_plot + epi_pt_bray_control_plot
 #        dpi = 300)
 
 # ⟞ d. reference and removal plots together -------------------------------
-
-
-
-s
+algae_title/algae_pt_bray_continual_plot/algae_pt_bray_control_plot + plot_layout(heights = c(1, 10, 10), widths = c(1, 1, 1))
+epi_title/epi_pt_bray_continual_plot/epi_pt_bray_control_plot + plot_layout(heights = c(1, 10, 10))
+fig3 <- (algae_title + epi_title) /
+        (algae_pt_bray_continual_plot + epi_pt_bray_continual_plot) /
+        (algae_pt_bray_control_plot + epi_pt_bray_control_plot) +
+  plot_layout(heights = c(1, 10, 10))
+fig3
+(algae_title/algae_pt_bray_continual_plot/algae_pt_bray_control_plot) | (epi_title/epi_pt_bray_continual_plot/epi_pt_bray_control_plot) +
+  plot_layout(widths = c(1, 1), 
+              heights = c(1, 10, 10))
