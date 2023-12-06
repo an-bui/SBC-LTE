@@ -616,9 +616,9 @@ shape_palette_site <- c("aque" = aque_shape,
                         "mohk" = mohk_shape, 
                         "carp" = carp_shape)
 
-annual_col <- "#54662C"
-continual_col <- "#009BB0"
-control_col <- "grey"
+removal_col <- "#CC7540"
+annual_col <- "#009BB0"
+reference_col <- "#6D5A18"
 kelp_col <- "#6D5A18"
 under_col <- "#CC7540"
   
@@ -757,7 +757,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         coord_fixed() +
         geom_vline(xintercept = 0, color = "grey", lty = 2) +
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = site_full, fill = comp_3yrs), size = 1, alpha = 0.9) +
+        geom_point(aes(shape = comp_3yrs, fill = comp_3yrs), size = 1, alpha = 0.9) +
         # ellipse
         stat_ellipse(aes(color = comp_3yrs), linewidth = 0.5, linetype = treatment_linetype) 
         # # arrows for species from SIMPER
@@ -779,7 +779,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         coord_fixed() +
         geom_vline(xintercept = 0, color = "grey", lty = 2) +
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = site_full, fill = comp_3yrs), size = 1, alpha = 0.9) +
+        geom_point(aes(shape = comp_3yrs, fill = comp_3yrs), size = 1, alpha = 0.9) +
         # ellipse
         stat_ellipse(aes(color = comp_3yrs), linewidth = 0.5, linetype = treatment_linetype) 
     }
@@ -791,7 +791,7 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         coord_fixed() +
         geom_vline(xintercept = 0, color = "grey", lty = 2) +
         geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = site_full, fill = comp_3yrs, alpha = treatment), size = 1) +
+        geom_point(aes(shape = comp_3yrs, fill = comp_3yrs, alpha = treatment), size = 1) +
         # ellipse
         stat_ellipse(aes(color = comp_3yrs, linetype = treatment), linewidth = 0.5) +
         scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5)) +
@@ -884,5 +884,18 @@ arrow_plot_fxn <- function(site) {
           panel.grid.minor = element_line(color = "#FFFFFF")) 
 
 }
+
+
+# ⟞ k. column titles ------------------------------------------------------
+
+algae_title <- ggplot(data.frame(l = "Understory macroalgae", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), size = 4.5) + 
+  theme_void() +
+  coord_cartesian(clip = "off")
+
+epi_title <- ggplot(data.frame(l = "Sessile invertebrates", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), size = 4.5) + 
+  theme_void() +
+  coord_cartesian(clip = "off")
 
 
