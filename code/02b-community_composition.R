@@ -297,7 +297,9 @@ algae_simper_treatment <- simper_algae_treatment$control_continual %>%
 algae_pt_bray_plotdf <- scores(algae_pt_bray, display = "sites") %>% 
   as_tibble(rownames = "sample_ID") %>% 
   # join with metadata
-  left_join(., comm_meta, by = "sample_ID")
+  left_join(., comm_meta, by = "sample_ID") %>% 
+  # taking out outlier for visualization
+  filter(sample_ID != "mohk_control_2020-08-12")
 
 # pull top species from simper analysis
 simper_algae_spp <- algae_comp3yrs %>% 
@@ -315,30 +317,15 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "continual", algae_pt_bray_species
 ) +
   # axis limits
-  # scale_x_continuous(limits = c(-1.65, 1.65), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
-  # scale_y_continuous(limits = c(-1.65, 1.65), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
-  # scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1)) +
-  # scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
-  # ordination_theme() +
-  labs(shape = "Site",
-       color = "Time period", fill = "Time period",
-       title = "(a) Understory macroalgae") +
-  # ellipse labels. clown shit
-  # annotate("text", x = -1, y = 0.5, label = "Start of", size = 10, col = start_col) +
-  # annotate("text", x = -1, y = 0.4, label = "removal", size = 10, col = start_col) +
-  # annotate("text", x = 1.4, y = 0.75, label = "End of", size = 10, col = during_col) +
-  # annotate("text", x = 1.4, y = 0.65, label = "removal", size = 10, col = during_col) +
-  # annotate("text", x = 0.85, y = -0.9, label = "Recovery", size = 10, col = after_col) +
-  # annotate("text", x = 0.85, y = -1, label = "period", size = 10, col = after_col) +
-  # stress annotation
-  annotate("text", x = -1.15, y = -1.51, label = "Stress = 0.2", size = 2) +
-  labs(title = "(a) Removal",
+  scale_x_continuous(limits = c(-1.45, 1.6)) +
+  scale_y_continuous(limits = c(-1.625, 1.425)) +
+  labs(shape = "Time period",
+       color = "Time period", 
        fill = "Time period",
-       color = "Time period",
-       shape = "Time period") +
-  theme(legend.position = c(0.85, 0.9), 
-        panel.grid = element_blank(), 
-        plot.background = element_rect(fill = "red")) 
+       title = "(a) Removal") +
+  theme(legend.position = "none", # c(0.2, 0.8), 
+        # panel.grid = element_blank(),
+        legend.background = element_blank())
 algae_pt_bray_continual_plot 
 
 algae_pt_bray_continual_plot_arrows <- algae_pt_bray_continual_plot +
@@ -359,29 +346,18 @@ algae_pt_bray_continual_plot_arrows
 algae_pt_bray_control_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "control", algae_pt_bray_species
 ) +
-  # plot aesthetics
-  # ordination_theme() +
   # axis limits
-  # scale_x_continuous(limits = c(-1.65, 1.65), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
-  # scale_y_continuous(limits = c(-1.65, 1.65), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(-1.45, 1.6)) +
+  scale_y_continuous(limits = c(-1.5, 1.55)) +
+  # labels
   labs(shape = "Site",
        color = "Time period", fill = "Time period",
        title = "(b) Reference") +
-  # ellipse labels. clown shit
-  # annotate("text", x = -1.2, y = 1.05, label = "Start of", size = 10, col = start_col) +
-  # annotate("text", x = -1.2, y = 0.9, label = "removal", size = 10, col = start_col) +
-  # annotate("text", x = 1.7, y = 0.85, label = "End of", size = 10, col = during_col) +
-  # annotate("text", x = 1.7, y = 0.7, label = "removal", size = 10, col = during_col) +
-  # annotate("text", x = -1.4, y = 1.05, label = "Recovery", size = 10, col = after_col) +
-  # annotate("text", x = -1.4, y = 0.9, label = "period", size = 10, col = after_col) +
-  # stress annotation
-  annotate("text", x = -1.5, y = -1.5, label = "Stress = 0.2", size = 2) +
-  coord_cartesian(xlim = c(-1.65, 1.65), ylim = c(-1.65, 1.65)) +
-  labs(color = "Time period",
-       shape = "Time period") +
-  theme(panel.grid = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "blue"))
+  # theme
+  theme(legend.position = "none",
+        aspect.ratio = 1
+        #panel.grid = element_blank()
+        ) 
 algae_pt_bray_control_plot
 
 # both treatments together
@@ -528,15 +504,12 @@ epi_pt_bray_species <- scores(epi_pt_bray, display = "species", tidy = TRUE) %>%
 epi_pt_bray_continual_plot <- nmds_plot_fxn(
   epi_pt_bray_plotdf, "continual", epi_pt_bray_species
 ) +
-  coord_fixed() +
-  # scale_x_continuous(limits = c(-1.7, 1.4), breaks = seq(-1, 1, by = 1)) + # length = 3.1
-  # scale_y_continuous(limits = c(-1.3, 1), breaks = seq(-1, 1, by = 1)) +
-  # scale_x_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) +
-  # scale_y_continuous(limits = c(-1.75, 1.4), breaks = seq(-1, 1, by = 1), expand = c(0, 0)) + # length = 3.15
-  annotate("text", x = -1.4, y = -1.6, label = "Stress = 0.2", size = 2) +
-  theme(legend.position = "none",
-        panel.grid = element_blank()) +
-  labs(title = "(c) Removal")
+  scale_x_continuous(limits = c(-1.6, 1.2)) +
+  scale_y_continuous(limits = c(-1.6, 1.2)) +
+  theme(legend.position = "none"
+        # panel.grid = element_blank()
+        ) +
+  labs(title = "(c) Removal") 
 epi_pt_bray_continual_plot
 
 epi_pt_bray_continual_plot_arrows <- epi_pt_bray_continual_plot +
@@ -556,10 +529,12 @@ epi_pt_bray_continual_plot_arrows
 epi_pt_bray_control_plot <- nmds_plot_fxn(
   epi_pt_bray_plotdf, "control", epi_pt_bray_species
 ) +
-  annotate("text", x = -1.1, y = -1.5, label = "Stress = 0.2", size = 2) +
+  scale_x_continuous(limits = c(-1.3, 1.3), breaks = seq(-1, 1, by = 1)) +
+  scale_y_continuous(limits = c(-1.25, 1.35), breaks = seq(-1, 1, by = 1)) +
   labs(title = "(d) Reference") +
-  theme(legend.position = "none",
-        panel.grid = element_blank())
+  theme(legend.position = "none"
+        # panel.grid = element_blank()
+        ) 
 epi_pt_bray_control_plot
 
 # both treatments together
@@ -834,13 +809,45 @@ comm_comp_control <- algae_pt_bray_control_plot + epi_pt_bray_control_plot
 #        dpi = 300)
 
 # ⟞ d. reference and removal plots together -------------------------------
-algae_title/algae_pt_bray_continual_plot/algae_pt_bray_control_plot + plot_layout(heights = c(1, 10, 10), widths = c(1, 1, 1))
-epi_title/epi_pt_bray_continual_plot/epi_pt_bray_control_plot + plot_layout(heights = c(1, 10, 10))
-fig3 <- (algae_title + epi_title) /
-        (algae_pt_bray_continual_plot + epi_pt_bray_continual_plot) /
-        (algae_pt_bray_control_plot + epi_pt_bray_control_plot) +
-  plot_layout(heights = c(1, 10, 10))
-fig3
-(algae_title/algae_pt_bray_continual_plot/algae_pt_bray_control_plot) | (epi_title/epi_pt_bray_continual_plot/epi_pt_bray_control_plot) +
-  plot_layout(widths = c(1, 1), 
-              heights = c(1, 10, 10))
+
+# putting algae plots together
+algae_plots <- plot_grid(algae_pt_bray_continual_plot, algae_pt_bray_control_plot, 
+                         nrow = 2)
+
+# putting invert plots together
+epi_plots <- plot_grid(epi_pt_bray_continual_plot, epi_pt_bray_control_plot, 
+                       nrow = 2)
+
+# group plots with labels
+algae_labelled <- plot_grid(algae_title, algae_plots, 
+                            rel_heights = c(1, 12), 
+                            ncol = 1)
+
+
+epi_labelled <- plot_grid(epi_title, epi_plots, 
+                          rel_heights = c(1, 12), 
+                          ncol = 1)
+
+# getting the legend as separate object
+plot_legend <- nmds_plot_fxn(
+  algae_pt_bray_plotdf, "continual", algae_pt_bray_species
+) +
+  labs(shape = "Time period",
+       color = "Time period", 
+       fill = "Time period") 
+legend <- cowplot::get_legend(plot_legend)
+
+# putting plots together
+all_plots <- plot_grid(algae_labelled, epi_labelled, ncol = 2,
+                                rel_widths = c(1, 1))
+
+# putting plots with legend
+final_plot <- plot_grid(all_plots, legend, ncol = 2, rel_widths = c(1, 0.3))
+
+# saving
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-3_", today(), ".jpg", sep = "")),
+       plot = final_plot,
+       height = 13, width = 15, units = "cm",
+       dpi = 300)
+
