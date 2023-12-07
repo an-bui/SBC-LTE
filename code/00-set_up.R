@@ -620,7 +620,7 @@ removal_col <- "#CC7540"
 annual_col <- "#009BB0"
 reference_col <- "#6D5A18"
 kelp_col <- "#6D5A18"
-under_col <- "#CC7540"
+under_col <- "#6B6D9F"
   
 site_raw_biomass_theme <- function() {
   theme_bw() + 
@@ -811,12 +811,16 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
     theme_bw() +
     theme(axis.title = element_text(size = 8),
           axis.text = element_text(size = 7),
-          legend.text = element_text(size = 4), 
-          legend.title = element_text(size = 5),
+          legend.text = element_text(size = 7), 
+          legend.spacing.y = unit(0.01, units = "cm"),
+          legend.title = element_text(size = 8),
           plot.title = element_text(size = 8),
           plot.title.position = "plot",
-          legend.key.size = unit(0.3, units = "cm"),
+          legend.key.size = unit(0.5, units = "cm"),
           aspect.ratio = 1) +
+    guides(fill = guide_legend(byrow = TRUE),
+           shape = guide_legend(byrow = TRUE),
+           color = guide_legend(byrow = TRUE)) +
     labs(shape = "Site",
          color = "Time period",
          fill = "Time period")
