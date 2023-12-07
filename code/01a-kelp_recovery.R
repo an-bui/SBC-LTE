@@ -739,8 +739,10 @@ overall_kelp <- ggplot() +
   # prediction lines
   geom_line(data = predicted_kelp_during_raw, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
   geom_line(data = predicted_kelp_after_raw, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
-  scale_color_manual(values = c(reference = reference_col, removal = removal_col)) +
-  scale_linetype_manual(values = c(2, 1)) +
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col),
+                     labels = c("Reference", "Removal")) +
+  scale_linetype_manual(values = c(2, 1),
+                        labels = c("Reference", "Removal")) +
   
   # confidence intervals
   geom_ribbon(data = predicted_kelp_during_raw, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.1) +
@@ -753,19 +755,21 @@ overall_kelp <- ggplot() +
         axis.text = element_text(size = 7),
         legend.text = element_text(size = 6), 
         legend.title = element_text(size = 6),
+        legend.background = element_blank(),
         # plot.margin = margin(0, 0, 0, 0),
-        legend.position = c(0.88, 0.73),
+        legend.position = c(0.92, 0.9),
         legend.key.size = unit(0.5, units = "cm"),
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.1, units = "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
-       y = expression(Giant~kelp~biomass~"("~dry~g/m^{"2"}~")"), 
+       y = "Giant kelp biomass (dry g/m\U00B2)",
        linetype = "Plot",
        color = "Plot",
        title = "(a)")
@@ -816,13 +820,14 @@ overall_kelp_removal <- ggplot() +
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.1, units = "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
-       y = expression(Giant~kelp~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Giant kelp biomass (dry g/m\U00B2)",
        title = "(a) Removal")
 
 overall_kelp_removal
@@ -856,13 +861,14 @@ overall_kelp_reference <- ggplot() +
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.1, units = "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
-       y = expression(Giant~kelp~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Giant kelp biomass (dry g/m\U00B2)",
        title = "(b) Reference")
 
 overall_kelp_reference
@@ -989,7 +995,7 @@ overall_predictions <- ggplot() +
   geom_line(data = delta_predictions_after, aes(x = x, y = delta), linewidth = 1) +
 
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(breaks = seq(-1500, 1000, by = 1000), limits = c(-1800, 900)) +
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1800, 1000)) +
   theme_bw() + 
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
@@ -998,13 +1004,13 @@ overall_predictions <- ggplot() +
         # plot.margin = margin(0, 0, 0, 0),
         legend.position = "none",
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   labs(x = "Time since end of removal (years)", 
-       y = bquote(atop("\U0394 giant kelp biomass",
-                       "(removal - reference, "~dry~g/m^{"2"}~")")), 
+       y = "\U0394 giant kelp biomass\n(removal \U2212 reference, dry g/m\U00B2)",
        fill = "Site",
        shape = "Site",
-       title = "(c) Removal - reference")
+       title = "(c) Removal \U2212 reference")
 
 overall_predictions
 
@@ -1075,15 +1081,15 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-1_new-model_", today(), ".jpg", sep = "")),
 #        plot = fig1_new,
-#        height = 18, width = 14, units = "cm",
+#        height = 17, width = 13, units = "cm",
 #        dpi = 300)
-# 
+
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-1_new-model_v2_", today(), ".jpg", sep = "")),
 #        plot = fig1_new_v2,
-#        height = 18, width = 14, units = "cm",
+#        height = 17, width = 13, units = "cm",
 #        dpi = 300)
-# 
+
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-1_new-model_removal", today(), ".jpg", sep = "")),
 #        plot = overall_kelp_removal,
