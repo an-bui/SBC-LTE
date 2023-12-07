@@ -28,57 +28,53 @@ lm_delta_algae_kelp_after_m1 <- lm(
   na.action = na.omit
 )
 lm_delta_algae_kelp_after_m2 <- lmer(
-  delta_continual_algae ~ delta_continual + (1|year) + (1|site), 
+  delta_continual_algae ~ delta_continual + (1|site) + (1|year),
   data = delta_algae_continual %>% filter(exp_dates == "after")
 )
-lm_delta_algae_kelp_after_m3 <- lmer(
-  delta_continual_algae ~ delta_continual + (1|site), 
-  data = delta_algae_continual %>% filter(exp_dates == "after")
-)
-lm_algae_kelp_after_m1 <- lmer(
-  continual_algae ~ continual + (1|year) + (1|site),
-  data = delta_algae_continual %>% filter(exp_dates == "after")
-)
-lm_algae_kelp_after_m2 <- lmer(
-  continual_algae ~ continual*time_since_end + (1|site),
-  data = delta_algae_continual %>% filter(exp_dates == "after")
-)
+# lm_delta_algae_kelp_after_m3 <- lmer(
+#   delta_continual_algae ~ delta_continual + (1|site), 
+#   data = delta_algae_continual %>% filter(exp_dates == "after")
+# )
+# lm_algae_kelp_after_m1 <- lmer(
+#   continual_algae ~ continual + (1|year) + (1|site),
+#   data = delta_algae_continual %>% filter(exp_dates == "after")
+# )
+# lm_algae_kelp_after_m2 <- lmer(
+#   continual_algae ~ continual*time_since_end + (1|site),
+#   data = delta_algae_continual %>% filter(exp_dates == "after")
+# )
 
 # diagnostics
 check_model(lm_delta_algae_kelp_after_m1)
 simulateResiduals(lm_delta_algae_kelp_after_m1, plot = TRUE)
+
 check_model(lm_delta_algae_kelp_after_m2)
 simulateResiduals(lm_delta_algae_kelp_after_m2, plot = TRUE)
-check_model(lm_delta_algae_kelp_after_m3)
+# check_model(lm_delta_algae_kelp_after_m3)
 
-check_model(lm_algae_kelp_after_m1)
-check_model(lm_algae_kelp_after_m2)
-plot(simulateResiduals(lm_algae_kelp_after_m2))
+# check_model(lm_algae_kelp_after_m1)
+# plot(simulateResiduals(lm_algae_kelp_after_m1))
 
 # Rsquared
 r.squaredGLMM(lm_delta_algae_kelp_after_m1)
 r.squaredGLMM(lm_delta_algae_kelp_after_m2)
-r.squaredGLMM(lm_delta_algae_kelp_after_m3)
+# r.squaredGLMM(lm_delta_algae_kelp_after_m3)
 
-r.squaredGLMM(lm_algae_kelp_after_m1)
-r.squaredGLMM(lm_algae_kelp_after_m2)
+# r.squaredGLMM(lm_algae_kelp_after_m1)
+# r.squaredGLMM(lm_algae_kelp_after_m2)
 
 # summaries
 summary(lm_delta_algae_kelp_after_m1)
 summary(lm_delta_algae_kelp_after_m2)
-summary(lm_delta_algae_kelp_after_m3)
+# summary(lm_delta_algae_kelp_after_m3)
 
 lm_delta_algae_kelp_after_summary <- lm_delta_algae_kelp_after_m2 %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05) %>% 
   modify_header(
     label = " ",
-    estimate = "**Slope**",
-    df = "**df**"
+    estimate = "**Slope**"
   ) 
-
-summary(lm_algae_kelp_after_m1)
-summary(lm_algae_kelp_after_m2)
 
 # AIC comparison
 AICc(lm_delta_algae_kelp_after_m1, lm_delta_algae_kelp_after_m2, lm_delta_algae_kelp_after_m3) %>% 
@@ -114,53 +110,48 @@ delta_algae_vs_kelp_lm <- delta_algae_continual %>%
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
   geom_hline(aes(yintercept = 0), lty = 2) +
   geom_vline(aes(xintercept = 0), lty = 2) +
-  geom_point(aes(shape = site, fill = site), size = 1) + 
-  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
-  scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
+  geom_point(size = 1, shape = 5, alpha = 0.4, color = under_col) + 
   geom_ribbon(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.1) +
-  geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), linewidth = 1) +
+  geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), 
+            linewidth = 1,
+            color = under_col) +
   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
-  labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 understory macroalgae biomass \n (treatment - control)",
-       title = "(a) Understory macroalgae",
-       fill = "Site", shape = "Site") +
+  scale_y_continuous(breaks = seq(-200, 400, by = 200)) +
+  labs(x = "\U0394 giant kelp biomass\n(removal - reference, dry g/m\U00B2)",
+       y = "\U0394 understory macroalgae biomass\n(removal - reference, dry g/m\U00B2)", 
+       title = "(a) Understory macroalgae") +
   theme_bw() + 
-  theme(axis.title = element_text(size = 8),
-        axis.text = element_text(size = 7),
-        legend.text = element_text(size = 5), 
-        legend.title = element_text(size = 5),
-        legend.key.size = unit(0.25, units = "cm"), 
-        legend.position = c(0.2, 0.16), 
-        plot.margin = margin(0.2, 0.22, 0.2, 0.2, unit = "cm"),
+  theme(axis.title = element_text(size = 6),
+        axis.text = element_text(size = 5),
         plot.title = element_text(size = 8),
         plot.title.position = "plot") 
 delta_algae_vs_kelp_lm
 
-delta_algae_vs_kelp_pearson <- delta_algae_continual %>% 
-  mutate(exp_dates = case_when(
-    exp_dates == "during" ~ "During removal",
-    exp_dates == "after" ~ "Recovery period"
-  )) %>% 
-  ggplot(aes(x = delta_continual, y = delta_continual_algae, linetype = exp_dates, color = exp_dates, fill = exp_dates)) +
-  geom_hline(aes(yintercept = 0), lty = 2) +
-  geom_vline(aes(xintercept = 0), lty = 2) +
-  geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21, color = "#000000") +
-  stat_cor(method = "pearson", cor.coef.name = "rho", inherit.aes = TRUE) +
-  geom_smooth(aes(color = exp_dates), method = "lm", color = "black", linewidth = 3, se = FALSE) +
-  scale_linetype_manual(values = c("During removal" = 2, "Recovery period" = 1)) +
-  scale_color_manual(values = c("During removal" = "grey", "Recovery period" = under_col)) +
-  scale_fill_manual(values = c("During removal" = "#FFFFFF", "Recovery period" = under_col)) +
-  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
-  labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 understory macroalgae biomass (treatment - control)") +
-  theme_bw() + 
-  theme(axis.title = element_text(size = 18),
-        plot.title = element_text(size = 18),
-        axis.text = element_text(size = 16),
-        legend.position = c(0.83, 0.93),
-        legend.text = element_text(size = 18),
-        legend.title = element_blank())
-delta_algae_vs_kelp_pearson
+# delta_algae_vs_kelp_pearson <- delta_algae_continual %>% 
+#   mutate(exp_dates = case_when(
+#     exp_dates == "during" ~ "During removal",
+#     exp_dates == "after" ~ "Recovery period"
+#   )) %>% 
+#   ggplot(aes(x = delta_continual, y = delta_continual_algae, linetype = exp_dates, color = exp_dates, fill = exp_dates)) +
+#   geom_hline(aes(yintercept = 0), lty = 2) +
+#   geom_vline(aes(xintercept = 0), lty = 2) +
+#   geom_point(aes(shape = exp_dates, fill = exp_dates), size = 5, shape = 21, color = "#000000") +
+#   stat_cor(method = "pearson", cor.coef.name = "rho", inherit.aes = TRUE) +
+#   geom_smooth(aes(color = exp_dates), method = "lm", color = "black", linewidth = 3, se = FALSE) +
+#   scale_linetype_manual(values = c("During removal" = 2, "Recovery period" = 1)) +
+#   scale_color_manual(values = c("During removal" = "grey", "Recovery period" = under_col)) +
+#   scale_fill_manual(values = c("During removal" = "#FFFFFF", "Recovery period" = under_col)) +
+#   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
+#   labs(x = "\U0394 kelp biomass (treatment - control)",
+#        y = "\U0394 understory macroalgae biomass (treatment - control)") +
+#   theme_bw() + 
+#   theme(axis.title = element_text(size = 18),
+#         plot.title = element_text(size = 18),
+#         axis.text = element_text(size = 16),
+#         legend.position = c(0.83, 0.93),
+#         legend.text = element_text(size = 18),
+#         legend.title = element_blank())
+# delta_algae_vs_kelp_pearson
 
 ##########################################################################-
 # 2. epilithic inverts ----------------------------------------------------
@@ -192,38 +183,43 @@ lm_delta_epi_kelp_after_m3 <- lmer(
   data = delta_epi_continual %>% filter(exp_dates == "after")
 )
 
-lm_epi_kelp_after_m1 <- lmer(
-  continual_epi ~ continual + (1|year) + (1|site),
-  data = delta_epi_continual %>% filter(exp_dates == "after")
-)
+# lm_epi_kelp_after_m1 <- lmer(
+#   continual_epi ~ continual + (1|year) + (1|site),
+#   data = delta_epi_continual %>% filter(exp_dates == "after")
+# )
 
-lm_epi_kelp_after_m2 <- lmer(
-  continual_epi ~ continual*time_since_end + (1|site),
-  data = delta_epi_continual %>% filter(exp_dates == "after")
-)
+# lm_epi_kelp_after_m2 <- lmer(
+#   continual_epi ~ continual*time_since_end + (1|site),
+#   data = delta_epi_continual %>% filter(exp_dates == "after")
+# )
 
 # diagnostics
+simulateResiduals(lm_delta_epi_kelp_after_m1, plot = T)
 check_model(lm_delta_epi_kelp_after_m1)
+
+simulateResiduals(lm_delta_epi_kelp_after_m2, plot = T)
 check_model(lm_delta_epi_kelp_after_m2)
+
+simulateResiduals(lm_delta_epi_kelp_after_m3, plot = T)
 check_model(lm_delta_epi_kelp_after_m3)
 
-check_model(lm_epi_kelp_after_m1)
-check_model(lm_epi_kelp_after_m2)
+# check_model(lm_epi_kelp_after_m1)
+# check_model(lm_epi_kelp_after_m2)
 
 # Rsquared
 r.squaredGLMM(lm_delta_epi_kelp_after_m1)
 r.squaredGLMM(lm_delta_epi_kelp_after_m2)
 r.squaredGLMM(lm_delta_epi_kelp_after_m3)
 
-r.squaredGLMM(lm_epi_kelp_after_m1)
-r.squaredGLMM(lm_epi_kelp_after_m2)
+# r.squaredGLMM(lm_epi_kelp_after_m1)
+# r.squaredGLMM(lm_epi_kelp_after_m2)
 
 # summaries
 summary(lm_delta_epi_kelp_after_m1)
 summary(lm_delta_epi_kelp_after_m2)
 summary(lm_delta_epi_kelp_after_m3)
 
-lm_delta_epi_kelp_after_summary <- lm_delta_epi_kelp_after_m1 %>% 
+lm_delta_epi_kelp_after_summary <- lm_delta_epi_kelp_after_m2 %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05) %>% 
   modify_header(
@@ -231,11 +227,6 @@ lm_delta_epi_kelp_after_summary <- lm_delta_epi_kelp_after_m1 %>%
     estimate = "**Slope**"
   ) 
 lm_delta_epi_kelp_after_summary
-
-summary(lm_epi_kelp_after_m1)
-summary(lm_epi_kelp_after_m2)
-
-
 
 # AICc
 AICc(lm_delta_epi_kelp_after_m1, lm_delta_epi_kelp_after_m2, lm_delta_epi_kelp_after_m3) %>% 
@@ -249,7 +240,7 @@ AICc(lm_epi_kelp_after_m1, lm_epi_kelp_after_m2) # same?
 predicted_epi_vs_kelp <- ggpredict(lm_epi_kelp_after_m1, terms = ~ continual, type = "fixed")
 
 # deltas
-predicted_delta_epi_vs_kelp <- ggpredict(lm_delta_epi_kelp_after_m1, terms = ~ delta_continual, type = "fixed")
+predicted_delta_epi_vs_kelp <- ggpredict(lm_delta_epi_kelp_after_m2, terms = ~ delta_continual, type = "fixed")
 
 # ⟞ c. figures ------------------------------------------------------------
 
@@ -269,49 +260,45 @@ delta_epi_vs_kelp_lm <- delta_epi_continual %>%
   ggplot(aes(x = delta_continual, y = delta_continual_epi)) +
   geom_hline(aes(yintercept = 0), lty = 2) +
   geom_vline(aes(xintercept = 0), lty = 2) +
-  geom_point(aes(shape = site, fill = site), size = 1) + 
-  scale_shape_manual(values = shape_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
-  scale_fill_manual(values = color_palette_site, labels = c("aque" = aque_full, "napl" = napl_full, "mohk" = mohk_full, carp = carp_full)) +
+  geom_point(size = 1, shape = 5, alpha = 0.4) + 
   # geom_ribbon(data = predicted_delta_epi_vs_kelp, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.1) +
   # geom_line(data = predicted_delta_epi_vs_kelp, aes(x = x, y = predicted), size = 2) +
   # scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
-  labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 epilithic invertebrate biomass \n (treatment - control)",
-       title = "(b) Epilithic invertebrates") +
+  labs(x = "\U0394 giant kelp biomass\n(removal - reference, dry g/m\U00B2)",
+       y = "\U0394 sessile invertebrate biomass\n(removal - reference, dry g/m\U00B2)", 
+       title = "(b) Sessile invertebrates") +
   theme_bw() + 
-  theme(axis.title = element_text(size = 8),
-        axis.text = element_text(size = 7),
-        legend.position = "none", 
-        plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
+  theme(axis.title = element_text(size = 6),
+        axis.text = element_text(size = 5),
         plot.title = element_text(size = 8),
         plot.title.position = "plot") 
 delta_epi_vs_kelp_lm
 
-epi_vs_kelp_pearson <- delta_epi_continual %>% 
-  mutate(exp_dates = case_when(
-    exp_dates == "during" ~ "During removal",
-    exp_dates == "after" ~ "Post-removal"
-  )) %>% 
-  ggplot(aes(x = delta_continual, y = delta_continual_epi, linetype = exp_dates, color = exp_dates, fill = exp_dates)) +
-  stat_cor(aes(color = exp_dates), method = "pearson", cor.coef.name = "rho") +
-  geom_hline(aes(yintercept = 0), lty = 2) +
-  geom_vline(aes(xintercept = 0), lty = 2) +
-  geom_point(size = 5, shape = 25, color = "#000000") + 
-  geom_smooth(aes(linetype = exp_dates), method = "lm", se = FALSE, color = "black", size = 3) +
-  scale_linetype_manual(values = c("During removal" = 2, "Post-removal" = 1)) +
-  scale_fill_manual(values = c("During removal" = "#FFFFFF", "Post-removal" = "#54662C")) +
-  scale_color_manual(values = c("During removal" = "grey", "Post-removal" = "#54662C")) +
-  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
-  labs(x = "\U0394 kelp biomass (treatment - control)",
-       y = "\U0394 epilithic invertebrate biomass (treatment - control)") +
-  theme_bw() + 
-  theme(axis.title = element_text(size = 18),
-        plot.title = element_text(size = 18),
-        axis.text = element_text(size = 16),
-        legend.position = c(0.83, 0.93),
-        legend.text = element_text(size = 18),
-        legend.title = element_blank())
-epi_vs_kelp_pearson
+# epi_vs_kelp_pearson <- delta_epi_continual %>% 
+#   mutate(exp_dates = case_when(
+#     exp_dates == "during" ~ "During removal",
+#     exp_dates == "after" ~ "Post-removal"
+#   )) %>% 
+#   ggplot(aes(x = delta_continual, y = delta_continual_epi, linetype = exp_dates, color = exp_dates, fill = exp_dates)) +
+#   stat_cor(aes(color = exp_dates), method = "pearson", cor.coef.name = "rho") +
+#   geom_hline(aes(yintercept = 0), lty = 2) +
+#   geom_vline(aes(xintercept = 0), lty = 2) +
+#   geom_point(size = 5, shape = 25, color = "#000000") + 
+#   geom_smooth(aes(linetype = exp_dates), method = "lm", se = FALSE, color = "black", size = 3) +
+#   scale_linetype_manual(values = c("During removal" = 2, "Post-removal" = 1)) +
+#   scale_fill_manual(values = c("During removal" = "#FFFFFF", "Post-removal" = "#54662C")) +
+#   scale_color_manual(values = c("During removal" = "grey", "Post-removal" = "#54662C")) +
+#   scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
+#   labs(x = "\U0394 kelp biomass (treatment - control)",
+#        y = "\U0394 epilithic invertebrate biomass (treatment - control)") +
+#   theme_bw() + 
+#   theme(axis.title = element_text(size = 18),
+#         plot.title = element_text(size = 18),
+#         axis.text = element_text(size = 16),
+#         legend.position = c(0.83, 0.93),
+#         legend.text = element_text(size = 18),
+#         legend.title = element_blank())
+# epi_vs_kelp_pearson
 
 ##########################################################################-
 # 3. manuscript tables ----------------------------------------------------
@@ -340,8 +327,8 @@ algae_vs_kelp_spearman
 
 group_vs_kelp <- plot_grid(delta_algae_vs_kelp_lm, delta_epi_vs_kelp_lm, ncol = 2)
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-4_", today(), ".jpg", sep = "")),
-#        plot = group_vs_kelp,
-#        height = 7, width = 14, units = "cm",
-#        dpi = 400)
+ggsave(here::here("figures", "ms-figures",
+                  paste("fig-4_", today(), ".jpg", sep = "")),
+       plot = group_vs_kelp,
+       height = 6, width = 12, units = "cm",
+       dpi = 300)
