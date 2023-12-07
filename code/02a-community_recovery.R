@@ -522,8 +522,10 @@ raw_algae_time <- ggplot() +
   geom_ribbon(data = predicted_raw_algae_recovery, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.1) +
   geom_line(data = predicted_raw_algae_during, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
   geom_ribbon(data = predicted_raw_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.1) +
-  scale_color_manual(values = c(reference = reference_col, removal = removal_col)) +
-  scale_linetype_manual(values = c(reference = 2, removal = 1)) +
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col),
+                     labels = c("Reference", "Removal")) +
+  scale_linetype_manual(values = c(reference = 2, removal = 1),
+                        labels = c("Reference", "Removal")) +
   
   # theming
   theme_bw() + 
@@ -533,19 +535,20 @@ raw_algae_time <- ggplot() +
         axis.text = element_text(size = 7),
         legend.text = element_text(size = 6), 
         legend.title = element_text(size = 6),
-        # plot.margin = margin(0, 0, 0, 0),
         legend.position = c(0.86, 0.88),
+        legend.background = element_blank(),
         legend.key.size = unit(0.5, units = "cm"),
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.01, "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
-       y = expression(Macroalgae~biomass~"("~dry~g/m^{"2"}~")"), 
+       y = "Biomass (dry g/m\U00B2)", 
        color = "Plot",
        linetype = "Plot",
        title = "(a)")
@@ -581,13 +584,14 @@ raw_algae_removal <- ggplot() +
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.1, units = "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
-       y = expression(Understory~macroalgae~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Biomass (dry g/m\U00B2)",
        title = "(a) Removal")
 
 raw_algae_reference <- ggplot() +
@@ -611,21 +615,15 @@ raw_algae_reference <- ggplot() +
   scale_y_continuous(limits = c(-10, 800)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
-        legend.text = element_text(size = 6), 
-        legend.title = element_text(size = 6),
-        # plot.margin = margin(0, 0, 0, 0),
-        legend.position = c(0.88, 0.73),
-        legend.key.size = unit(0.5, units = "cm"),
-        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
-        legend.spacing.y = unit(0.1, units = "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of reference (years)", 
-       y = expression(Understory~macroalgae~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Biomass (dry g/m\U00B2)",
        title = "(b) Reference")
 
 # data frame of predictions
@@ -663,13 +661,13 @@ overall_algae_predictions <- ggplot() +
         # plot.margin = margin(0, 0, 0, 0),
         legend.position = "none",
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   labs(x = "Time since end of removal (years)", 
-       y = bquote(atop("\U0394 understory macroalgae biomass",
-                       "(removal - reference, "~dry~g/m^{"2"}~")")), 
+       y = "\U0394 biomass \n (removal \U2212 reference, dry g/m\U00B2)",
        fill = "Site",
        shape = "Site",
-       title = "(c) Removal - reference")
+       title = "(b)")
 
 overall_algae_predictions
 
@@ -903,22 +901,16 @@ raw_epi_time <- ggplot() +
   coord_cartesian(ylim = c(5, 155)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
-        legend.text = element_text(size = 6), 
-        legend.title = element_text(size = 6),
-        # plot.margin = margin(0, 0, 0, 0),
-        # legend.position = c(0.89, 0.78),
         legend.position = "none",
-        legend.key.size = unit(0.5, units = "cm"),
-        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
-        legend.spacing.y = unit(0.01, "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
-       y = expression(Sessile~invertebrate~biomass~"("~dry~g/m^{"2"}~")"), 
+       y = "Biomass (dry g/m\U00B2)", 
        color = "Treatment",
        linetype = "Treatment",
        title = "(c)")
@@ -954,13 +946,14 @@ raw_epi_removal <- ggplot() +
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.1, units = "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
-       y = expression(Sessile~invertebrate~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Biomass (dry g/m\U00B2)",
        title = "(d) Removal")
 raw_epi_removal
 
@@ -986,21 +979,15 @@ raw_epi_reference <- ggplot() +
   coord_cartesian(ylim = c(4, 155)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
-        legend.text = element_text(size = 6), 
-        legend.title = element_text(size = 6),
-        # plot.margin = margin(0, 0, 0, 0),
-        legend.position = c(0.88, 0.73),
-        legend.key.size = unit(0.5, units = "cm"),
-        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
-        legend.spacing.y = unit(0.1, units = "cm"),
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of reference (years)", 
-       y = expression(Sessile~invertebrate~biomass~"("~dry~g/m^{"2"}~")"),
+       y = "Biomass (dry g/m\U00B2)",
        title = "(e) Reference")
 raw_epi_reference
 
@@ -1039,13 +1026,13 @@ overall_epi_predictions <- ggplot() +
         # plot.margin = margin(0, 0, 0, 0),
         legend.position = "none",
         panel.grid = element_blank(),
-        plot.title.position = "plot") +
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10)) +
   labs(x = "Time since end of removal (years)", 
-       y = bquote(atop("\U0394 sessile invertebrate biomass",
-                       "(removal - reference, "~dry~g/m^{"2"}~")")), 
+       y = "\U0394 biomass \n (removal \U2212 reference, dry g/m\U00B2)",
        fill = "Site",
        shape = "Site",
-       title = "(f) Removal - reference")
+       title = "(d)")
 
 overall_epi_predictions
 
@@ -1149,17 +1136,17 @@ fig2_v2
 #        dpi = 400)
 
 # v1: legend position c(0.86, 0.88)
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-2_new-model_v1_", today(), ".jpg", sep = "")),
-       plot = fig2_v1,
-       height = 15, width = 18, units = "cm",
-       dpi = 400)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-2_new-model_v1_", today(), ".jpg", sep = "")),
+#        plot = fig2_v1,
+#        height = 15, width = 18, units = "cm",
+#        dpi = 400)
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-2_new-model_v2_", today(), ".jpg", sep = "")),
-       plot = fig2_v2,
-       height = 24, width = 18, units = "cm",
-       dpi = 400)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-2_new-model_v2_", today(), ".jpg", sep = "")),
+#        plot = fig2_v2,
+#        height = 24, width = 18, units = "cm",
+#        dpi = 400)
 
 
 
