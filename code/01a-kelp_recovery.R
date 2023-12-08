@@ -77,7 +77,6 @@ continual_long <- delta_continual %>%
   mutate(treatment = case_match(treatment, "control" ~ "reference", "continual" ~ "removal")) %>% 
   unite("sample_ID", site, date, quarter, treatment, remove = FALSE)
 
-
 ##########################################################################-
 # 2. timeseries plots -----------------------------------------------------
 ##########################################################################-
@@ -499,7 +498,7 @@ predicted_kelp_during_carp <- ggpredict(lm_kelp_during_lmer, terms = ~ time_sinc
 
 # raw kelp biomass
 predicted_kelp_during_raw <- ggpredict(lm_kelp_during_zigamma_02,
-                                      terms = c("time_since_end", "treatment"), type = "fixed")
+                                      terms = c("time_since_end [-7.25:0 by = 0.25]", "treatment"), type = "fixed")
 
 # ⟞ b. recovery period ----------------------------------------------------
 
@@ -669,7 +668,7 @@ ggpredict(lm_kelp_recovery_lmer, terms = "time_since_end [3.5:4 by = 0.01]", typ
 
 # raw kelp biomass
 predicted_kelp_after_raw <- ggpredict(lm_kelp_recovery_zigamma_02,
-                                      terms = c("time_since_end", "treatment"), type = "fixed")
+                                      terms = c("time_since_end [0:6.75 by = 0.25]", "treatment"), type = "fixed")
 # kelp in treatment plot matches kelp in reference plot in about 4 years
 
 # aque
