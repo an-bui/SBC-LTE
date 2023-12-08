@@ -652,7 +652,7 @@ overall_algae_predictions <- ggplot() +
   geom_line(data = delta_algae_predictions_after, aes(x = x, y = delta), linewidth = 1) +
   
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(breaks = seq(-250, 800, by = 200), limits = c(-250, 775)) +
+  # scale_y_continuous(breaks = seq(-250, 800, by = 200), limits = c(-250, 775)) +
   theme_bw() + 
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
@@ -667,7 +667,7 @@ overall_algae_predictions <- ggplot() +
        y = "\U0394 biomass \n (removal \U2212 reference, dry g/m\U00B2)",
        fill = "Site",
        shape = "Site",
-       title = "(b)")
+       title = "(c) Removal \U2212 reference")
 
 overall_algae_predictions
 
@@ -1032,7 +1032,7 @@ overall_epi_predictions <- ggplot() +
        y = "\U0394 biomass \n (removal \U2212 reference, dry g/m\U00B2)",
        fill = "Site",
        shape = "Site",
-       title = "(d)")
+       title = "(f) Removal \U2212 reference")
 
 overall_epi_predictions
 
