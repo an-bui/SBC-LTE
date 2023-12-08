@@ -223,14 +223,45 @@ algae_pt_perma_2yrs
 
 comp_3yrs_meta <- comm_meta %>% 
   drop_na(comp_3yrs) %>% 
-  unite("combo", comp_3yrs, treatment, sep = "-", remove = FALSE)
+  unite("combo", comp_3yrs, treatment, sep = "-", remove = FALSE) %>% 
+  as.data.frame() %>% 
+  mutate(site = as_factor(site))
 comp_3yrs_sampleID <- comp_3yrs_meta %>% 
   pull(sample_ID)
 comp_3yrs_algae <- comm_mat_algae[comp_3yrs_sampleID, ]
-algae_pt_perma_3yrs <- adonis2(comp_3yrs_algae ~ treatment*comp_3yrs, 
+algae_pt_perma_3yrs <- adonis2(comp_3yrs_algae ~ comp_3yrs*treatment, 
                                data = comp_3yrs_meta,
                                strata = comp_3yrs_meta$site)
 algae_pt_perma_3yrs 
+
+algae_pairwise <- pairwise.adonis2(comp_3yrs_algae ~ comp_3yrs*treatment, 
+                 data = comp_3yrs_meta,
+                 comp_3yrs_meta$site)
+algae_pairwise
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "during"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_algae[test_ID, ]
+adonis2(test_mat ~ comp_3yrs*treatment,
+        data = test_meta,
+        strata = test_meta$site)
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("after", "during"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_algae[test_ID, ]
+adonis2(test_mat ~ comp_3yrs*treatment,
+        data = test_meta,
+        strata = test_meta$site)
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "after"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_algae[test_ID, ]
+adonis2(test_mat ~ comp_3yrs*treatment,
+        data = test_meta,
+        strata = test_meta$site)
 
 # beta dispersion
 algae_pt_dist <- vegdist(comp_3yrs_algae, "bray")
@@ -262,7 +293,7 @@ algae_SA_comp3yrs <- simper_algae_3yrs$start_after %>%
   arrange(-average) %>% 
   head(10) %>% 
   mutate(comparison = "start-after")
-# PTCA, CYOS, CO, CC, EC, DL, R, POLA, EGME, RAT
+# PTCA, CYOS, CO, CC, DL, EC, R, POLA, EGME, RAT
 algae_SD_comp3yrs <- simper_algae_3yrs$start_during %>% 
   as_tibble() %>% 
   arrange(-average) %>% 
@@ -284,7 +315,7 @@ simper_algae_treatment <- simper(
   group = comp_3yrs_meta$treatment
 )
 
-algae_simper_treatment <- simper_algae_treatment$control_continual %>% 
+algae_simper_treatment <- simper_algae_treatment$continual_control %>% 
   as_tibble() %>% 
   # arrange by greatest to least contribution to dissimilarity
   arrange(-average) %>% 
@@ -317,8 +348,8 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "continual", algae_pt_bray_species
 ) +
   # axis limits
-  scale_x_continuous(limits = c(-1.45, 1.6)) +
-  scale_y_continuous(limits = c(-1.625, 1.425)) +
+  scale_x_continuous(limits = c(-1.6, 1.5)) +
+  scale_y_continuous(limits = c(-1.6, 1.5)) +
   labs(shape = "Time period",
        color = "Time period", 
        fill = "Time period",
@@ -347,8 +378,8 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "control", algae_pt_bray_species
 ) +
   # axis limits
-  scale_x_continuous(limits = c(-1.45, 1.6)) +
-  scale_y_continuous(limits = c(-1.5, 1.55)) +
+  scale_x_continuous(limits = c(-1.6, 1.5)) +
+  scale_y_continuous(limits = c(-1.6, 1.5)) +
   # labels
   labs(shape = "Site",
        color = "Time period", fill = "Time period",
@@ -414,14 +445,47 @@ epi_pt_perma_2yrs
 
 comp_3yrs_meta <- comm_meta %>% 
   drop_na(comp_3yrs) %>% 
-  unite("combo", comp_3yrs, treatment, sep = "-", remove = FALSE)
+  unite("combo", comp_3yrs, treatment, sep = "-", remove = FALSE) %>% 
+  as.data.frame() %>% 
+  mutate(site = as_factor(site),
+         treatment = as_factor(treatment))
 comp_3yrs_sampleID <- comp_3yrs_meta %>% 
   pull(sample_ID)
 comp_3yrs_epi <- comm_mat_epi[comp_3yrs_sampleID, ]
-epi_pt_perma_3yrs <- adonis2(comm_mat_epi ~ treatment*comp_3yrs,
+epi_pt_perma_3yrs <- adonis2(comm_mat_epi ~ comp_3yrs*treatment,
                              data = comp_3yrs_meta,
                              strata = comp_3yrs_meta$site)
 epi_pt_perma_3yrs # same as 2 years
+
+epi_pairwise <- pairwise.adonis2(comm_mat_epi ~ comp_3yrs*treatment,
+                                 data = comp_3yrs_meta,
+                                 strata = comp_3yrs_meta$site)
+epi_pairwise
+# all different from each other
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "during"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_epi[test_ID, ]
+adonis2(test_mat ~ comp_3yrs*treatment,
+        data = test_meta,
+        strata = test_meta$site)
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "after"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_epi[test_ID, ]
+adonis2(test_mat ~ comp_3yrs*treatment,
+        data = test_meta,
+        strata = test_meta$site)
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("after", "during"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_epi[test_ID, ]
+adonis2(test_mat ~ comp_3yrs*treatment,
+        data = test_meta,
+        strata = test_meta$site)
 
 # beta dispersion
 epi_pt_dist <- vegdist(comm_mat_epi, "bray")
@@ -472,7 +536,7 @@ simper_epi_treatment <- simper(
   group = comp_3yrs_meta$treatment
 )
 
-epi_simper_treatment <- simper_epi_treatment$control_continual %>% 
+epi_simper_treatment <- simper_epi_treatment$continual_control %>% 
   as_tibble() %>% 
   # arrange by greatest to least contribution to dissimilarity
   arrange(-average) %>% 
@@ -502,8 +566,8 @@ epi_pt_bray_species <- scores(epi_pt_bray, display = "species", tidy = TRUE) %>%
 epi_pt_bray_continual_plot <- nmds_plot_fxn(
   epi_pt_bray_plotdf, "continual", epi_pt_bray_species
 ) +
-  scale_x_continuous(limits = c(-1.6, 1.2)) +
-  scale_y_continuous(limits = c(-1.6, 1.2)) +
+  scale_x_continuous(limits = c(-1.7, 1.2)) +
+  scale_y_continuous(limits = c(-1.7, 1.2)) +
   theme(legend.position = "none",
         panel.grid = element_blank()
         ) +
@@ -527,8 +591,8 @@ epi_pt_bray_continual_plot_arrows
 epi_pt_bray_control_plot <- nmds_plot_fxn(
   epi_pt_bray_plotdf, "control", epi_pt_bray_species
 ) +
-  scale_x_continuous(limits = c(-1.3, 1.3), breaks = seq(-1, 1, by = 1)) +
-  scale_y_continuous(limits = c(-1.25, 1.35), breaks = seq(-1, 1, by = 1)) +
+  scale_x_continuous(limits = c(-1.4, 1.4), breaks = seq(-1, 1, by = 1)) +
+  scale_y_continuous(limits = c(-1.35, 1.45), breaks = seq(-1, 1, by = 1)) +
   labs(title = "(d) Reference") +
   theme(legend.position = "none",
         panel.grid = element_blank()) 
@@ -653,7 +717,8 @@ epi_biomass_time_plot
 ##########################################################################-
 
 anova_1yr_tables <- rbind(anova_summary_fxn(algae_pt_perma_1yr), anova_summary_fxn(epi_pt_perma_1yr)) %>% 
-  rename_with(., .fn = ~paste(., "_1yr", sep = "", .cols = everything(cols)))
+  rename_with(., .fn = ~paste(., "_1yr", sep = "", .cols = everything(cols))) 
+
 anova_1yr_tables 
 
 anova_2yrs_tables <- rbind(anova_summary_fxn(algae_pt_perma_2yrs), anova_summary_fxn(epi_pt_perma_2yrs)) %>% 
@@ -665,6 +730,10 @@ anova_3yrs_tables <- rbind(anova_summary_fxn(algae_pt_perma_3yrs), anova_summary
 anova_3yrs_tables
 
 anova_together_tables <- cbind(anova_1yr_tables, anova_2yrs_tables, anova_3yrs_tables) %>% 
+  mutate(group = case_when(
+    str_detect(model_1yr1, "algae") ~ "Understory macroalgae",
+    str_detect(model_1yr1, "epi") ~ "Sessile invertebrates"
+  )) %>% 
   # take out unwanted columns
   select(!c("model_1yr1", "model_2yrs1", "model_3yrs1", 
             "SumOfSqs_1yr1", "SumOfSqs_2yrs1", "SumOfSqs_3yrs1",
@@ -672,12 +741,12 @@ anova_together_tables <- cbind(anova_1yr_tables, anova_2yrs_tables, anova_3yrs_t
   # turn the whole thing into a gt
   gt() %>% 
   # group labels
-  tab_row_group(
-    label = "Epilithic invertebrates", rows = 6:10
-  ) %>% 
-  tab_row_group(
-    label = "Understory macroalgae", rows = 1:5
-  ) %>% 
+  # tab_row_group(
+  #   label = "Sessile invertebrates", rows = 6:10
+  # ) %>% 
+  # tab_row_group(
+  #   label = "Understory macroalgae", rows = 1:5
+  # ) %>% 
   # 1, 2, and 3 year comparisons
   tab_spanner(
     label = "1 year comparison",
@@ -696,15 +765,15 @@ anova_together_tables <- cbind(anova_1yr_tables, anova_2yrs_tables, anova_3yrs_t
     variables_1yr1 = "Source of variation",
     Df_1yr1 = "df",
     F_1yr1 = "pseudo-F",
-    p_1yr1 = "p", 
+    p_1yr1 = "p-value", 
     variables_2yrs1 = "Source of variation",
     Df_2yrs1 = "df",
     F_2yrs1 = "pseudo-F",
-    p_2yrs1 = "p", 
+    p_2yrs1 = "p-value", 
     variables_3yrs1 = "Source of variation",
-    Df_3yrs1 = "df",
+    Df_3yrs1 = "Degrees of freedom",
     F_3yrs1 = "pseudo-F",
-    p_3yrs1 = "p"
+    p_3yrs1 = "p-value"
   ) %>% 
   # increase spacing between cells
   tab_style(
