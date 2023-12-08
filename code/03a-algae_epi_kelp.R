@@ -306,7 +306,7 @@ delta_epi_vs_kelp_lm
 
 lm_vs_kelp_summary_tables <- tbl_stack(
   tbls = list(lm_delta_algae_kelp_after_summary, lm_delta_epi_kelp_after_summary),
-  group_header = c("Understory macroalgae", "Epilithic invertebrates"),
+  group_header = c("Understory macroalgae", "Sessile invertebrates"),
   quiet = TRUE) %>% 
   as_flex_table() %>% 
   font(fontname = "Times New Roman", part = "all")
