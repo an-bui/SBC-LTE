@@ -457,7 +457,20 @@ biomass <- read_csv(here::here("data", "all-species-biomass", "LTE_All_Species_B
   # new group column %>% 
   left_join(., guilds, by = c("sp_code" = "sp.code")) %>% 
   # take out all the first dates 
-  filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates)))
+  filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates))) %>% 
+  # dangling controls (from annual plot surveys) makes things harder
+  filter(!(sample_ID %in% c("NAPL_CONTROL_2010-04-27", "CARP_CONTROL_2010-04-23",
+                            "AQUE_CONTROL_2010-04-26", "MOHK_CONTROL_2010-05-05"))) %>% 
+  # calculating average biomass (across sampling dates for 2010-2012, when sampling was done 8x per year)
+  time_since_columns_continual() %>%
+  group_by(site, year, treatment, quarter, sp_code) %>%
+  mutate(dry_gm2 = mean(dry_gm2),
+         wm_gm2 = mean(wm_gm2)) %>%
+  # take out the "duplicates": only one sampling date per quarter in the dataframe, with values averaged across the two sampling dates
+  slice(1L) %>%
+  ungroup() %>%
+  # take out extraneous columns from time_since_columns_continual()
+  select(!quarter:test_min_time_yrs)
 
 # ⟞ c. LTE algae biomass at section ---------------------------------------
 
