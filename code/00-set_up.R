@@ -41,6 +41,7 @@ library(performance)
 library(ggeffects)
 library(emmeans)
 library(gtsummary)
+library(pairwiseAdonis)
 
 ##########################################################################-
 # 2. start and end dates --------------------------------------------------
