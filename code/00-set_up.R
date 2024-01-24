@@ -3,31 +3,24 @@
 # 1. libraries ------------------------------------------------------------
 ##########################################################################-
 
-# general cleaning, visualization, etc.  
+# ⟞ a. general organization and cleaning ----------------------------------
+
 library(tidyverse)
 library(here)
 library(janitor)
 library(lubridate)
+library(fuzzyjoin)
+library(rlang)
+
+# ⟞ b. visualization ------------------------------------------------------
+
 library(patchwork)
 library(cowplot)
 library(ggrepel)
-library(plotly)
-library(fuzzyjoin)
-library(gt)
-library(rlang)
-library(multcompView)
-library(ggeffects)
-library(ggnewscale)
 library(scales)
-library(ggpubr)
-library(webshot2)
-library(flextable)
 
-# analysis
-library(vegan)
-library(vegclust)
-library(ecotraj)
-library(FD)
+# ⟞ c. model tools --------------------------------------------------------
+
 library(minpack.lm) # Fitting non-linear models
 library(nls2) # Fitting non-linear models
 library(AICcmodavg) # calculate second order AIC (AICc)
@@ -38,10 +31,28 @@ library(glmmTMB) # as of 2023-04-28 got this to work, thank Christ never update 
 library(nlme)
 library(DHARMa)
 library(performance)
+
+# ⟞ d. model predictions, means, etc. -------------------------------------
+
 library(ggeffects)
 library(emmeans)
-library(gtsummary)
+library(modelbased)
+
+# ⟞ e. community analysis -------------------------------------------------
+
+library(vegan)
+library(vegclust)
+library(ecotraj)
+library(FD)
 library(pairwiseAdonis)
+
+# ⟞ f. table making -------------------------------------------------------
+
+library(gt)
+library(ggpubr)
+library(webshot2)
+library(flextable)
+library(gtsummary)
 
 ##########################################################################-
 # 2. start and end dates --------------------------------------------------
@@ -859,10 +870,10 @@ raw_biomass_plot_theme <- function() {
           plot.title = element_text(size = 8),
           axis.text = element_text(size = 7),
           strip.text = element_text(size = 8, hjust = 0),
-          strip.background = element_rect(fill = "#FFFFFF", color = "#FFFFFF"),
+          strip.background = element_blank(),
           legend.text = element_text(size = 7),
           legend.position = "none",
-          panel.grid.minor = element_line(color = "#FFFFFF")) 
+          panel.grid = element_blank()) 
 }
 
 # ⟞ j. arrow plots --------------------------------------------------------

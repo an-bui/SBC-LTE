@@ -22,11 +22,11 @@ cor.test(delta_algae_after$delta_continual_algae, delta_algae_after$delta_contin
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
 
 # models
-lm_delta_algae_kelp_after_m1 <- lm(
-  delta_continual_algae ~ delta_continual, 
-  data = delta_algae_continual %>% filter(exp_dates == "after"),
-  na.action = na.omit
-)
+# lm_delta_algae_kelp_after_m1 <- lm(
+#   delta_continual_algae ~ delta_continual, 
+#   data = delta_algae_continual %>% filter(exp_dates == "after"),
+#   na.action = na.omit
+# )
 lm_delta_algae_kelp_after_m2 <- lmer(
   delta_continual_algae ~ delta_continual + (1|site) + (1|year),
   data = delta_algae_continual %>% filter(exp_dates == "after")
@@ -45,8 +45,8 @@ lm_delta_algae_kelp_after_m2 <- lmer(
 # )
 
 # diagnostics
-check_model(lm_delta_algae_kelp_after_m1)
-simulateResiduals(lm_delta_algae_kelp_after_m1, plot = TRUE)
+# check_model(lm_delta_algae_kelp_after_m1)
+# simulateResiduals(lm_delta_algae_kelp_after_m1, plot = TRUE)
 
 check_model(lm_delta_algae_kelp_after_m2)
 simulateResiduals(lm_delta_algae_kelp_after_m2, plot = TRUE)
@@ -56,7 +56,7 @@ simulateResiduals(lm_delta_algae_kelp_after_m2, plot = TRUE)
 # plot(simulateResiduals(lm_algae_kelp_after_m1))
 
 # Rsquared
-r.squaredGLMM(lm_delta_algae_kelp_after_m1)
+# r.squaredGLMM(lm_delta_algae_kelp_after_m1)
 r.squaredGLMM(lm_delta_algae_kelp_after_m2)
 # r.squaredGLMM(lm_delta_algae_kelp_after_m3)
 
@@ -64,7 +64,7 @@ r.squaredGLMM(lm_delta_algae_kelp_after_m2)
 # r.squaredGLMM(lm_algae_kelp_after_m2)
 
 # summaries
-summary(lm_delta_algae_kelp_after_m1)
+# summary(lm_delta_algae_kelp_after_m1)
 summary(lm_delta_algae_kelp_after_m2)
 # summary(lm_delta_algae_kelp_after_m3)
 
@@ -77,14 +77,14 @@ lm_delta_algae_kelp_after_summary <- lm_delta_algae_kelp_after_m2 %>%
   ) 
 
 # AIC comparison
-AICc(lm_delta_algae_kelp_after_m1, lm_delta_algae_kelp_after_m2, lm_delta_algae_kelp_after_m3) %>% 
-  arrange(AICc)
-AICc(lm_algae_kelp_after_m1, lm_algae_kelp_after_m2)
+# AICc(lm_delta_algae_kelp_after_m1, lm_delta_algae_kelp_after_m2, lm_delta_algae_kelp_after_m3) %>% 
+#   arrange(AICc)
+# AICc(lm_algae_kelp_after_m1, lm_algae_kelp_after_m2)
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
 # raw biomass
-predicted_algae_kelp_after <- ggpredict(lm_algae_kelp_after_m1, terms = ~ continual, type = "fixed")
+# predicted_algae_kelp_after <- ggpredict(lm_algae_kelp_after_m1, terms = ~ continual, type = "fixed")
 
 # deltas
 predicted_delta_algae_vs_kelp <- ggpredict(lm_delta_algae_kelp_after_m2, terms = ~ delta_continual, type = "fixed")
@@ -93,14 +93,14 @@ predicted_delta_algae_vs_kelp <- ggpredict(lm_delta_algae_kelp_after_m2, terms =
 
 # ⟞ ⟞ i. raw biomass ------------------------------------------------------
 
-algae_kelp_after_plot <- ggplot(data = delta_algae_continual %>% 
-                                  filter(exp_dates == "after"), 
-                                aes(x = continual, y = continual_algae)) +
-  geom_point(shape = 21) +
-  geom_line(data = predicted_algae_kelp_after, aes(x = x, y = predicted), lty = 1) +
-  geom_ribbon(data = predicted_algae_kelp_after, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.2)
-
-algae_kelp_after_plot
+# algae_kelp_after_plot <- ggplot(data = delta_algae_continual %>% 
+#                                   filter(exp_dates == "after"), 
+#                                 aes(x = continual, y = continual_algae)) +
+#   geom_point(shape = 21) +
+#   geom_line(data = predicted_algae_kelp_after, aes(x = x, y = predicted), lty = 1) +
+#   geom_ribbon(data = predicted_algae_kelp_after, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.2)
+# 
+# algae_kelp_after_plot
 
 # ⟞ ⟞ ii. deltas ----------------------------------------------------------
 
@@ -124,7 +124,8 @@ delta_algae_vs_kelp_lm <- delta_algae_continual %>%
   theme(axis.title = element_text(size = 6),
         axis.text = element_text(size = 5),
         plot.title = element_text(size = 8),
-        plot.title.position = "plot") 
+        plot.title.position = "plot",
+        panel.grid = element_blank()) 
 delta_algae_vs_kelp_lm
 
 # delta_algae_vs_kelp_pearson <- delta_algae_continual %>% 
@@ -169,19 +170,19 @@ cor.test(delta_epi_after$delta_continual_epi, delta_epi_after$delta_continual,
 
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
 
-lm_delta_epi_kelp_after_m1 <- lm(
-  delta_continual_epi ~ delta_continual, 
-  data = delta_epi_continual %>% filter(exp_dates == "after"),
-  na.action = na.omit
-)
+# lm_delta_epi_kelp_after_m1 <- lm(
+#   delta_continual_epi ~ delta_continual, 
+#   data = delta_epi_continual %>% filter(exp_dates == "after"),
+#   na.action = na.omit
+# )
 lm_delta_epi_kelp_after_m2 <- lmer(
   delta_continual_epi ~ delta_continual + (1|year) + (1|site), 
   data = delta_epi_continual %>% filter(exp_dates == "after")
 )
-lm_delta_epi_kelp_after_m3 <- lmer(
-  delta_continual_epi ~ delta_continual + (1|site), 
-  data = delta_epi_continual %>% filter(exp_dates == "after")
-)
+# lm_delta_epi_kelp_after_m3 <- lmer(
+#   delta_continual_epi ~ delta_continual + (1|site), 
+#   data = delta_epi_continual %>% filter(exp_dates == "after")
+# )
 
 # lm_epi_kelp_after_m1 <- lmer(
 #   continual_epi ~ continual + (1|year) + (1|site),
@@ -194,30 +195,30 @@ lm_delta_epi_kelp_after_m3 <- lmer(
 # )
 
 # diagnostics
-simulateResiduals(lm_delta_epi_kelp_after_m1, plot = T)
-check_model(lm_delta_epi_kelp_after_m1)
+# simulateResiduals(lm_delta_epi_kelp_after_m1, plot = T)
+# check_model(lm_delta_epi_kelp_after_m1)
 
 simulateResiduals(lm_delta_epi_kelp_after_m2, plot = T)
 check_model(lm_delta_epi_kelp_after_m2)
 
-simulateResiduals(lm_delta_epi_kelp_after_m3, plot = T)
-check_model(lm_delta_epi_kelp_after_m3)
+# simulateResiduals(lm_delta_epi_kelp_after_m3, plot = T)
+# check_model(lm_delta_epi_kelp_after_m3)
 
 # check_model(lm_epi_kelp_after_m1)
 # check_model(lm_epi_kelp_after_m2)
 
 # Rsquared
-r.squaredGLMM(lm_delta_epi_kelp_after_m1)
+# r.squaredGLMM(lm_delta_epi_kelp_after_m1)
 r.squaredGLMM(lm_delta_epi_kelp_after_m2)
-r.squaredGLMM(lm_delta_epi_kelp_after_m3)
+# r.squaredGLMM(lm_delta_epi_kelp_after_m3)
 
 # r.squaredGLMM(lm_epi_kelp_after_m1)
 # r.squaredGLMM(lm_epi_kelp_after_m2)
 
 # summaries
-summary(lm_delta_epi_kelp_after_m1)
+# summary(lm_delta_epi_kelp_after_m1)
 summary(lm_delta_epi_kelp_after_m2)
-summary(lm_delta_epi_kelp_after_m3)
+# summary(lm_delta_epi_kelp_after_m3)
 
 lm_delta_epi_kelp_after_summary <- lm_delta_epi_kelp_after_m2 %>% 
   tbl_regression() %>% 
@@ -229,15 +230,15 @@ lm_delta_epi_kelp_after_summary <- lm_delta_epi_kelp_after_m2 %>%
 lm_delta_epi_kelp_after_summary
 
 # AICc
-AICc(lm_delta_epi_kelp_after_m1, lm_delta_epi_kelp_after_m2, lm_delta_epi_kelp_after_m3) %>% 
-  arrange(AICc)
+# AICc(lm_delta_epi_kelp_after_m1, lm_delta_epi_kelp_after_m2, lm_delta_epi_kelp_after_m3) %>% 
+#   arrange(AICc)
 
 AICc(lm_epi_kelp_after_m1, lm_epi_kelp_after_m2) # same?
 
 # ⟞ ⟞ ii. predictions -----------------------------------------------------
 
 # raw biomass
-predicted_epi_vs_kelp <- ggpredict(lm_epi_kelp_after_m1, terms = ~ continual, type = "fixed")
+# predicted_epi_vs_kelp <- ggpredict(lm_epi_kelp_after_m1, terms = ~ continual, type = "fixed")
 
 # deltas
 predicted_delta_epi_vs_kelp <- ggpredict(lm_delta_epi_kelp_after_m2, terms = ~ delta_continual, type = "fixed")
@@ -246,11 +247,11 @@ predicted_delta_epi_vs_kelp <- ggpredict(lm_delta_epi_kelp_after_m2, terms = ~ d
 
 # ⟞ ⟞ i. raw biomass ------------------------------------------------------
 
-delta_epi_continual %>% 
-  filter(exp_dates == "during") %>% 
-  ggplot(aes(x = continual, y = continual_epi)) +
-  geom_point() +
-  geom_line(data = predicted_epi_vs_kelp, aes(x = x, y = predicted))
+# delta_epi_continual %>% 
+#   filter(exp_dates == "during") %>% 
+#   ggplot(aes(x = continual, y = continual_epi)) +
+#   geom_point() +
+#   geom_line(data = predicted_epi_vs_kelp, aes(x = x, y = predicted))
 
 # ⟞ ⟞ ii. deltas ----------------------------------------------------------
 
@@ -271,7 +272,8 @@ delta_epi_vs_kelp_lm <- delta_epi_continual %>%
   theme(axis.title = element_text(size = 6),
         axis.text = element_text(size = 5),
         plot.title = element_text(size = 8),
-        plot.title.position = "plot") 
+        plot.title.position = "plot",
+        panel.grid = element_blank()) 
 delta_epi_vs_kelp_lm
 
 # epi_vs_kelp_pearson <- delta_epi_continual %>% 
