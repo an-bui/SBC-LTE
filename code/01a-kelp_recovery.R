@@ -146,6 +146,31 @@ delta_continual_sites_raw <- delta_continual %>%
 
 delta_continual_sites_raw
 
+
+# ⟞ d. summer biomass -----------------------------------------------------
+
+summer_biomass <- continual_long %>% 
+  filter(quarter == "Q3") %>% 
+  ggplot(aes(x = time_since_end, y = kelp_biomass)) +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_line(aes(color = site, alpha = treatment), linewidth = 2) +
+  scale_color_manual(values = color_palette_site) +
+  geom_point(color = "#FFFFFF", size = 1) +
+  scale_alpha_manual(values = c(reference = 0.4, removal = 1)) +
+  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        legend.position = "none",
+        strip.background = element_blank(),
+        strip.text = element_text(hjust = 0)) +
+  facet_wrap(~site_full) +
+  labs(x = "Time since end (years)",
+       y = "Giant kelp biomass (dry g/m\U00B2)",
+       title = "Summer kelp biomass")
+ 
+summer_biomass
+
 ##########################################################################-
 # 3. linear models --------------------------------------------------------
 ##########################################################################-
