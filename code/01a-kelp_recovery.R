@@ -350,26 +350,6 @@ lm_kelp_during_zigamma_02 <- glmmTMB(
   family = ziGamma(link = "log"),
   ziformula = ~1)
 
-# estimates predicted mean values of response for each level in predictor
-modelbased::estimate_means(lm_kelp_during_zigamma_02) %>% plot()
-emmeans::emmeans(lm_kelp_during_zigamma_02, ~ treatment | time_since_end, type = "response") %>% plot()
-
-# calculates differences between levels of categorical predictor
-contrasts <- modelbased::estimate_contrasts(lm_kelp_during_zigamma_02, transform = "response") 
-# when transforming to response scale, gives ratio of means (weird?)
-contrasts
-
-# estimates slopes of numeric predictors for levels of categorical predictors
-# in summary object: estimate = difference in slope of time since end (removal - reference)
-during_slopes <- modelbased::estimate_slopes(lm_kelp_during_zigamma_02, 
-                trend = "time_since_end",
-                at = "treatment") %>% 
-  as_tibble() %>% 
-  mutate(exp_dates = "Experimental removal")
-emmeans::emtrends(lm_kelp_during_zigamma_02, "treatment", var = "time_since_end") %>% plot()
-
-estimate_relation(lm_kelp_during_zigamma_02) %>% plot()
-
 # df <- delta_continual %>% 
 #   filter(exp_dates == "during") %>% 
 #   cbind(., residuals(lm_kelp_during_lmer)) %>% 
@@ -544,6 +524,35 @@ lm_kelp_during_zigamma_summary
 predicted_kelp_during_raw <- ggpredict(lm_kelp_during_zigamma_02,
                                       terms = c("time_since_end [-7.25:0 by = 0.25]", "treatment"), type = "fixed")
 
+
+# ⟞ ⟞ iii. means ----------------------------------------------------------
+
+# estimates predicted mean values of response for each level in predictor
+# using modelbased
+during_response_means <- estimate_means(lm_kelp_during_zigamma_02, 
+                               transform = "response") %>% 
+  mutate(exp_dates = "during")
+# using emmeans
+during_response_emmeans <- emmeans(lm_kelp_during_zigamma_02, 
+                          ~ treatment | time_since_end, type = "response") 
+
+# calculates differences between levels of categorical predictor
+contrasts <- estimate_contrasts(lm_kelp_during_zigamma_02, 
+                                transform = "response") 
+# when transforming to response scale, gives ratio of means (weird?)
+contrasts
+
+# estimates slopes of numeric predictors for levels of categorical predictors
+# in summary object: estimate = difference in slope of time since end (removal - reference)
+during_slopes <- estimate_slopes(lm_kelp_during_zigamma_02, 
+                                 trend = "time_since_end",
+                                 at = "treatment") %>% 
+  as_tibble() %>% 
+  mutate(exp_dates = "Experimental removal")
+during_emtrends <- emmeans::emtrends(lm_kelp_during_zigamma_02, "treatment", var = "time_since_end")
+
+estimate_relation(lm_kelp_during_zigamma_02) %>% plot()
+
 # ⟞ b. recovery period ----------------------------------------------------
 
 # ⟞ ⟞ i. model and diagnostics  -------------------------------------------
@@ -588,39 +597,7 @@ lm_kelp_recovery_zigamma_02 <- glmmTMB(
   family = ziGamma(link = "log"), 
   ziformula = ~1)
 
-# estimates predicted mean values of response for each level in predictor
-modelbased::estimate_means(lm_kelp_recovery_zigamma_02) %>% plot()
-emmeans::emmeans(lm_kelp_recovery_zigamma_02, ~ treatment | time_since_end, type = "response") %>% plot()
 
-# calculates differences between levels of categorical predictor
-contrasts <- modelbased::estimate_contrasts(lm_kelp_recovery_zigamma_02, transform = "response") 
-# when transforming to response scale, gives ratio of means (weird?)
-contrasts
-
-# estimates slopes of numeric predictors for levels of categorical predictors
-# in summary object: estimate = difference in slope of time since end removal - reference
-recovery_slopes <- modelbased::estimate_slopes(lm_kelp_recovery_zigamma_02, 
-                                               trend = "time_since_end",
-                                               at = "treatment") %>% 
-  as_tibble() %>% 
-  mutate(exp_dates = "Recovery") %>% 
-  rbind(during_slopes) %>% 
-  mutate(exp_dates = fct_relevel(exp_dates, "Experimental removal", "Recovery"))
-
-emmeans::emtrends(lm_kelp_recovery_zigamma_02, "treatment", var = "time_since_end") %>% plot()
-
-effplot <- ggplot(data = recovery_slopes, aes(x = treatment, y = Coefficient)) +
-  geom_hline(yintercept = 0, lty = 2) +
-  geom_pointrange(aes(ymin = CI_low, ymax = CI_high)) +
-  labs(x = "Treatment", 
-       y = "Effect of time since end (years)") +
-  theme_bw() +
-  raw_biomass_plot_theme() +
-  facet_wrap(~exp_dates)
-
-ggsave(filename = here::here("figures", "ms-figures", paste("fig-S11_", today(), ".jpg", sep = "")),
-       effplot,
-       width = 6, height = 4, dpi = 150)
 # check for autocorrelation
 # performance::check_autocorrelation(lm_kelp_recovery_lmer)
 performance::check_autocorrelation(lm_kelp_recovery_zigamma_01)
@@ -768,6 +745,33 @@ predicted_kelp_after_carp <- ggpredict(lm_kelp_recovery_zigamma_02, terms = c("t
 # predicted time to recovery: 4 years
 ggpredict(lm_kelp_recovery_zigamma_02, terms = c("time_since_end [3.5:4.5 by = 0.01]", "treatment"), type = "random", condition = c(site = "carp")) %>% plot()
 
+# ⟞ ⟞ iii. means ----------------------------------------------------------
+
+# estimates predicted mean values of response for each level in predictor
+recovery_response_means <- estimate_means(lm_kelp_recovery_zigamma_02) %>% 
+  mutate(exp_dates = "after")
+recovery_response_emmeans <- emmeans(lm_kelp_recovery_zigamma_02, ~ treatment | time_since_end, type = "response") %>% plot()
+
+# calculates differences between levels of categorical predictor
+recovery_contrasts <- modelbased::estimate_contrasts(lm_kelp_recovery_zigamma_02, transform = "response") 
+# when transforming to response scale, gives ratio of means (weird?)
+recovery_contrasts
+
+# estimates slopes of numeric predictors for levels of categorical predictors
+# in summary object: estimate = difference in slope of time since end removal - reference
+recovery_slopes <- modelbased::estimate_slopes(lm_kelp_recovery_zigamma_02, 
+                                               trend = "time_since_end",
+                                               at = "treatment") %>% 
+  as_tibble() %>% 
+  mutate(exp_dates = "Recovery") %>% 
+  rbind(during_slopes) %>% 
+  mutate(exp_dates = fct_relevel(exp_dates, "Experimental removal", "Recovery"))
+
+recovery_emtrends <- emmeans::emtrends(lm_kelp_recovery_zigamma_02, "treatment", var = "time_since_end") 
+
+# ggsave(filename = here::here("figures", "ms-figures", paste("fig-S11_", today(), ".jpg", sep = "")),
+#        effplot,
+#        width = 6, height = 4, dpi = 150)
 
 # ⟞ c. figures -------------------------------------------------------------
 
@@ -1105,6 +1109,72 @@ overall_predictions
 fig1_new <- overall_kelp / overall_predictions
 # fig1_new_v2 <- overall_kelp_removal / overall_kelp_reference / overall_predictions
 
+
+# ⟞ ⟞ iv. effect plots ----------------------------------------------------
+
+kelp_means_df <- rbind(during_response_means, recovery_response_means) %>% 
+  as_tibble() %>% 
+  mutate(exp_dates = fct_relevel(exp_dates, "during", "after"))
+
+# mean predicted responses: what are the differences in mean giant kelp biomass between treatments during each time period?
+kelp_means_plot <- continual_long %>% 
+  # filter(exp_dates == "during") %>% 
+  ggplot(aes(x = treatment, y = kelp_biomass, color = treatment)) +
+  facet_wrap(~exp_dates, 
+             labeller = labeller(exp_dates = c("during" = "Experimental removal",
+                                               "after" = "Recovery"))) +
+  geom_point(position = position_jitter(width = 0.1, seed = 666),
+             alpha = 0.3, shape = 21) +
+  geom_pointrange(data = kelp_means_df, 
+                  aes(x = treatment, y = Mean, ymin = CI_low, ymax = CI_high),
+                  size = 0.5, linewidth = 0.5) +
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col)) +
+  scale_fill_manual(values = c(reference = reference_col, removal = removal_col)) +
+  scale_x_discrete(labels = c("reference" = "Reference", "removal" = "Removal")) +
+  scale_y_continuous(limits = c(-5, 2000), expand = c(0.01, 0.01)) +
+  labs(x = "Treatment", 
+       y = "Giant kelp biomass (dry g/m\U00B2)") +
+  theme_classic() +
+  theme(legend.position = "none",
+        strip.placement = "outer",
+        strip.text = element_text(hjust = 0.5),
+        strip.background = element_blank()) 
+
+kelp_means_plot
+
+kelp_means_nodata_plot <- ggplot(data = kelp_means_df,
+                            aes(x = treatment, y = kelp_biomass, color = treatment)) +
+  facet_wrap(~exp_dates, 
+             labeller = labeller(exp_dates = c("during" = "Experimental removal",
+                                               "after" = "Recovery"))) +
+  geom_pointrange(aes(x = treatment, y = Mean, ymin = CI_low, ymax = CI_high),
+                  size = 0.5, linewidth = 0.5) +
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col)) +
+  scale_fill_manual(values = c(reference = reference_col, removal = removal_col)) +
+  scale_x_discrete(labels = c("reference" = "Reference", "removal" = "Removal")) +
+  scale_y_continuous(limits = c(-5, 550), 
+                     breaks = seq(from = 0, to = 550, by = 125),
+                     expand = c(0.01, 0.01)) +
+  labs(x = "Treatment", 
+       y = "Predicted giant kelp biomass \n(dry g/m\U00B2)") +
+  theme_classic() +
+  theme(legend.position = "none",
+        strip.placement = "outer",
+        strip.text = element_text(hjust = 0.5),
+        strip.background = element_blank()) 
+kelp_means_nodata_plot
+
+# mean predicted slopes: what are the differences in rates of giant kelp biomass change?
+effplot <- ggplot(data = recovery_slopes, aes(x = treatment, y = Coefficient)) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_pointrange(aes(ymin = CI_low, ymax = CI_high)) +
+  labs(x = "Treatment", 
+       y = "Effect of time since end (years)") +
+  theme_bw() +
+  raw_biomass_plot_theme() +
+  facet_wrap(~exp_dates)
+effplot
+
 ##########################################################################-
 # 4. manuscript tables ----------------------------------------------------
 ##########################################################################-
@@ -1192,9 +1262,18 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
 
 # Ecology max figure size: 18 x 24
 
+# ⟞ f. means plots --------------------------------------------------------
 
-
-
-
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("kelp_means_plot_", today(), ".jpg", sep = "")),
+#        plot = kelp_means_plot,
+#        height = 7, width = 14, units = "cm",
+#        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("kelp_means_nodata_plot_", today(), ".jpg", sep = "")),
+#        plot = kelp_means_nodata_plot,
+#        height = 7, width = 14, units = "cm",
+#        dpi = 300)
 
 
