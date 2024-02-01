@@ -138,7 +138,7 @@ delta_continual_sites_raw <- delta_continual %>%
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = "Giant kelp biomass (dry g/m\U00B2)") +
@@ -492,7 +492,7 @@ lm_kelp_during_zigamma_summary <- lm_kelp_during_zigamma_02 %>%
   ) %>% 
   modify_column_indent(
     columns = label, 
-    rows = variable %in% c("treatment", "time_since_end", "time_since_end:treatment"))
+    rows = variable %in% c("treatment", "time_since_end", "time_since_end:treatment")) 
 
 # filter out zero-inflated component
 lm_kelp_during_zigamma_summary$table_body <- lm_kelp_during_zigamma_summary$table_body %>% 
@@ -835,7 +835,7 @@ overall_kelp <- ggplot() +
   #                   labels = c("Reference", "Removal")) +
   
   theme_bw() + 
-  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   scale_y_continuous(limits = c(-10, 2000)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
@@ -1082,7 +1082,7 @@ overall_predictions <- ggplot() +
   geom_line(data = delta_predictions_during, aes(x = x, y = delta), linewidth = 1) +
   geom_line(data = delta_predictions_after, aes(x = x, y = delta), linewidth = 1) +
 
-  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1800, 1000)) +
   theme_bw() + 
   theme(axis.title = element_text(size = 8),

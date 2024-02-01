@@ -403,8 +403,8 @@ predicted_raw_algae_during <- ggpredict(lm_raw_algae_during_zigamma_02, terms = 
 #   na.action = na.pass)
 
 # lm_raw_algae_recovery_zigamma_01 <- glmmTMB(
-#   algae_biomass ~ time_since_end*treatment + (1|site), 
-#   data = algae_continual_long %>% filter(exp_dates == "after"), 
+#   algae_biomass ~ time_since_end*treatment + (1|site),
+#   data = algae_continual_long %>% filter(exp_dates == "after"),
 #   na.action = na.pass,
 #   family = ziGamma(link = "log"),
 #   ziformula = ~1)
@@ -469,7 +469,7 @@ lm_raw_algae_recovery_zigamma_summary
 
 # predicted_algae_recovery <- ggpredict(lm_algae_recovery_lmer, terms = ~time_since_end, type = "fixed")
 
-predicted_raw_algae_recovery <- ggpredict(lm_raw_algae_recovery_zigamma_02, terms = c("time_since_end", "treatment"), type = "fixed")
+predicted_raw_algae_recovery <- ggpredict(lm_raw_algae_recovery_zigamma_02, terms = c("time_since_end[0:6.75, by = 0.25]", "treatment"), type = "fixed")
 
 # ⟞ c. figure ------------------------------------------------------------
 
@@ -528,7 +528,7 @@ raw_algae_time <- ggplot() +
   
   # theming
   theme_bw() + 
-  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   coord_cartesian(ylim = c(30, 800)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
@@ -851,7 +851,7 @@ summary(lm_raw_epi_recovery_zigamma_02)
 
 # predicted_epi_recovery <- ggpredict(lm_epi_recovery_lmer, terms = ~ time_since_end, type = "fixed")
 
-predicted_raw_epi_recovery <- ggpredict(lm_raw_epi_recovery_zigamma_02, terms = c("time_since_end", "treatment"), type = "fixed")
+predicted_raw_epi_recovery <- ggpredict(lm_raw_epi_recovery_zigamma_02, terms = c("time_since_end[0:6.75, by = 0.25]", "treatment"), type = "fixed")
 
 # ⟞ c. figure ------------------------------------------------------------
 
@@ -909,7 +909,7 @@ raw_epi_time <- ggplot() +
   
   # theming
   theme_bw() + 
-  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   coord_cartesian(ylim = c(5, 155)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
