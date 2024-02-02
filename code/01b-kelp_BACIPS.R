@@ -220,7 +220,7 @@ aque_bacips_plot <- delta_continual %>%
   ggplot(aes(x = time_since_end, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
   geom_point(shape = aque_shape, fill = aque_col, size = 4) +
-  geom_function(fun = function(x) -254.104+(14.087*x), linewidth = 2) +
+  geom_function(fun = function(x) -281.776+(15.482*x), linewidth = 2) +
   labs(x = "Time since end of removal (years)", y = "\U0394 giant kelp biomass",
        title = aque_full) +
   theme_bw() + 
@@ -237,12 +237,14 @@ napl_biomass_continual <- time.model.fxn.new("napl", "continual", "all")
 
 napl_continual_bacips_results <- biomass.pcbacips(napl_biomass_continual)
 
+napl_continual_bacips_results$step.model.summary 
+
 napl_bacips_plot <- delta_continual %>% 
   filter(site == "napl" & exp_dates == "after") %>% 
   ggplot(aes(x = time_since_end, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
   geom_point(shape = napl_shape, fill = napl_col, size = 4) +
-  geom_function(fun = function(x) (223.626 * (x/6.506)^148.647)/(1 + (x/6.506)^148.647) - 211.374, linewidth = 2) +
+  geom_hline(yintercept = 0, linewidth = 2) +
   labs(x = "Time since end of removal (years)", y = "\U0394 giant kelp biomass",
        title = napl_full) +
   theme_bw() + 
@@ -264,7 +266,7 @@ mohk_bacips_plot <- delta_continual %>%
   ggplot(aes(x = time_since_end, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
   geom_point(shape = mohk_shape, fill = mohk_col, size = 4) +
-  geom_function(fun = function(x) -813.582+(47.306*x), linewidth = 2) +
+  geom_function(fun = function(x) -788+(44.931*x), linewidth = 2) +
   labs(x = "Time since end of removal (years)", y = "\U0394 giant kelp biomass",
        title = mohk_full) +
   theme_bw() + 
@@ -286,7 +288,7 @@ carp_bacips_plot <- delta_continual %>%
   ggplot(aes(x = time_since_end, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
   geom_point(shape = carp_shape, fill = carp_col, size = 4) +
-  geom_function(fun = function(x) -57.910+(1.713*x), linewidth = 2) +
+  geom_function(fun = function(x) -73.322+(2.795*x), linewidth = 2) +
   labs(x = "Time since end of removal (years)", y = "\U0394 giant kelp biomass",
        title = carp_full) + 
   theme_bw() + 
@@ -430,7 +432,7 @@ model_selection_summary_table_v2 <- cbind(
   font(fontname = "Times New Roman", part = "all") %>% 
   width(width = 1, unit = "in")
 
-# model_selection_summary_table_v2 %>% 
+# model_selection_summary_table_v2 %>%
 #   save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S2_", today(), ".docx", sep = "")))
 
 ##########################################################################-
@@ -443,7 +445,7 @@ bacips_plots <- (aque_bacips_plot + napl_bacips_plot) /
   theme(plot.tag = element_text(size = 20))
 bacips_plots
 
-# ggsave(here::here("figures", paste("bacips_plots-", today(), ".jpg", sep = "")),
+# ggsave(here::here("figures", "ms-figures", paste("bacips_plots-", today(), ".jpg", sep = "")),
 #        plot = bacips_plots,
 #        height = 8, width = 12, dpi = 150)
 
