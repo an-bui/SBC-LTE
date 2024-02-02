@@ -446,33 +446,34 @@ guilds <- read_csv(here::here("code", "resources", "castorani", "LTE_guild_data.
 
 # ⟞ b. LTE all species biomass --------------------------------------------
 
-# biomass <- read_csv(here::here("data", "all-species-biomass", "LTE_All_Species_Biomass_at_transect_20230530.csv")) %>% 
-#   clean_names() %>% 
+# biomass <- read_csv(here::here("data", "all-species-biomass", "LTE_All_Species_Biomass_at_transect_20230530.csv")) %>%
+#   clean_names() %>%
 #   # ANOB is incorrectly coded as having "SESSILE" mobility
-#   mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>% 
+#   mutate(mobility = replace(mobility, sp_code == "ANOB", "MOBILE")) %>%
 #   # replace NA sp_code with Nandersoniana
 #   mutate(sp_code = case_when(
 #     scientific_name == "Nienburgia andersoniana" ~ "Nandersoniana",
 #     TRUE ~ sp_code
-#   )) %>% 
+#   )) %>%
 #   # replace all -99999 values with NA
 #   mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA),
-#          wm_gm2 = replace(wm_gm2, wm_gm2 < 0, NA)) %>% 
+#          wm_gm2 = replace(wm_gm2, wm_gm2 < 0, NA),
+#          density = replace(density, density < 0, NA)) %>%
 #   # create a sample_ID for each sampling date at each treatment at each site
-#   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
+#   unite("sample_ID", site, treatment, date, remove = FALSE) %>%
 #   # change to lower case
-#   mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
+#   mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>%
 #   # make a new column for during and after and set factor levels
-#   exp_dates_column() %>% 
+#   exp_dates_column() %>%
 #   # create a new column for season and set factor levels
-#   season_column() %>% 
-#   # new group column %>% 
-#   left_join(., guilds, by = c("sp_code" = "sp.code")) %>% 
-#   # take out all the first dates 
-#   filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates))) %>% 
+#   season_column() %>%
+#   # new group column %>%
+#   left_join(., guilds, by = c("sp_code" = "sp.code")) %>%
+#   # take out all the first dates
+#   filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates))) %>%
 #   # dangling controls (from annual plot surveys) makes things harder
 #   filter(!(sample_ID %in% c("NAPL_CONTROL_2010-04-27", "CARP_CONTROL_2010-04-23",
-#                             "AQUE_CONTROL_2010-04-26", "MOHK_CONTROL_2010-05-05"))) %>% 
+#                             "AQUE_CONTROL_2010-04-26", "MOHK_CONTROL_2010-05-05"))) %>%
 #   # calculating average biomass (across sampling dates for 2010-2012, when sampling was done 8x per year)
 #   time_since_columns_continual() %>%
 #   group_by(site, year, treatment, quarter, sp_code) %>%
@@ -487,25 +488,42 @@ guilds <- read_csv(here::here("code", "resources", "castorani", "LTE_guild_data.
 # writing RDS to push
 # write_rds(biomass, file = here("data", "all-species-biomass", "biomass.RDS"))
 
-biomass <- read_rds(here("data", "all-species-biomass", "biomass.RDS"))
+biomass <- read_rds(here("data", "all-species-biomass", "biomass.RDS")) 
 
-# ⟞ c. LTE algae biomass at section ---------------------------------------
 
-# biomass_section <- read_csv(here::here("data", "algae", "LTE_Algae_Biomass_at_section_20220422.csv")) %>% 
-#   clean_names() %>% 
-#   # replace all -99999 values with NA
-#   mutate(dry_gm2 = replace(dry_gm2, dry_gm2 < 0, NA),
-#          wm_gm2 = replace(wm_gm2, wm_gm2 < 0, NA)) %>% 
-#   # create a sample_ID for each sampling date at each treatment at each site at each section
-#   unite("sample_ID", site, treatment, date, quad, side, remove = FALSE) %>% 
-#   # change to lower case
-#   mutate_at(c("group", "mobility", "growth_morph", "treatment", "site"), str_to_lower) %>% 
-#   # make a new column for during and after and set factor levels
-#   exp_dates_column() %>% 
-#   # create a new column for season and set factor levels
-#   season_column() %>% 
-#   # take out all the first dates 
-#   filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates)))
+# ⟞ c. LTE kelp fronds ----------------------------------------------------
+
+fronds <- read_csv(here("data", "kelp-fronds", "LTE_Kelp_All_Years_20230530.csv")) %>% 
+  clean_names() %>% 
+  # replace all -99999 values with NA
+  mutate(fronds = replace(fronds, fronds < 0, NA)) %>%
+  # create a sample_ID for each sampling date at each treatment at each site
+  unite("sample_ID", site, treatment, date, remove = FALSE) %>%
+  # change to lower case
+  mutate_at(c("treatment", "site"), str_to_lower) %>% 
+  # make a new column for during and after and set factor levels
+  exp_dates_column() %>%
+  # create a new column for season and set factor levels
+  season_column() %>% 
+  # take out all the first dates
+  filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates))) %>% 
+  # dangling controls (from annual plot surveys) makes things harder
+  filter(!(sample_ID %in% c("NAPL_CONTROL_2010-04-27", "CARP_CONTROL_2010-04-23",
+                            "AQUE_CONTROL_2010-04-26", "MOHK_CONTROL_2010-05-05"))) %>%
+  time_since_columns_continual() %>%
+  # calculating total fronds per transect
+  group_by(sample_ID) %>% 
+  mutate(fronds = sum(fronds)) %>% 
+  ungroup() %>% 
+  # calculating average fronds (across sampling dates for 2010-2012, when sampling was done 8x per year)
+  group_by(site, year, treatment, quarter, sp_code) %>%
+  mutate(fronds = mean(fronds)) %>%
+  # take out the "duplicates": only one sampling date per quarter in the dataframe, with values averaged across the two sampling dates
+  slice(1L) %>%
+  ungroup() %>%
+  # take out extraneous columns from time_since_columns_continual()
+  select(!quarter:test_min_time_yrs)
+
 
 ##########################################################################-
 # 5. operators ------------------------------------------------------------

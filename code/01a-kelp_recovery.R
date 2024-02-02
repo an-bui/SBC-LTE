@@ -77,6 +77,64 @@ continual_long <- delta_continual %>%
   mutate(treatment = case_match(treatment, "control" ~ "reference", "continual" ~ "removal")) %>% 
   unite("sample_ID", site, date, quarter, treatment, remove = FALSE)
 
+# ⟞ c. density ------------------------------------------------------------
+
+density <- biomass %>% 
+  filter(sp_code == "MAPY" & treatment %in% c("control", "continual")) %>% 
+  dplyr::select(-sp_code) %>% 
+  dplyr::select(site, year, month, treatment, date, density) %>% 
+  pivot_wider(names_from = treatment, values_from = density) %>% 
+  mutate(delta_continual_density = continual - control) %>%  
+  # take out years where continual removal hadn't happened yet
+  drop_na(delta_continual_density) %>% 
+  mutate(exp_dates = case_when(
+    # after removal ended
+    site == "aque" & date >= aque_after_date_continual ~ "after",
+    site == "napl" & date >= napl_after_date_continual ~ "after",
+    site == "mohk" & date >= mohk_after_date_continual ~ "after",
+    site == "carp" & date >= carp_after_date_continual ~ "after",
+    # everything else is "during" removal
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  time_since_columns_continual() %>% 
+  kelp_year_column() %>% 
+  comparison_column_continual() %>% 
+  left_join(., site_quality, by = "site") %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename("site_full" = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
+
+# ⟞ d. fronds -------------------------------------------------------------
+
+fronds_clean <- fronds %>% 
+  filter(treatment %in% c("control", "continual")) %>% 
+  dplyr::select(-sp_code) %>% 
+  dplyr::select(site, year, month, treatment, date, fronds) %>% 
+  pivot_wider(names_from = treatment, values_from = fronds) %>% 
+  mutate(delta_continual_fronds = continual - control) %>%  
+  # take out years where continual removal hadn't happened yet
+  drop_na(delta_continual_fronds) %>% 
+  mutate(exp_dates = case_when(
+    # after removal ended
+    site == "aque" & date >= aque_after_date_continual ~ "after",
+    site == "napl" & date >= napl_after_date_continual ~ "after",
+    site == "mohk" & date >= mohk_after_date_continual ~ "after",
+    site == "carp" & date >= carp_after_date_continual ~ "after",
+    # everything else is "during" removal
+    TRUE ~ "during"
+  ),
+  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  time_since_columns_continual() %>% 
+  kelp_year_column() %>% 
+  comparison_column_continual() %>% 
+  left_join(., site_quality, by = "site") %>% 
+  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  rename("site_full" = value) %>% 
+  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
+
 ##########################################################################-
 # 2. timeseries plots -----------------------------------------------------
 ##########################################################################-
@@ -119,7 +177,7 @@ continual_long <- delta_continual %>%
 
 # ⟞ c. raw biomass through time plot --------------------------------------
 
-delta_continual_sites_raw <- delta_continual %>% 
+continual_sites_raw <- delta_continual %>% 
   mutate(strip = case_when(
     site == "aque" ~ paste("(a) ", site_full, sep = ""),
     site == "napl" ~ paste("(b) ", site_full, sep = ""),
@@ -138,13 +196,13 @@ delta_continual_sites_raw <- delta_continual %>%
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(breaks = seq(-8, 8, by = 1), minor_breaks = NULL) +
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = "Giant kelp biomass (dry g/m\U00B2)") +
   facet_wrap(~strip, scales = "free_y")
 
-delta_continual_sites_raw
+continual_sites_raw
 
 
 # ⟞ d. summer biomass -----------------------------------------------------
@@ -170,6 +228,70 @@ summer_biomass <- continual_long %>%
        title = "Summer kelp biomass")
  
 summer_biomass
+
+
+# ⟞ e. density through time -----------------------------------------------
+  
+density_timeseries <- density %>% 
+  mutate(strip = case_when(
+    site == "aque" ~ paste("(a) ", site_full, sep = ""),
+    site == "napl" ~ paste("(b) ", site_full, sep = ""),
+    site == "mohk" ~ paste("(c) ", site_full, sep = ""),
+    site == "carp" ~ paste("(d) ", site_full, sep = "")
+  )) %>% 
+  ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  # control
+  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.3, linewidth = 2) +
+  geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.3, fill = "#FFFFFF") +
+  # continual
+  geom_line(aes(x = time_since_end, y = continual, col = site), linewidth = 2) +
+  geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1, fill = "#FFFFFF") +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_color_manual(values = color_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  scale_x_continuous(breaks = seq(-8, 8, by = 1), minor_breaks = NULL) +
+  raw_biomass_plot_theme() +
+  theme(plot.title = element_text(size = 10)) +
+  labs(x = "Time since end of experiment (years)", 
+       y = "Giant kelp density",
+       title = "Density") +
+  facet_wrap(~strip, scales = "free_y")
+
+density_timeseries
+
+
+# ⟞ f. fronds through time ------------------------------------------------
+
+fronds_timeseries <- fronds_clean %>% 
+  mutate(strip = case_when(
+    site == "aque" ~ paste("(a) ", site_full, sep = ""),
+    site == "napl" ~ paste("(b) ", site_full, sep = ""),
+    site == "mohk" ~ paste("(c) ", site_full, sep = ""),
+    site == "carp" ~ paste("(d) ", site_full, sep = "")
+  )) %>% 
+  ggplot() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  # control
+  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.3, linewidth = 2) +
+  geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.3, fill = "#FFFFFF") +
+  # continual
+  geom_line(aes(x = time_since_end, y = continual, col = site), linewidth = 2) +
+  geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1, fill = "#FFFFFF") +
+  scale_shape_manual(values = shape_palette_site) +
+  scale_color_manual(values = color_palette_site) +
+  scale_fill_manual(values = color_palette_site) +
+  scale_x_continuous(breaks = seq(-8, 8, by = 1), minor_breaks = NULL) +
+  raw_biomass_plot_theme() +
+  theme(plot.title = element_text(size = 10)) +
+  labs(x = "Time since end of experiment (years)", 
+       y = "Giant kelp fronds",
+       title = "Fronds") +
+  facet_wrap(~strip, scales = "free_y")
+
+fronds_timeseries
 
 ##########################################################################-
 # 3. linear models --------------------------------------------------------
@@ -1202,7 +1324,7 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S1_", today(), ".jpg", sep = "")),
-#        plot = delta_continual_sites_raw,
+#        plot = continual_sites_raw,
 #        height = 8, width = 16, units = "cm",
 #        dpi = 300)
 
@@ -1276,4 +1398,16 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
 #        height = 7, width = 14, units = "cm",
 #        dpi = 300)
 
+# ⟞ g. kelp density and fronds --------------------------------------------
 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("kelp-density-timeseries_", today(), ".jpg", sep = "")),
+#        plot = density_timeseries,
+#        height = 9, width = 16, units = "cm",
+#        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("kelp-frond-timeseries_", today(), ".jpg", sep = "")),
+#        plot = fronds_timeseries,
+#        height = 9, width = 16, units = "cm",
+#        dpi = 300)
