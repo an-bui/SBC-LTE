@@ -779,6 +779,9 @@ MuMIn::r.squaredGLMM(lm_kelp_recovery_zigamma_02)
 #   ) 
 # lm_kelp_recovery_summary
 
+summary(lm_kelp_recovery_zigamma_02)
+parameters::model_parameters(lm_kelp_recovery_zigamma_02, exponentiate = TRUE)
+
 lm_kelp_recovery_zigamma_summary <- lm_kelp_recovery_zigamma_02 %>% 
   tbl_regression() %>% 
   bold_p(t = 0.05) %>% 
