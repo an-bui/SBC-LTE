@@ -1301,8 +1301,8 @@ effplot
 # 4. manuscript tables ----------------------------------------------------
 ##########################################################################-
 
-lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery_summary), 
-                            tab_spanner = c("**Removal**", "**Recovery**")) 
+# lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery_summary), 
+#                             tab_spanner = c("**Removal**", "**Recovery**")) 
 # this table is compiled with others in the `02a-community_recovery.R` script
 
 lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, lm_kelp_recovery_zigamma_summary),

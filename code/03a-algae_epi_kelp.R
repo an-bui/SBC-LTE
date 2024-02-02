@@ -329,8 +329,8 @@ algae_vs_kelp_spearman
 
 group_vs_kelp <- plot_grid(delta_algae_vs_kelp_lm, delta_epi_vs_kelp_lm, ncol = 2)
 
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-4_", today(), ".jpg", sep = "")),
-       plot = group_vs_kelp,
-       height = 6, width = 12, units = "cm",
-       dpi = 300)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-4_", today(), ".jpg", sep = "")),
+#        plot = group_vs_kelp,
+#        height = 6, width = 12, units = "cm",
+#        dpi = 300)
