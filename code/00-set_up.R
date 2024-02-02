@@ -478,7 +478,8 @@ guilds <- read_csv(here::here("code", "resources", "castorani", "LTE_guild_data.
 #   time_since_columns_continual() %>%
 #   group_by(site, year, treatment, quarter, sp_code) %>%
 #   mutate(dry_gm2 = mean(dry_gm2),
-#          wm_gm2 = mean(wm_gm2)) %>%
+#          wm_gm2 = mean(wm_gm2),
+#          density = mean(density)) %>%
 #   # take out the "duplicates": only one sampling date per quarter in the dataframe, with values averaged across the two sampling dates
 #   slice(1L) %>%
 #   ungroup() %>%

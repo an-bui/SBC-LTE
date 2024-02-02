@@ -287,7 +287,7 @@ fronds_timeseries <- fronds_clean %>%
   raw_biomass_plot_theme() +
   theme(plot.title = element_text(size = 10)) +
   labs(x = "Time since end of experiment (years)", 
-       y = "Giant kelp fronds",
+       y = "Giant kelp fronds (number/m\U00B2)",
        title = "Fronds") +
   facet_wrap(~strip, scales = "free_y")
 
