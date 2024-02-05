@@ -75,7 +75,63 @@ continual_long <- delta_continual %>%
   pivot_longer(cols = c(control, continual)) %>% 
   rename(kelp_biomass = value, treatment = name) %>% 
   mutate(treatment = case_match(treatment, "control" ~ "reference", "continual" ~ "removal")) %>% 
-  unite("sample_ID", site, date, quarter, treatment, remove = FALSE)
+  unite("sample_ID", site, date, quarter, treatment, remove = FALSE) %>% 
+  # calculate variation by observation
+  group_by(exp_dates, treatment) %>% 
+  mutate(mean = mean(kelp_biomass),
+         variation = ((kelp_biomass - mean(kelp_biomass))/mean(kelp_biomass))^2) %>% 
+  ungroup()
+
+
+
+variation_during <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "during"))
+summary(variation_during)
+var_during_df <- ggpredict(variation_during, terms = c("treatment")) %>% 
+  as_tibble() %>% 
+  mutate(exp_dates = "during")
+variation_after <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "after"))
+summary(variation_after)
+var_after_df <- ggpredict(variation_after, terms = c("treatment")) %>% 
+  as_tibble() %>% 
+  mutate(exp_dates = "after")
+
+var_df <- rbind(var_during_df, var_after_df) %>% 
+  rename(treatment = x) %>% 
+  mutate(exp_dates = fct_relevel(exp_dates, "during", "after"))
+
+ggplot(data = var_df, aes(x = treatment, y = predicted)) +
+  geom_point(data = continual_long, aes(x = treatment, y = variation),
+             alpha = 0.2, shape = 21,
+             position = position_jitter(width = 0.2)) +
+  geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
+  facet_wrap(~exp_dates) +
+  labs(x = "Treatment", 
+       y = "Variation") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+ggplot(data = var_df, aes(x = treatment, y = predicted)) +
+  geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
+  facet_wrap(~exp_dates) +
+  labs(x = "Treatment", 
+       y = "Variation") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+variation_site <- continual_long %>% 
+  select(exp_dates, treatment, site, kelp_biomass) %>% 
+  group_by(exp_dates, treatment, site) %>% 
+  summarize(mean = mean(kelp_biomass),
+            variation = sd(kelp_biomass)/mean(kelp_biomass)) %>% 
+  ungroup()
+
+ggplot(variation_site, aes(x = treatment, y = variation)) +
+  geom_point(position = position_jitter(width = 0.1, seed = 666),
+             alpha = 0.3, shape = 21) +
+  stat_summary(fun.data = mean_se, geom = "pointrange") +
+  facet_wrap(~exp_dates) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
 
 # ⟞ c. density ------------------------------------------------------------
 

@@ -29,16 +29,19 @@ cor.test(delta_algae_after$delta_continual_algae, delta_algae_after$delta_contin
 # )
 lm_delta_algae_kelp_after_m2 <- lmer(
   delta_continual_algae ~ delta_continual + (1|site) + (1|year),
-  data = delta_algae_continual %>% filter(exp_dates == "after")
+  data = delta_algae_continual %>% filter(exp_dates == "after"))
 )
+
+ggpredict(lm_delta_algae_kelp_after_m2, terms = c("delta_continual")) %>% plot(show_data = TRUE)
+
 # lm_delta_algae_kelp_after_m3 <- lmer(
 #   delta_continual_algae ~ delta_continual + (1|site), 
 #   data = delta_algae_continual %>% filter(exp_dates == "after")
 # )
-# lm_algae_kelp_after_m1 <- lmer(
-#   continual_algae ~ continual + (1|year) + (1|site),
-#   data = delta_algae_continual %>% filter(exp_dates == "after")
-# )
+lm_algae_kelp_after_m1 <- lmer(
+  continual_algae ~ continual + (1|year) + (1|site),
+  data = delta_algae_continual %>% filter(exp_dates == "after") %>% filter(!(sample_ID %in% c("mohk_2019-11-19_Q4", "mohk_2021-05-13_Q2", "napl_2023-05-18_Q2")))
+)
 # lm_algae_kelp_after_m2 <- lmer(
 #   continual_algae ~ continual*time_since_end + (1|site),
 #   data = delta_algae_continual %>% filter(exp_dates == "after")
