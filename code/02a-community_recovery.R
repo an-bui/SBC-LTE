@@ -521,14 +521,14 @@ raw_algae_time <- ggplot() +
   #                    labels = c("Reference", "Removal")) +
   scale_linetype_manual(values = c(reference = 2, removal = 1),
                         labels = c("Reference", "Removal")) +
-  scale_shape_manual(values = c(reference = 1, removal = 16),
-                     labels = c("Reference", "Removal")) +
-  scale_size_manual(values = c(reference = 1, removal = 1.3),
-                    labels = c("Reference", "Removal")) +
+  # scale_shape_manual(values = c(reference = 1, removal = 16),
+  #                    labels = c("Reference", "Removal")) +
+  # scale_size_manual(values = c(reference = 1, removal = 1.3),
+  #                   labels = c("Reference", "Removal")) +
   
   # theming
   theme_bw() + 
-  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(limits = c(-7.25, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   coord_cartesian(ylim = c(30, 800)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),

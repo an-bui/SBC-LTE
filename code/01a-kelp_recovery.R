@@ -82,57 +82,6 @@ continual_long <- delta_continual %>%
          variation = ((kelp_biomass - mean(kelp_biomass))/mean(kelp_biomass))^2) %>% 
   ungroup()
 
-
-
-variation_during <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "during"))
-summary(variation_during)
-var_during_df <- ggpredict(variation_during, terms = c("treatment")) %>% 
-  as_tibble() %>% 
-  mutate(exp_dates = "during")
-variation_after <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "after"))
-summary(variation_after)
-var_after_df <- ggpredict(variation_after, terms = c("treatment")) %>% 
-  as_tibble() %>% 
-  mutate(exp_dates = "after")
-
-var_df <- rbind(var_during_df, var_after_df) %>% 
-  rename(treatment = x) %>% 
-  mutate(exp_dates = fct_relevel(exp_dates, "during", "after"))
-
-ggplot(data = var_df, aes(x = treatment, y = predicted)) +
-  geom_point(data = continual_long, aes(x = treatment, y = variation),
-             alpha = 0.2, shape = 21,
-             position = position_jitter(width = 0.2)) +
-  geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
-  facet_wrap(~exp_dates) +
-  labs(x = "Treatment", 
-       y = "Variation") +
-  theme_bw() +
-  theme(panel.grid = element_blank())
-
-ggplot(data = var_df, aes(x = treatment, y = predicted)) +
-  geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
-  facet_wrap(~exp_dates) +
-  labs(x = "Treatment", 
-       y = "Variation") +
-  theme_bw() +
-  theme(panel.grid = element_blank())
-
-variation_site <- continual_long %>% 
-  select(exp_dates, treatment, site, kelp_biomass) %>% 
-  group_by(exp_dates, treatment, site) %>% 
-  summarize(mean = mean(kelp_biomass),
-            variation = sd(kelp_biomass)/mean(kelp_biomass)) %>% 
-  ungroup()
-
-ggplot(variation_site, aes(x = treatment, y = variation)) +
-  geom_point(position = position_jitter(width = 0.1, seed = 666),
-             alpha = 0.3, shape = 21) +
-  stat_summary(fun.data = mean_se, geom = "pointrange") +
-  facet_wrap(~exp_dates) +
-  theme_bw() +
-  theme(panel.grid = element_blank())
-
 # ⟞ c. density ------------------------------------------------------------
 
 density <- biomass %>% 
@@ -252,7 +201,7 @@ continual_sites_raw <- delta_continual %>%
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(breaks = seq(-8, 8, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(limits = c(-7.5, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = "Giant kelp biomass (dry g/m\U00B2)") +
@@ -642,21 +591,22 @@ r.squaredGLMM(lm_kelp_during_zigamma_02)
 summary(lm_kelp_during_zigamma_02)
 
 lm_kelp_during_zigamma_summary <- lm_kelp_during_zigamma_02 %>% 
-  tbl_regression() %>% 
+  tbl_regression(intercept = TRUE) %>% 
   bold_p(t = 0.05) %>% 
   modify_header(
     label = " ",
-    estimate = "**Beta**"
+    estimate = "**Estimate**"
   ) %>% 
   modify_column_indent(
     columns = label, 
-    rows = variable %in% c("treatment", "time_since_end", "time_since_end:treatment")) 
+    rows = variable %in% c("(Intercept)", "treatment", "time_since_end", "time_since_end:treatment"))
 
 # filter out zero-inflated component
 lm_kelp_during_zigamma_summary$table_body <- lm_kelp_during_zigamma_summary$table_body %>% 
   filter(component != "zi")
 # change labels
 lm_kelp_during_zigamma_summary$table_body$label <- c(
+  `(Intercept)` = "Treatment (reference)",
   time_since_end = "Time since end",
   treatmentremoval = "Treatment (removal)",
   `time_since_end:treatmentremoval` = "Time since end * treatment (removal)" 
@@ -839,21 +789,22 @@ summary(lm_kelp_recovery_zigamma_02)
 parameters::model_parameters(lm_kelp_recovery_zigamma_02, exponentiate = TRUE)
 
 lm_kelp_recovery_zigamma_summary <- lm_kelp_recovery_zigamma_02 %>% 
-  tbl_regression() %>% 
+  tbl_regression(intercept = TRUE) %>% 
   bold_p(t = 0.05) %>% 
   modify_header(
     label = " ",
-    estimate = "**Beta**"
+    estimate = "**Estimate**"
   ) %>% 
   modify_column_indent(
     columns = label, 
-    rows = variable %in% c("treatment", "time_since_end", "time_since_end:treatment"))
+    rows = variable %in% c("(Intercept)", "treatment", "time_since_end", "time_since_end:treatment"))
 
 # filter out zero-inflated component
 lm_kelp_recovery_zigamma_summary$table_body <- lm_kelp_recovery_zigamma_summary$table_body %>% 
   filter(component != "zi")
 # change labels
 lm_kelp_recovery_zigamma_summary$table_body$label <- c(
+  `(Intercept)` = "Treatment (reference)",
   time_since_end = "Time since end",
   treatmentremoval = "Treatment (removal)",
   `time_since_end:treatmentremoval` = "Time since end * treatment (removal)" 
@@ -995,7 +946,7 @@ overall_kelp <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   
   # raw data points
-  geom_point(data = continual_long, aes(x = time_since_end, y = kelp_biomass, color = treatment, shape = treatment, size = treatment), alpha = 0.3) +
+  geom_point(data = continual_long, aes(x = time_since_end, y = kelp_biomass, color = treatment), alpha = 0.4, shape = 21) +
   
   # prediction lines
   geom_line(data = predicted_kelp_during_raw, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
@@ -1008,20 +959,12 @@ overall_kelp <- ggplot() +
   # colors and shapes
   scale_color_manual(values = c(reference = reference_col, removal = removal_col),
                      labels = c("Reference", "Removal")) +
-  # scale_fill_manual(values = c(reference = "#6D5A1800", removal = "#CC754066"),
-  #                    labels = c("Reference", "Removal")) +
   scale_linetype_manual(values = c(reference = 2, removal = 1),
-                        labels = c("Reference", "Removal")) +
-  scale_shape_manual(values = c(reference = 1, removal = 16),
                      labels = c("Reference", "Removal")) +
-  scale_size_manual(values = c(reference = 1, removal = 1.3),
-                    labels = c("Reference", "Removal")) +
-  # scale_fill_manual(values = c(reference = "#FFFFFF00", removal = removal_col),
-  #                   labels = c("Reference", "Removal")) +
   
   theme_bw() + 
-  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(limits = c(-10, 2000)) +
+  scale_x_continuous(limits = c(-7.25, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  coord_cartesian(ylim = c(-10, 2000)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
         legend.text = element_text(size = 6), 
@@ -1040,7 +983,7 @@ overall_kelp <- ggplot() +
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1) +
   labs(x = "Time since end of removal (years)", 
-       y = "Giant kelp biomass (dry g/m\U00B2)",
+       y = "Biomass (dry g/m\U00B2)",
        linetype = "Treatment",
        color = "Treatment",
        shape = "Treatment",
@@ -1048,7 +991,6 @@ overall_kelp <- ggplot() +
        title = "(a)")
 
 overall_kelp
-
 # napl_raw <- ggplot(data = continual_long %>% filter(site == "napl"),
 #        aes(x = time_since_end, y = kelp_biomass, color = treatment)) +
 #   # x at 0 and y at 0 lines
@@ -1356,8 +1298,108 @@ effplot <- ggplot(data = recovery_slopes, aes(x = treatment, y = Coefficient)) +
   facet_wrap(~exp_dates)
 effplot
 
+# ⟞ ⟞ v. conditional means ------------------------------------------------
+
+predicted_kelp_after_0_raw <- ggpredict(lm_kelp_recovery_zigamma_02,
+                                      terms = c("time_since_end [0]", "treatment"), type = "fixed")
+
+predicted_kelp_after_both_raw <- ggpredict(lm_kelp_recovery_zigamma_02,
+                                        terms = c("time_since_end [4]", "treatment"), 
+                                        type = "fixed") %>% 
+  rbind(predicted_kelp_after_0_raw) %>% 
+  rename("treatment" = group, 
+         "kelp_biomass" = predicted,
+         "time_since_end" = x)
+
+means <- continual_long %>% 
+  filter(time_since_end == 0 | time_since_end == 4) %>% 
+  ggplot(aes(x = treatment, y = kelp_biomass, color = treatment)) +
+  geom_point(position = position_jitter(width = 0.1, seed = 1),
+             shape = 21, alpha = 0.8, size = 1) +
+  geom_pointrange(data = predicted_kelp_after_both_raw,
+                  aes(ymin = conf.low, ymax = conf.high)) +
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col)) +
+  scale_x_discrete(labels = c(reference = "Reference", removal = "Removal")) +
+  labs(x = "Treatment",
+       y = "Giant kelp biomass (dry g/m\U00B2)") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        strip.text = element_text(hjust = 0, size = 10),
+        strip.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "none") +
+  #geom_pointrange(data = predicted_kelp_after_0, ) +
+  facet_wrap(~time_since_end, labeller = labeller(time_since_end = c("0" = "(a) Time since end = 0", "4" = "(b) Time since end = 4")))
+means
+
+
 ##########################################################################-
-# 4. manuscript tables ----------------------------------------------------
+# 4. variation plots ------------------------------------------------------
+##########################################################################-
+
+# variation_during <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "during"))
+# summary(variation_during)
+# var_during_df <- ggpredict(variation_during, terms = c("treatment")) %>% 
+#   as_tibble() %>% 
+#   mutate(exp_dates = "during")
+# variation_after <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "after"))
+# summary(variation_after)
+# var_after_df <- ggpredict(variation_after, terms = c("treatment")) %>% 
+#   as_tibble() %>% 
+#   mutate(exp_dates = "after")
+# 
+# var_df <- rbind(var_during_df, var_after_df) %>% 
+#   rename(treatment = x) %>% 
+#   mutate(exp_dates = fct_relevel(exp_dates, "during", "after"))
+# 
+# ggplot(data = var_df, aes(x = treatment, y = predicted)) +
+#   geom_point(data = continual_long, aes(x = treatment, y = variation),
+#              alpha = 0.2, shape = 21,
+#              position = position_jitter(width = 0.2)) +
+#   geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
+#   facet_wrap(~exp_dates) +
+#   labs(x = "Treatment", 
+#        y = "Variation") +
+#   theme_bw() +
+#   theme(panel.grid = element_blank())
+# 
+# ggplot(data = var_df, aes(x = treatment, y = predicted)) +
+#   geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
+#   facet_wrap(~exp_dates) +
+#   labs(x = "Treatment", 
+#        y = "Variation") +
+#   theme_bw() +
+#   theme(panel.grid = element_blank())
+
+variation_site <- continual_long %>% 
+  select(exp_dates, treatment, site, kelp_biomass) %>% 
+  group_by(exp_dates, treatment, site) %>% 
+  summarize(mean = mean(kelp_biomass),
+            variation = sd(kelp_biomass)/mean(kelp_biomass)) %>% 
+  ungroup()
+
+variation_plot <- ggplot(variation_site, aes(x = treatment, y = variation, color = treatment)) +
+  geom_point(position = position_jitter(width = 0.1, seed = 666),
+             alpha = 0.8, shape = 21) +
+  stat_summary(fun.data = mean_se, geom = "pointrange") +
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col)) +
+  scale_x_discrete(labels = c(reference = "Reference", removal = "Removal")) +
+  facet_wrap(~exp_dates, labeller = labeller(exp_dates = c("during" = "(a) Experimental removal", "after" = "(b) Recovery period"))) +
+  labs(x = "Treatment",
+       y = "Coefficient of variation") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        strip.text = element_text(hjust = 0, size = 10),
+        strip.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "none") 
+
+variation_plot
+
+##########################################################################-
+# 5. manuscript tables ----------------------------------------------------
 ##########################################################################-
 
 # lm_kelp_tables <- tbl_merge(tbls = list(lm_kelp_during_summary, lm_kelp_recovery_summary), 
@@ -1368,7 +1410,7 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
                                     tab_spanner = c("**Experimental removal**", "**Recovery**"))
 
 ##########################################################################-
-# 5. manuscript figures ---------------------------------------------------
+# 6. manuscript figures ---------------------------------------------------
 ##########################################################################-
 
 # ⟞ a. delta kelp through time -------------------------------------------
@@ -1456,6 +1498,12 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
 #        plot = kelp_means_nodata_plot,
 #        height = 7, width = 14, units = "cm",
 #        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("kelp-means-recovery-plot_", today(), ".jpg", sep = "")),
+#        plot = means,
+#        height = 7, width = 14, units = "cm",
+#        dpi = 300)
 
 # ⟞ g. kelp density and fronds --------------------------------------------
 
@@ -1470,3 +1518,13 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
 #        plot = fronds_timeseries,
 #        height = 9, width = 16, units = "cm",
 #        dpi = 300)
+
+# ⟞ h. variation plots --------------------------------------------------------
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("cov_plot_", today(), ".jpg", sep = "")),
+#        plot = variation_plot,
+#        height = 7, width = 14, units = "cm",
+#        dpi = 300)
+
+
