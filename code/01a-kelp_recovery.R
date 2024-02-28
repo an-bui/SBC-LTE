@@ -62,7 +62,7 @@ delta_continual <- biomass %>%
   exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
   time_since_columns_continual() %>% 
   kelp_year_column() %>% 
-  comparison_column_continual() %>% 
+  comparison_column_continual_new() %>% 
   left_join(., site_quality, by = "site") %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 

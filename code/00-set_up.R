@@ -399,6 +399,68 @@ comparison_column_continual <- function(df) {
     unite("sample_ID", site, date, quarter, remove = FALSE)
 }
 
+comparison_column_continual_new <- function(df) {
+  df %>% 
+    mutate(comp_1yrs = case_when(
+      site %in% c("aque", "carp") & between(time_since_end, -7.25, -6.25) ~ "start",
+      site == "napl" & between(time_since_end, -6.25, -5.25) ~ "start",
+      site == "mohk" & between(time_since_end, -7, -6) ~ "start",
+      
+      site %in% c("aque", "napl", "mohk", "carp") & between(time_since_end, -1.25, -0.25) ~ "during",
+      
+      site %in% c("aque", "mohk", "carp") & between(time_since_end, 4.75, 5.75) ~ "after",
+      site == "napl" & between(time_since_end, 5.75, 6.75) ~ "after"
+      
+    )) %>% 
+    mutate(comp_1yrs = fct_relevel(comp_1yrs, "start", "during", "after")) %>% 
+    mutate(comp_2yrs = case_when(
+      site %in% c("aque", "carp") & between(time_since_end, -7.25, -5.25) ~ "start",
+      site == "napl" & between(time_since_end, -6.25, -4.25) ~ "start",
+      site == "mohk" & between(time_since_end, -7, -5) ~ "start",
+      
+      site %in% c("aque", "napl", "mohk", "carp") & between(time_since_end, -2.25, -0.25) ~ "during",
+      
+      site %in% c("aque", "mohk", "carp") & between(time_since_end, 3.75, 5.75) ~ "after",
+      site == "napl" & between(time_since_end, 4.75, 6.75) ~ "after"
+    )) %>% 
+    mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+    mutate(comp_3yrs = case_when(
+      site %in% c("aque", "carp") & between(time_since_end, -7.25, -4.25) ~ "start",
+      site == "napl" & between(time_since_end, -6.25, -3.25) ~ "start",
+      site == "mohk" & between(time_since_end, -7, -4) ~ "start",
+      
+      site %in% c("aque", "napl", "mohk", "carp") & between(time_since_end, -3.25, -0.25) ~ "during",
+      
+      site %in% c("aque", "mohk", "carp") & between(time_since_end, 2.75, 5.75) ~ "after",
+      site == "napl" & between(time_since_end, 3.75, 6.75) ~ "after"
+    )) %>% 
+    mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+    unite("sample_ID", site, date, quarter, remove = FALSE) %>% 
+    unite("sample_ID_short", site, date, remove = FALSE)
+}
+
+anova_summary_fxn <- function(adonis2.obj) {
+  # turn object name into string
+  name <- deparse(substitute(adonis2.obj))
+  
+  adonis2.obj %>% 
+    # turn adonis2 result into data frame
+    as.data.frame() %>% 
+    # make rownames "variables"
+    rownames_to_column("variables") %>% 
+    # rename Pr(>F) column into something intelligible
+    rename(p = `Pr(>F)`) %>% 
+    # round values to 2 decimal points
+    mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
+    # replace comp_.yrs with time period
+    mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
+    mutate(variables = str_replace(variables, "comp_.yr", "time period")) %>% 
+    # make object name column
+    mutate(model = name) 
+}
+
+
+
 anova_summary_fxn <- function(adonis2.obj) {
   # turn object name into string
   name <- deparse(substitute(adonis2.obj))

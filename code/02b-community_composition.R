@@ -12,16 +12,16 @@ source(here::here("code", "02a-community_recovery.R"))
 # ⟞ a. continual removal communities --------------------------------------
 
 comm_df <- biomass %>% 
+  filter(treatment %in% c("control", "continual")) %>% 
   # select columns of interest 
   dplyr::select(site, year, month, treatment, date, new_group, sp_code, dry_gm2) %>% 
+  unite("sample_ID_short", site, date, remove = FALSE) %>% 
+  # filtered from kelp delta data frame created in upstream script
+  filter(sample_ID_short %in% (delta_continual$sample_ID_short)) %>% 
   exp_dates_column_continual() %>% 
   time_since_columns_continual() %>% 
   kelp_year_column() %>% 
-  comparison_column_continual() %>% 
-  # only including continual + control sampling dates
-  # filtered from kelp delta data frame created in upstream script
-  filter(sample_ID %in% (delta_continual$sample_ID)) %>% 
-  filter(treatment %in% c("control", "continual")) %>% 
+  comparison_column_continual_new() %>% 
   full_join(., site_quality, by = "site") %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename(site_full = value) %>% 
@@ -33,7 +33,7 @@ comm_df <- biomass %>%
 
 # metadata for all plots
 comm_meta <- comm_df %>% 
-  select(sample_ID, site, date, year, month, treatment, exp_dates, quarter, time_yrs, time_since_start, time_since_end, kelp_year, comp_1yr, comp_2yrs, comp_3yrs, quality, site_full) %>% 
+  select(sample_ID, site, date, year, month, treatment, exp_dates, quarter, time_yrs, time_since_start, time_since_end, kelp_year, comp_1yrs, comp_2yrs, comp_3yrs, quality, site_full) %>% 
   unique()
 
 # metadata for continual removal plots
@@ -201,12 +201,12 @@ plot(algae_pt_bray)
 
 # permanova
 comp_1yr_meta <- comm_meta %>% 
-  drop_na(comp_1yr)
+  drop_na(comp_1yrs)
 comp_1yr_sampleID <- comp_1yr_meta %>% 
   pull(sample_ID)
 comp_1yr_algae <- comm_mat_algae[comp_1yr_sampleID, ]
 
-algae_pt_perma_1yr <- adonis2(comp_1yr_algae ~ treatment*comp_1yr, 
+algae_pt_perma_1yr <- adonis2(comp_1yr_algae ~ treatment*comp_1yrs, 
                               data = comp_1yr_meta,
                               strata = comp_1yr_meta$site)
 algae_pt_perma_1yr
@@ -236,8 +236,7 @@ algae_pt_perma_3yrs
 
 algae_pairwise <- pairwise.adonis2(comp_3yrs_algae ~ comp_3yrs*treatment, 
                  data = comp_3yrs_meta,
-                 comp_3yrs_meta$site)
-algae_pairwise
+                 strata = comp_3yrs_meta$site)
 
 test_meta <- comp_3yrs_meta %>% 
   filter(comp_3yrs %in% c("start", "during"))
@@ -245,7 +244,11 @@ test_ID <- test_meta %>% pull(sample_ID)
 test_mat <- comm_mat_algae[test_ID, ]
 adonis2(test_mat ~ comp_3yrs*treatment,
         data = test_meta,
-        strata = test_meta$site)
+        strata = test_meta$site) %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  flextable()
 
 test_meta <- comp_3yrs_meta %>% 
   filter(comp_3yrs %in% c("after", "during"))
@@ -424,11 +427,11 @@ plot(epi_pt_bray)
 
 # permanova
 comp_1yr_meta <- comm_meta %>% 
-  drop_na(comp_1yr)
+  drop_na(comp_1yrs)
 comp_1yr_sampleID <- comp_1yr_meta %>% 
   pull(sample_ID)
 comp_1yr_epi <- comm_mat_epi[comp_1yr_sampleID, ]
-epi_pt_perma_1yr <- adonis2(comp_1yr_epi ~ treatment*comp_1yr, 
+epi_pt_perma_1yr <- adonis2(comp_1yr_epi ~ treatment*comp_1yrs, 
                             data = comp_1yr_meta,
                             strata = comp_1yr_meta$site)
 epi_pt_perma_1yr
