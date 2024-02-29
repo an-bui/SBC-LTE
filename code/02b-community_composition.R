@@ -186,7 +186,7 @@ comm_mat_control_epi <- comm_df %>%
 
 # ⟞ a. algae --------------------------------------------------------------
 
-# ⟞ ⟞ i. period*treatment -------------------------------------------------
+# ⟞ ⟞ i. Bray-Curtis ------------------------------------------------------
 
 # ⟞ ⟞ ⟞  1. analysis ------------------------------------------------------
 
@@ -267,7 +267,7 @@ adonis2(test_mat ~ comp_3yrs*treatment,
         strata = test_meta$site)
 
 # beta dispersion
-algae_pt_dist <- vegdist(comp_3yrs_algae, "bray")
+algae_pt_dist <- vegdist(comp_3yrs_algae)
 algae_betadisper <- betadisper(algae_pt_dist, comp_3yrs_meta$combo)
 permutest(algae_betadisper, pairwise = TRUE)
 anova(algae_betadisper)
@@ -351,7 +351,7 @@ algae_pt_bray_continual_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "continual", algae_pt_bray_species
 ) +
   # axis limits
-  scale_x_continuous(limits = c(-1.6, 1.5)) +
+  scale_x_continuous(limits = c(-1.5, 1.6)) +
   scale_y_continuous(limits = c(-1.6, 1.5)) +
   labs(shape = "Time period",
        color = "Time period", 
@@ -381,7 +381,7 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "control", algae_pt_bray_species
 ) +
   # axis limits
-  scale_x_continuous(limits = c(-1.6, 1.5)) +
+  scale_x_continuous(limits = c(-1.5, 1.6)) +
   scale_y_continuous(limits = c(-1.6, 1.5)) +
   # labels
   labs(shape = "Site",
@@ -396,9 +396,11 @@ algae_pt_bray_control_plot
 algae_pt_bray_both_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "both", algae_pt_bray_species
 ) +
-  labs(shape = "Site",
+  labs(shape = "Time period",
        color = "Time period",
-       fill = "Time period") +
+       fill = "Time period",
+       linetype = "Treatment",
+       alpha = "Treatment") +
   # ellipse labels. clown shit
   # annotate("text", x = -1.2, y = 1.05, label = "Start of", size = 10, col = start_col) +
   # annotate("text", x = -1.2, y = 0.9, label = "removal", size = 10, col = start_col) +
@@ -407,12 +409,235 @@ algae_pt_bray_both_plot <- nmds_plot_fxn(
   # annotate("text", x = -1.4, y = 1.05, label = "Recovery", size = 10, col = after_col) +
   # annotate("text", x = -1.4, y = 0.9, label = "period", size = 10, col = after_col) +
   # stress annotation
-  annotate("text", x = -1.4, y = -1.25, label = "Stress = 0.2", size = 5)
+  annotate("text", x = -1.2, y = -1.25, label = "Stress = 0.22", size = 4)
 algae_pt_bray_both_plot
+
+
+# ⟞ ⟞ ii. modified Gower --------------------------------------------------
+
+# ⟞ ⟞ ⟞ 1. analysis -------------------------------------------------------
+
+algae_pt_altgower <- metaMDS(comm_mat_algae, "altGower")
+
+# stress plot
+stressplot(algae_pt_altgower)
+
+# preliminary plot
+plot(algae_pt_altgower)
+
+# permanova
+# comp_1yr_meta <- comm_meta %>% 
+#   drop_na(comp_1yrs)
+# comp_1yr_sampleID <- comp_1yr_meta %>% 
+#   pull(sample_ID)
+# comp_1yr_algae <- comm_mat_algae[comp_1yr_sampleID, ]
+
+algae_pt_perma_1yr_altgower <- adonis2(comp_1yr_algae ~ treatment*comp_1yrs, 
+                              data = comp_1yr_meta,
+                              strata = comp_1yr_meta$site,
+                              method = "altGower")
+algae_pt_perma_1yr_altgower
+
+algae_pt_perma_2yrs_altgower <- adonis2(comp_2yrs_algae ~ treatment*comp_2yrs, 
+                               data = comp_2yrs_meta,
+                               strata = comp_2yrs_meta$site,
+                               method = "altGower")
+algae_pt_perma_2yrs_altgower
+
+algae_pt_perma_3yrs_altgower <- adonis2(comp_3yrs_algae ~ comp_3yrs*treatment, 
+                               data = comp_3yrs_meta,
+                               strata = comp_3yrs_meta$site,
+                               method = "altGower")
+algae_pt_perma_3yrs_altgower 
+
+algae_pairwise_altgower <- pairwise.adonis2(comp_3yrs_algae ~ comp_3yrs*treatment, 
+                                   data = comp_3yrs_meta,
+                                   strata = comp_3yrs_meta$site,
+                                   method = "altGower")
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "during"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_algae[test_ID, ]
+algae_start_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+        data = test_meta,
+        strata = test_meta$site,
+        method = "altGower") %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  flextable()
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("after", "during"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_algae[test_ID, ]
+algae_after_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+                                                data = test_meta,
+                                                strata = test_meta$site,
+                                                method = "altGower") %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  flextable()
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "after"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_algae[test_ID, ]
+algae_start_after_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+                                                data = test_meta,
+                                                strata = test_meta$site,
+                                                method = "altGower") %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  flextable()
+
+# beta dispersion
+algae_pt_dist_altgower <- vegdist(comp_3yrs_algae, method = "altGower")
+algae_betadisper_altgower <- betadisper(algae_pt_dist_altgower, comp_3yrs_meta$combo)
+permutest(algae_betadisper_altgower, pairwise = TRUE)
+anova(algae_betadisper_altgower)
+TukeyHSD(algae_betadisper_altgower)
+# significantly different dispersions
+# control dispersions different between during and after
+
+# ⟞ ⟞ ⟞ 2. SIMPER ---------------------------------------------------------
+
+# comparing continual removal plots across time periods
+simper_algae_3yrs <- simper(
+  # subset algae matrix to only include continual removal plots
+  comm = comp_3yrs_algae[comp_3yrs_sampleID_continual, ], 
+  # only 2 year comparisons
+  group = comp_3yrs_meta %>% 
+    filter(treatment == "continual") %>% 
+    pull(comp_3yrs)
+)
+
+algae_SA_comp3yrs <- simper_algae_3yrs$start_after %>% 
+  as_tibble() %>% 
+  # arrange by greatest to least contribution to dissimilarity
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "start-after")
+# PTCA, CYOS, CO, CC, DL, EC, R, POLA, EGME, RAT
+algae_SD_comp3yrs <- simper_algae_3yrs$start_during %>% 
+  as_tibble() %>% 
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "start-during")
+# CYOS, PTCA, CC, EGME, DL, R, EC, SAMU, RAT, POLA
+algae_DA_comp3yrs <- simper_algae_3yrs$during_after %>% 
+  as_tibble() %>% 
+  arrange(-average) %>% 
+  head(10) %>% 
+  mutate(comparison = "during-after")
+# PTCA, CYOS, CO, EC, EGME, CC, R, SAMU, DL, RAT
+
+algae_comp3yrs <- rbind(algae_SA_comp3yrs, algae_SD_comp3yrs, algae_DA_comp3yrs)
+
+# comparing treatment plots across time periods
+simper_algae_treatment <- simper(
+  comm = comp_3yrs_algae, 
+  group = comp_3yrs_meta$treatment
+)
+
+algae_simper_treatment <- simper_algae_treatment$continual_control %>% 
+  as_tibble() %>% 
+  # arrange by greatest to least contribution to dissimilarity
+  arrange(-average) %>% 
+  head(10)
+# PTCA, CYOS, DL, CC, EC, CO, R, POLA, RAT, EGME
+
+# ⟞ ⟞ ⟞ 3. plotting -------------------------------------------------------
+
+# points into data frame for plotting
+algae_pt_altgower_plotdf <- scores(algae_pt_altgower, display = "sites") %>% 
+  as_tibble(rownames = "sample_ID") %>% 
+  # join with metadata
+  left_join(., comm_meta, by = "sample_ID") %>% 
+  # taking out outlier for visualization
+  filter(sample_ID != "mohk_control_2020-08-12")
+
+# pull top species from simper analysis
+simper_algae_spp <- algae_comp3yrs %>% 
+  pull(species)
+
+# get species points
+algae_pt_altgower_species <- scores(algae_pt_altgower, display = "species", tidy = TRUE) %>% 
+  as_tibble(rownames = "sp_code") %>% 
+  # keep species from simper analysis only
+  filter(sp_code %in% simper_algae_spp) %>% 
+  left_join(., spp_names, by = "sp_code")
+
+# continual removal plots only
+algae_pt_altgower_continual_plot <- nmds_plot_fxn(
+  algae_pt_altgower_plotdf, "continual", algae_pt_altgower_species
+) +
+  # axis limits
+  scale_x_continuous(limits = c(-0.5, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.5, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  labs(shape = "Time period",
+       color = "Time period", 
+       fill = "Time period",
+       title = "(a) Removal") +
+  theme(legend.position = "none", # c(0.2, 0.8), 
+        panel.grid = element_blank(),
+        legend.background = element_blank())
+algae_pt_altgower_continual_plot 
+
+algae_pt_altgower_continual_plot_arrows <- algae_pt_altgower_continual_plot +
+  geom_text_repel(data = algae_pt_altgower_species,
+                  aes(x = NMDS1, y = NMDS2,
+                      label = stringr::str_wrap(scientific_name, 4, width = 40)),
+                  color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 1.5) +
+  geom_segment(data = algae_pt_altgower_species,
+               aes(x = 0, y = 0,
+                   xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.1, "cm")),
+               color = "#C70000", linewidth = 0.5) +
+  scale_x_continuous(limits = c(-0.5, 0.5)) +
+  scale_y_continuous(limits = c(-0.5, 0.5)) 
+
+algae_pt_altgower_continual_plot_arrows
+
+
+# control plots only
+algae_pt_altgower_control_plot <- nmds_plot_fxn(
+  algae_pt_altgower_plotdf, "control", algae_pt_altgower_species
+) +
+  # axis limits
+  scale_x_continuous(limits = c(-0.5, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.5, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  # labels
+  labs(shape = "Site",
+       color = "Time period", fill = "Time period",
+       title = "(b) Reference") +
+  # theme
+  theme(legend.position = "none",
+        panel.grid = element_blank()) 
+algae_pt_altgower_control_plot
+
+# both treatments together
+algae_pt_altgower_both_plot <- nmds_plot_fxn(
+  algae_pt_altgower_plotdf, "both", algae_pt_altgower_species
+) +
+  labs(shape = "Time period",
+       color = "Time period",
+       fill = "Time period",
+       linetype = "Treatment",
+       alpha = "Treatment") 
+  # stress annotation
+  # annotate("text", x = -1.2, y = -1.25, label = "Stress = 0.22", size = 4)
+algae_pt_altgower_both_plot
 
 # ⟞ b. epi inverts --------------------------------------------------------
 
-# ⟞ ⟞ i. period*treatment -------------------------------------------------
+# ⟞ ⟞ i. Bray-Curtis ------------------------------------------------------
 
 # ⟞ ⟞ ⟞  1. analysis ------------------------------------------------------
 
@@ -491,7 +716,7 @@ adonis2(test_mat ~ comp_3yrs*treatment,
         strata = test_meta$site)
 
 # beta dispersion
-epi_pt_dist <- vegdist(comm_mat_epi, "bray")
+epi_pt_dist <- vegdist(comm_mat_epi)
 epi_betadisper <- betadisper(epi_pt_dist, comp_3yrs_meta$combo)
 anova(epi_betadisper)
 permutest(epi_betadisper, pairwise = TRUE)
@@ -570,7 +795,7 @@ epi_pt_bray_continual_plot <- nmds_plot_fxn(
   epi_pt_bray_plotdf, "continual", epi_pt_bray_species
 ) +
   scale_x_continuous(limits = c(-1.7, 1.2)) +
-  scale_y_continuous(limits = c(-1.7, 1.2)) +
+  scale_y_continuous(limits = c(-1.6, 1.3)) +
   theme(legend.position = "none",
         panel.grid = element_blank()
         ) +
@@ -609,6 +834,186 @@ epi_pt_bray_both_plot <- nmds_plot_fxn(
   scale_y_continuous(limits = c(-1.7, 1.45), breaks = seq(-1, 1, by = 1)) +
   annotate("text", x = -1, y = -1.7, label = "Stress = 0.2", size = 2)
 epi_pt_bray_both_plot
+
+# ⟞ ⟞ ii. modified Gower --------------------------------------------------
+
+
+# ⟞ ⟞ ⟞ 1. analysis -------------------------------------------------------
+
+epi_pt_altgower <- metaMDS(comm_mat_epi, "altGower")
+
+# stress plot
+stressplot(epi_pt_altgower)
+
+# preliminary plot
+plot(epi_pt_altgower)
+
+# permanova
+# comp_1yr_meta <- comm_meta %>% 
+#   drop_na(comp_1yrs)
+# comp_1yr_sampleID <- comp_1yr_meta %>% 
+#   pull(sample_ID)
+# comp_1yr_epi <- comm_mat_epi[comp_1yr_sampleID, ]
+
+epi_pt_perma_1yr_altgower <- adonis2(comp_1yr_epi ~ treatment*comp_1yrs, 
+                                       data = comp_1yr_meta,
+                                       strata = comp_1yr_meta$site,
+                                       method = "altGower")
+epi_pt_perma_1yr_altgower
+
+epi_pt_perma_2yrs_altgower <- adonis2(comp_2yrs_epi ~ treatment*comp_2yrs, 
+                                        data = comp_2yrs_meta,
+                                        strata = comp_2yrs_meta$site,
+                                        method = "altGower")
+epi_pt_perma_2yrs_altgower
+
+epi_pt_perma_3yrs_altgower <- adonis2(comp_3yrs_epi ~ comp_3yrs*treatment, 
+                                        data = comp_3yrs_meta,
+                                        strata = comp_3yrs_meta$site,
+                                        method = "altGower")
+epi_pt_perma_3yrs_altgower 
+
+epi_pairwise_altgower <- pairwise.adonis2(comp_3yrs_epi ~ comp_3yrs*treatment, 
+                                            data = comp_3yrs_meta,
+                                            strata = comp_3yrs_meta$site,
+                                            method = "altGower")
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "during"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_epi[test_ID, ]
+epi_start_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+                                                data = test_meta,
+                                                strata = test_meta$site,
+                                                method = "altGower") %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  flextable()
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("after", "during"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_epi[test_ID, ]
+epi_after_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+                                                data = test_meta,
+                                                strata = test_meta$site,
+                                                method = "altGower") %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  flextable()
+
+test_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "after"))
+test_ID <- test_meta %>% pull(sample_ID)
+test_mat <- comm_mat_epi[test_ID, ]
+epi_start_after_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+                                               data = test_meta,
+                                               strata = test_meta$site,
+                                               method = "altGower") %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  flextable()
+
+# beta dispersion
+epi_pt_dist_altgower <- vegdist(comp_3yrs_epi, method = "altGower")
+epi_betadisper_altgower <- betadisper(epi_pt_dist_altgower, comp_3yrs_meta$combo)
+permutest(epi_betadisper_altgower, pairwise = TRUE)
+anova(epi_betadisper_altgower)
+TukeyHSD(epi_betadisper_altgower)
+# significantly different dispersions
+# control dispersions different between during and after, start and after
+# start control and start removal dispersions different
+
+# ⟞ ⟞ ⟞ 2. SIMPER ---------------------------------------------------------
+
+
+# ⟞ ⟞ ⟞ 3. plotting -------------------------------------------------------
+
+# points into data frame for plotting
+epi_pt_altgower_plotdf <- scores(epi_pt_altgower, display = "sites") %>% 
+  as_tibble(rownames = "sample_ID") %>% 
+  # join with metadata
+  left_join(., comm_meta, by = "sample_ID") %>% 
+  # taking out outlier for visualization
+  filter(sample_ID != "mohk_control_2020-08-12")
+
+# pull top species from simper analysis
+simper_epi_spp <- epi_comp3yrs %>% 
+  pull(species)
+
+# get species points
+epi_pt_altgower_species <- scores(epi_pt_altgower, display = "species", tidy = TRUE) %>% 
+  as_tibble(rownames = "sp_code") %>% 
+  # keep species from simper analysis only
+  filter(sp_code %in% simper_epi_spp) %>% 
+  left_join(., spp_names, by = "sp_code")
+
+# continual removal plots only
+epi_pt_altgower_continual_plot <- nmds_plot_fxn(
+  epi_pt_altgower_plotdf, "continual", epi_pt_altgower_species
+) +
+  # axis limits
+  scale_x_continuous(limits = c(-0.35, 0.25)) +
+  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  labs(shape = "Time period",
+       color = "Time period", 
+       fill = "Time period",
+       title = "(a) Removal") +
+  theme(legend.position = "none", # c(0.2, 0.8), 
+        panel.grid = element_blank(),
+        legend.background = element_blank())
+epi_pt_altgower_continual_plot 
+
+epi_pt_altgower_continual_plot_arrows <- epi_pt_altgower_continual_plot +
+  geom_text_repel(data = epi_pt_altgower_species,
+                  aes(x = NMDS1, y = NMDS2,
+                      label = stringr::str_wrap(scientific_name, 4, width = 40)),
+                  color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 1.5) +
+  geom_segment(data = epi_pt_altgower_species,
+               aes(x = 0, y = 0,
+                   xend = NMDS1, yend = NMDS2),
+               arrow = arrow(length = unit(0.1, "cm")),
+               color = "#C70000", linewidth = 0.5) +
+  scale_x_continuous(limits = c(-0.5, 0.5)) +
+  scale_y_continuous(limits = c(-0.5, 0.5)) 
+
+epi_pt_altgower_continual_plot_arrows
+
+
+# control plots only
+epi_pt_altgower_control_plot <- nmds_plot_fxn(
+  epi_pt_altgower_plotdf, "control", epi_pt_altgower_species
+) +
+  # axis limits
+  scale_x_continuous(limits = c(-0.35, 0.25)) +
+  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  # labels
+  labs(shape = "Site",
+       color = "Time period", fill = "Time period",
+       title = "(b) Reference") +
+  # theme
+  theme(legend.position = "none",
+        panel.grid = element_blank()) 
+epi_pt_altgower_control_plot
+
+# both treatments together
+epi_pt_altgower_both_plot <- nmds_plot_fxn(
+  epi_pt_altgower_plotdf, "both", epi_pt_altgower_species
+) +
+  labs(shape = "Time period",
+       color = "Time period",
+       fill = "Time period",
+       linetype = "Treatment",
+       alpha = "Treatment") 
+# stress annotation
+# annotate("text", x = -1.2, y = -1.25, label = "Stress = 0.22", size = 4)
+epi_pt_altgower_both_plot
 
 ##########################################################################-
 # 3. individual species ---------------------------------------------------
@@ -719,6 +1124,8 @@ epi_biomass_time_plot
 # 4. manuscript tables ----------------------------------------------------
 ##########################################################################-
 
+# ⟞ a. Bray-Curtis --------------------------------------------------------
+
 anova_1yr_tables <- rbind(anova_summary_fxn(algae_pt_perma_1yr), anova_summary_fxn(epi_pt_perma_1yr)) %>% 
   rename_with(., .fn = ~paste(., "_1yr", sep = "", .cols = everything(cols))) 
 
@@ -826,9 +1233,122 @@ anova_together_tables <- cbind(anova_1yr_tables, anova_2yrs_tables, anova_3yrs_t
 anova_together_tables
 
 # gtsave(anova_together_tables,
-#        here::here("tables", "ms-tables", paste("tbl-S4_", today(), ".docx", sep = "")),
+#        here::here("tables", "ms-tables", paste("tbl-S4_bray_", today(), ".docx", sep = "")),
 #        vwidth = 1500, vheight = 1000)
 
+
+# ⟞ b. modified Gower -----------------------------------------------------
+
+
+anova_1yr_altgower_tables <- rbind(anova_summary_fxn(algae_pt_perma_1yr_altgower), anova_summary_fxn(epi_pt_perma_1yr_altgower)) %>% 
+  rename_with(., .fn = ~paste(., "_1yr_altgower", sep = "", .cols = everything(cols))) 
+
+anova_1yr_altgower_tables 
+
+anova_2yrs_altgower_tables <- rbind(anova_summary_fxn(algae_pt_perma_2yrs_altgower), anova_summary_fxn(epi_pt_perma_2yrs_altgower)) %>% 
+  rename_with(., .fn = ~paste(., "_2yrs_altgower", sep = "", .cols = everything(cols)))
+anova_2yrs_altgower_tables 
+
+anova_3yrs_altgower_tables <- rbind(anova_summary_fxn(algae_pt_perma_3yrs_altgower), anova_summary_fxn(epi_pt_perma_3yrs_altgower)) %>% 
+  rename_with(., .fn = ~paste(., "_3yrs_altgower", sep = "", .cols = everything(cols)))
+anova_3yrs_altgower_tables
+
+anova_together_tables_altgower <- cbind(anova_1yr_altgower_tables, anova_2yrs_altgower_tables, anova_3yrs_altgower_tables) %>% 
+  mutate(group = case_when(
+    str_detect(model_1yr_altgower1, "algae") ~ "Understory macroalgae",
+    str_detect(model_1yr_altgower1, "epi") ~ "Sessile invertebrates"
+  )) %>% 
+  # take out unwanted columns
+  select(!c("model_1yr_altgower1", "model_2yrs_altgower1", "model_3yrs_altgower1", 
+            "SumOfSqs_1yr_altgower1", "SumOfSqs_2yrs_altgower1", "SumOfSqs_3yrs_altgower1",
+            "R2_1yr_altgower1", "R2_2yrs_altgower1", "R2_3yrs_altgower1")) %>% 
+  # turn the whole thing into a gt
+  gt() %>% 
+  # group labels
+  # tab_row_group(
+  #   label = "Sessile invertebrates", rows = 6:10
+  # ) %>% 
+  # tab_row_group(
+  #   label = "Understory macroalgae", rows = 1:5
+  # ) %>% 
+  # 1, 2, and 3 year comparisons
+  tab_spanner(
+    label = "1 year comparison",
+    columns = c(variables_1yr_altgower1, Df_1yr_altgower1, F_1yr_altgower1, p_1yr_altgower1)
+  ) %>% 
+  tab_spanner(
+    label = "2 year comparison",
+    columns = c(variables_2yrs_altgower1, Df_2yrs_altgower1, F_2yrs_altgower1, p_2yrs_altgower1)
+  ) %>% 
+  tab_spanner(
+    label = "3 year comparison",
+    columns = c(variables_3yrs_altgower1, Df_3yrs_altgower1, F_3yrs_altgower1, p_3yrs_altgower1)
+  ) %>% 
+  # change column names
+  cols_label(
+    variables_1yr_altgower1 = "Source of variation",
+    Df_1yr_altgower1 = "df",
+    F_1yr_altgower1 = "pseudo-F",
+    p_1yr_altgower1 = "p-value", 
+    variables_2yrs_altgower1 = "Source of variation",
+    Df_2yrs_altgower1 = "df",
+    F_2yrs_altgower1 = "pseudo-F",
+    p_2yrs_altgower1 = "p-value", 
+    variables_3yrs_altgower1 = "Source of variation",
+    Df_3yrs_altgower1 = "Degrees of freedom",
+    F_3yrs_altgower1 = "pseudo-F",
+    p_3yrs_altgower1 = "p-value"
+  ) %>% 
+  # increase spacing between cells
+  tab_style(
+    style = "padding-left:15px;padding-right:15px;",
+    locations = cells_body()
+  ) %>% 
+  # align columns
+  cols_align(columns = everything(),
+             align = "center") %>% 
+  # bold p < 0.05
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_1yr_altgower1,
+      rows = p_1yr_altgower1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_2yrs_altgower1,
+      rows = p_2yrs_altgower1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_3yrs_altgower1,
+      rows = p_3yrs_altgower1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()
+  ) %>% 
+  sub_missing(
+    columns = everything(),
+    missing_text = "--"
+  ) %>% 
+  tab_options(table.font.names = "Times New Roman") 
+anova_together_tables_altgower
+
+# gtsave(anova_together_tables,
+#        here::here("tables", "ms-tables", paste("tbl-S4_altgower_", today(), ".docx", sep = "")),
+#        vwidth = 1500, vheight = 1000)
 
 ##########################################################################-
 # 5. manuscript figures ---------------------------------------------------
@@ -836,19 +1356,35 @@ anova_together_tables
 
 # ⟞ a. continual removal --------------------------------------------------
 
-comm_comp_together <- algae_pt_bray_continual_plot + epi_pt_bray_continual_plot 
+comm_comp_together_bray <- algae_pt_bray_continual_plot + epi_pt_bray_continual_plot 
 
-comm_comp_together_arrows <- algae_pt_bray_continual_plot_arrows + epi_pt_bray_continual_plot_arrows
+comm_comp_together_arrows_bray <- algae_pt_bray_continual_plot_arrows + epi_pt_bray_continual_plot_arrows
+
+comm_comp_together_altgower <- algae_pt_altgower_continual_plot + epi_pt_altgower_continual_plot 
+
+comm_comp_together_arrows_altgower <- algae_pt_altgower_continual_plot_arrows + epi_pt_altgower_continual_plot_arrows
 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-3_", today(), ".jpg", sep = "")),
-#        plot = comm_comp_together,
+#                   paste("fig-3_bray_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_together_bray,
 #        height = 8, width = 16, units = "cm",
 #        dpi = 300)
 # 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-S8_", today(), ".jpg", sep = "")),
-#        plot = comm_comp_together_arrows,
+#                   paste("fig-S8_bray_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_together_arrows_bray,
+#        height = 8, width = 16, units = "cm",
+#        dpi = 400)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-3_altgower_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_together_altgower,
+#        height = 8, width = 16, units = "cm",
+#        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S8_altgower_", today(), ".jpg", sep = "")),
+#        plot = comm_comp_together_arrows_altgower,
 #        height = 8, width = 16, units = "cm",
 #        dpi = 400)
 
@@ -878,6 +1414,8 @@ comm_comp_control <- algae_pt_bray_control_plot + epi_pt_bray_control_plot
 #        dpi = 300)
 
 # ⟞ d. reference and removal plots together -------------------------------
+
+# ⟞ ⟞ i. Bray-Curtis ------------------------------------------------------
 
 # putting algae plots together
 algae_plots <- plot_grid(algae_pt_bray_continual_plot, algae_pt_bray_control_plot, 
@@ -915,8 +1453,53 @@ final_plot <- plot_grid(all_plots, legend, ncol = 2, rel_widths = c(1, 0.3))
 
 # saving
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-3_", today(), ".jpg", sep = "")),
+#                   paste("fig-3_bray_", today(), ".jpg", sep = "")),
 #        plot = final_plot,
 #        height = 13, width = 15, units = "cm",
 #        dpi = 300)
+
+
+# ⟞ ⟞ ii. modified Gower --------------------------------------------------
+
+# putting algae plots together
+algae_altgower_plots <- plot_grid(algae_pt_altgower_continual_plot, algae_pt_altgower_control_plot, 
+                         nrow = 2)
+
+# putting invert plots together
+epi_altgower_plots <- plot_grid(epi_pt_altgower_continual_plot, epi_pt_altgower_control_plot, 
+                       nrow = 2)
+
+# group plots with labels
+algae_altgower_labelled <- plot_grid(algae_title, algae_altgower_plots, 
+                            rel_heights = c(1, 12), 
+                            ncol = 1)
+
+
+epi_altgower_labelled <- plot_grid(epi_title, epi_altgower_plots, 
+                          rel_heights = c(1, 12), 
+                          ncol = 1)
+
+# getting the legend as separate object
+plot_legend_altgower <- nmds_plot_fxn(
+  algae_pt_altgower_plotdf, "continual", algae_pt_altgower_species
+) +
+  labs(shape = "Time period",
+       color = "Time period", 
+       fill = "Time period") 
+legend <- cowplot::get_legend(plot_legend)
+
+# putting plots together
+all_altgower_plots <- plot_grid(algae_altgower_labelled, epi_altgower_labelled, ncol = 2,
+                       rel_widths = c(1, 1))
+
+# putting plots with legend
+final_altgower_plot <- plot_grid(all_altgower_plots, legend, ncol = 2, rel_widths = c(1, 0.3))
+
+# saving
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-3_altgower_", today(), ".jpg", sep = "")),
+#        plot = final_altgower_plot,
+#        height = 13, width = 15, units = "cm",
+#        dpi = 300)
+
 

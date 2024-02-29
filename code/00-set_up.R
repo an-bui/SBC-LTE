@@ -905,8 +905,10 @@ nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
         geom_point(aes(shape = comp_3yrs, fill = comp_3yrs, alpha = treatment), size = 1) +
         # ellipse
         stat_ellipse(aes(color = comp_3yrs, linetype = treatment), linewidth = 0.5) +
-        scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5)) +
-        scale_linetype_manual(values = c("continual" = 1, "control" = 2))
+        scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5),
+                           labels = c("continual" = "Removal", "control" = "Reference")) +
+        scale_linetype_manual(values = c("continual" = 1, "control" = 2),
+                              labels = c("continual" = "Removal", "control" = "Reference"))
     }
   } else {
     warning("Check your arguments! You may have specified the wrong treatment.")
@@ -1010,6 +1012,11 @@ algae_title <- ggplot(data.frame(l = "Understory macroalgae", x = 1, y = 1)) +
   coord_cartesian(clip = "off")
 
 epi_title <- ggplot(data.frame(l = "Sessile invertebrates", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), size = 4.5) + 
+  theme_void() +
+  coord_cartesian(clip = "off")
+
+kelp_title <- ggplot(data.frame(l = "Giant kelp", x = 1, y = 1)) +
   geom_text(aes(x, y, label = l), size = 4.5) + 
   theme_void() +
   coord_cartesian(clip = "off")

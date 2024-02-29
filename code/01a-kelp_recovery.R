@@ -201,7 +201,7 @@ continual_sites_raw <- delta_continual %>%
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(limits = c(-7.5, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = "Giant kelp biomass (dry g/m\U00B2)") +
@@ -606,7 +606,7 @@ lm_kelp_during_zigamma_summary$table_body <- lm_kelp_during_zigamma_summary$tabl
   filter(component != "zi")
 # change labels
 lm_kelp_during_zigamma_summary$table_body$label <- c(
-  `(Intercept)` = "Treatment (reference)",
+  `(Intercept)` = "(Intercept)",
   time_since_end = "Time since end",
   treatmentremoval = "Treatment (removal)",
   `time_since_end:treatmentremoval` = "Time since end * treatment (removal)" 
@@ -804,7 +804,7 @@ lm_kelp_recovery_zigamma_summary$table_body <- lm_kelp_recovery_zigamma_summary$
   filter(component != "zi")
 # change labels
 lm_kelp_recovery_zigamma_summary$table_body$label <- c(
-  `(Intercept)` = "Treatment (reference)",
+  `(Intercept)` = "(Intercept)",
   time_since_end = "Time since end",
   treatmentremoval = "Treatment (removal)",
   `time_since_end:treatmentremoval` = "Time since end * treatment (removal)" 
@@ -946,7 +946,10 @@ overall_kelp <- ggplot() +
   geom_hline(yintercept = 0, lty = 2) +
   
   # raw data points
-  geom_point(data = continual_long, aes(x = time_since_end, y = kelp_biomass, color = treatment), alpha = 0.4, shape = 21) +
+  geom_point(data = continual_long, aes(x = time_since_end, y = kelp_biomass, color = treatment),
+             alpha = 0.1,
+             size = 0.75,
+             shape = 21) +
   
   # prediction lines
   geom_line(data = predicted_kelp_during_raw, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
@@ -963,7 +966,7 @@ overall_kelp <- ggplot() +
                      labels = c("Reference", "Removal")) +
   
   theme_bw() + 
-  scale_x_continuous(limits = c(-7.25, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   coord_cartesian(ylim = c(-10, 2000)) +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
@@ -971,7 +974,7 @@ overall_kelp <- ggplot() +
         legend.title = element_text(size = 6),
         legend.background = element_blank(),
         # plot.margin = margin(0, 0, 0, 0),
-        legend.position = c(0.92, 0.9),
+        legend.position = c(0.85, 0.9),
         legend.key.size = unit(0.5, units = "cm"),
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.1, units = "cm"),
@@ -1203,13 +1206,16 @@ overall_predictions <- ggplot() +
   geom_vline(xintercept = 0, lty = 2) +
   geom_hline(yintercept = 0, lty = 2) +
   geom_point(data = delta_continual,
-             aes(x = time_since_end, y = delta_continual), shape = 2, size = 1, alpha = 0.4) +
+             aes(x = time_since_end, y = delta_continual), 
+             shape = 2, 
+             alpha = 0.1,
+             size = 0.75) +
 
   # overall
   geom_line(data = delta_predictions_during, aes(x = x, y = delta), linewidth = 1) +
   geom_line(data = delta_predictions_after, aes(x = x, y = delta), linewidth = 1) +
 
-  scale_x_continuous(breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1800, 1000)) +
   theme_bw() + 
   theme(axis.title = element_text(size = 8),
@@ -1222,10 +1228,10 @@ overall_predictions <- ggplot() +
         plot.title.position = "plot",
         plot.title = element_text(size = 10)) +
   labs(x = "Time since end of removal (years)", 
-       y = "\U0394 giant kelp biomass\n(removal \U2212 reference, dry g/m\U00B2)",
+       y = "\U0394 biomass\n(removal \U2212 reference, dry g/m\U00B2)",
        fill = "Site",
        shape = "Site",
-       title = "(c) Removal \U2212 reference")
+       title = "(b) Removal \U2212 reference")
 
 overall_predictions
 
