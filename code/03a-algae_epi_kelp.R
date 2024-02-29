@@ -27,11 +27,16 @@ cor.test(delta_algae_after$delta_continual_algae, delta_algae_after$delta_contin
 #   data = delta_algae_continual %>% filter(exp_dates == "after"),
 #   na.action = na.omit
 # )
-lm_delta_algae_kelp_after_m2 <- lmer(
+lm_delta_algae_kelp_after_m2_outlier <- lmer(
   delta_continual_algae ~ delta_continual + (1|site) + (1|year),
   data = delta_algae_continual %>% filter(exp_dates == "after"))
 
-check_outliers(lm_delta_algae_kelp_after_m2, c("cook"))
+check_outliers(lm_delta_algae_kelp_after_m2_outlier, c("cook"))
+# outlier: napl_2023-05-18_Q2 because of a lot of PTCA biomass in control plot
+
+lm_delta_algae_kelp_after_m2 <- lmer(
+  delta_continual_algae ~ delta_continual + (1|site) + (1|year),
+  data = delta_algae_continual %>% filter(exp_dates == "after" & sample_ID != "napl_2023-05-18_Q2"))
 
 ggpredict(lm_delta_algae_kelp_after_m2, terms = c("delta_continual")) %>% plot(show_data = TRUE)
 
@@ -39,10 +44,10 @@ ggpredict(lm_delta_algae_kelp_after_m2, terms = c("delta_continual")) %>% plot(s
 #   delta_continual_algae ~ delta_continual + (1|site), 
 #   data = delta_algae_continual %>% filter(exp_dates == "after")
 # )
-lm_algae_kelp_after_m1 <- lmer(
-  continual_algae ~ continual + (1|year) + (1|site),
-  data = delta_algae_continual %>% filter(exp_dates == "after") %>% filter(!(sample_ID %in% c("mohk_2019-11-19_Q4", "mohk_2021-05-13_Q2", "napl_2023-05-18_Q2")))
-)
+# lm_algae_kelp_after_m1 <- lmer(
+#   continual_algae ~ continual + (1|year) + (1|site),
+#   data = delta_algae_continual %>% filter(exp_dates == "after") %>% filter(!(sample_ID %in% c("mohk_2019-11-19_Q4", "mohk_2021-05-13_Q2", "napl_2023-05-18_Q2")))
+# )
 # lm_algae_kelp_after_m2 <- lmer(
 #   continual_algae ~ continual*time_since_end + (1|site),
 #   data = delta_algae_continual %>% filter(exp_dates == "after")
@@ -52,8 +57,10 @@ lm_algae_kelp_after_m1 <- lmer(
 # check_model(lm_delta_algae_kelp_after_m1)
 # simulateResiduals(lm_delta_algae_kelp_after_m1, plot = TRUE)
 
-check_model(lm_delta_algae_kelp_after_m2)
 simulateResiduals(lm_delta_algae_kelp_after_m2, plot = TRUE)
+
+outlier_check <- check_outliers(lm_delta_algae_kelp_after_m2_outlier) %>% plot()
+simulateResiduals(lm_delta_algae_kelp_after_m2_outlier, plot = TRUE)
 # check_model(lm_delta_algae_kelp_after_m3)
 
 # check_model(lm_algae_kelp_after_m1)
@@ -93,6 +100,8 @@ lm_delta_algae_kelp_after_summary <- lm_delta_algae_kelp_after_m2 %>%
 # deltas
 predicted_delta_algae_vs_kelp <- ggpredict(lm_delta_algae_kelp_after_m2, terms = ~ delta_continual, type = "fixed")
 
+predicted_delta_algae_vs_kelp_outlier <- ggpredict(lm_delta_algae_kelp_after_m2_outlier, terms = ~ delta_continual, type = "fixed")
+
 # ⟞ c. figures ------------------------------------------------------------
 
 # ⟞ ⟞ i. raw biomass ------------------------------------------------------
@@ -109,7 +118,7 @@ predicted_delta_algae_vs_kelp <- ggpredict(lm_delta_algae_kelp_after_m2, terms =
 # ⟞ ⟞ ii. deltas ----------------------------------------------------------
 
 delta_algae_vs_kelp_lm <- delta_algae_continual %>% 
-  filter(exp_dates == "after") %>% 
+  filter(exp_dates == "after" & sample_ID != "napl_2023-05-18_Q2") %>% 
   # two points missing from delta kelp: MOHK 2010-06-14, NAPL 2014-11-14
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
   geom_hline(aes(yintercept = 0), lty = 2) +
@@ -131,6 +140,30 @@ delta_algae_vs_kelp_lm <- delta_algae_continual %>%
         plot.title.position = "plot",
         panel.grid = element_blank()) 
 delta_algae_vs_kelp_lm
+
+delta_algae_vs_kelp_lm_outlier <- delta_algae_continual %>% 
+  filter(exp_dates == "after") %>% 
+  # two points missing from delta kelp: MOHK 2010-06-14, NAPL 2014-11-14
+  ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
+  geom_hline(aes(yintercept = 0), lty = 2) +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_point(size = 1, shape = 5, alpha = 0.4, color = under_col) + 
+  geom_ribbon(data = predicted_delta_algae_vs_kelp_outlier, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.1) +
+  geom_line(data = predicted_delta_algae_vs_kelp_outlier, aes(x = x, y = predicted), 
+            linewidth = 1,
+            color = under_col) +
+  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), minor_breaks = seq(-2000, 2000, by = 500)) +
+  scale_y_continuous(breaks = seq(-200, 400, by = 200)) +
+  labs(x = "\U0394 giant kelp biomass\n(removal - reference, dry g/m\U00B2)",
+       y = "\U0394 understory macroalgae biomass\n(removal - reference, dry g/m\U00B2)", 
+       title = "(a) Understory macroalgae") +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 6),
+        axis.text = element_text(size = 5),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        panel.grid = element_blank()) 
+delta_algae_vs_kelp_lm_outlier
 
 # delta_algae_vs_kelp_pearson <- delta_algae_continual %>% 
 #   mutate(exp_dates = case_when(
@@ -203,7 +236,6 @@ lm_delta_epi_kelp_after_m2 <- lmer(
 # check_model(lm_delta_epi_kelp_after_m1)
 
 simulateResiduals(lm_delta_epi_kelp_after_m2, plot = T)
-check_model(lm_delta_epi_kelp_after_m2)
 
 # simulateResiduals(lm_delta_epi_kelp_after_m3, plot = T)
 # check_model(lm_delta_epi_kelp_after_m3)
@@ -337,4 +369,13 @@ group_vs_kelp <- plot_grid(delta_algae_vs_kelp_lm, delta_epi_vs_kelp_lm, ncol = 
 #                   paste("fig-4_", today(), ".jpg", sep = "")),
 #        plot = group_vs_kelp,
 #        height = 6, width = 12, units = "cm",
+#        dpi = 300)
+
+
+# ⟞ c. outlier check ------------------------------------------------------
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S12_", today(), ".jpg", sep = "")),
+#        plot = outlier_check,
+#        height = 8, width = 14, units = "cm",
 #        dpi = 300)

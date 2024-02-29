@@ -242,11 +242,12 @@ test_meta <- comp_3yrs_meta %>%
   filter(comp_3yrs %in% c("start", "during"))
 test_ID <- test_meta %>% pull(sample_ID)
 test_mat <- comm_mat_algae[test_ID, ]
-adonis2(test_mat ~ comp_3yrs*treatment,
+algae_start_during_pairwise_bray <- adonis2(test_mat ~ comp_3yrs*treatment,
         data = test_meta,
         strata = test_meta$site) %>% 
   as_tibble() %>% 
   mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
   relocate(names, .before = Df) %>% 
   flextable()
 
@@ -254,22 +255,46 @@ test_meta <- comp_3yrs_meta %>%
   filter(comp_3yrs %in% c("after", "during"))
 test_ID <- test_meta %>% pull(sample_ID)
 test_mat <- comm_mat_algae[test_ID, ]
-adonis2(test_mat ~ comp_3yrs*treatment,
-        data = test_meta,
-        strata = test_meta$site)
+algae_after_during_pairwise_bray <- adonis2(test_mat ~ comp_3yrs*treatment,
+                                            data = test_meta,
+                                            strata = test_meta$site) %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  relocate(names, .before = Df) %>% 
+  flextable()
 
 test_meta <- comp_3yrs_meta %>% 
   filter(comp_3yrs %in% c("start", "after"))
 test_ID <- test_meta %>% pull(sample_ID)
 test_mat <- comm_mat_algae[test_ID, ]
-adonis2(test_mat ~ comp_3yrs*treatment,
-        data = test_meta,
-        strata = test_meta$site)
+algae_start_after_pairwise_bray <- adonis2(test_mat ~ comp_3yrs*treatment,
+                                            data = test_meta,
+                                            strata = test_meta$site) %>% 
+  as_tibble() %>% 
+  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  relocate(names, .before = Df) %>% 
+  flextable()
 
 # beta dispersion
 algae_pt_dist <- vegdist(comp_3yrs_algae)
+# testing with a x b factors following:
+# https://stat.ethz.ch/pipermail/r-sig-ecology/2010-September/001524.html
 algae_betadisper <- betadisper(algae_pt_dist, comp_3yrs_meta$combo)
-permutest(algae_betadisper, pairwise = TRUE)
+algae_permu <- permutest(algae_betadisper, pairwise = TRUE)
+algae_pval_bray <- algae_permu$pairwise$permuted %>% 
+  as_tibble(rownames = NA) %>% 
+  rownames_to_column("pairs") %>% 
+  separate_wider_delim(cols = pairs, 
+                       names = c("first", "second", "third", "fourth"), 
+                       delim = "-") %>% 
+  unite("pair1", first, second, sep = "-") %>% 
+  unite("pair2", third, fourth, sep = "-") %>% 
+  pivot_wider(names_from = pair2, values_from = value) %>% 
+  flextable()
+algae_pval_bray
+TukeyHSD(algae_betadisper)
 anova(algae_betadisper)
 # not significantly different dispersions
 
@@ -331,9 +356,9 @@ algae_simper_treatment <- simper_algae_treatment$continual_control %>%
 algae_pt_bray_plotdf <- scores(algae_pt_bray, display = "sites") %>% 
   as_tibble(rownames = "sample_ID") %>% 
   # join with metadata
-  left_join(., comm_meta, by = "sample_ID") %>% 
+  left_join(., comm_meta, by = "sample_ID") # %>% 
   # taking out outlier for visualization
-  filter(sample_ID != "mohk_control_2020-08-12")
+  # filter(sample_ID != "mohk_control_2020-08-12") # nothing there except Gelidium robustum
 
 # pull top species from simper analysis
 simper_algae_spp <- algae_comp3yrs %>% 
@@ -391,6 +416,19 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
   theme(legend.position = "none",
         panel.grid = element_blank()) 
 algae_pt_bray_control_plot
+
+# control plot with outlier
+algae_pt_bray_control_outlier_plot <- nmds_plot_fxn(
+  algae_pt_bray_plotdf, "control", algae_pt_bray_species
+) +
+  # labels
+  labs(shape = "Site",
+       color = "Time period", fill = "Time period",
+       title = "Understory macroalgae | Reference plot") +
+  # theme
+  theme(legend.position = "none",
+        panel.grid = element_blank()) 
+algae_pt_bray_control_outlier_plot
 
 # both treatments together
 algae_pt_bray_both_plot <- nmds_plot_fxn(
@@ -451,9 +489,9 @@ algae_pt_perma_3yrs_altgower <- adonis2(comp_3yrs_algae ~ comp_3yrs*treatment,
 algae_pt_perma_3yrs_altgower 
 
 algae_pairwise_altgower <- pairwise.adonis2(comp_3yrs_algae ~ comp_3yrs*treatment, 
-                                   data = comp_3yrs_meta,
-                                   strata = comp_3yrs_meta$site,
-                                   method = "altGower")
+                                            data = comp_3yrs_meta,
+                                            strata = comp_3yrs_meta$site,
+                                            method = "altGower")
 
 test_meta <- comp_3yrs_meta %>% 
   filter(comp_3yrs %in% c("start", "during"))
@@ -501,7 +539,6 @@ algae_start_after_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
 algae_pt_dist_altgower <- vegdist(comp_3yrs_algae, method = "altGower")
 algae_betadisper_altgower <- betadisper(algae_pt_dist_altgower, comp_3yrs_meta$combo)
 permutest(algae_betadisper_altgower, pairwise = TRUE)
-anova(algae_betadisper_altgower)
 TukeyHSD(algae_betadisper_altgower)
 # significantly different dispersions
 # control dispersions different between during and after
@@ -718,7 +755,6 @@ adonis2(test_mat ~ comp_3yrs*treatment,
 # beta dispersion
 epi_pt_dist <- vegdist(comm_mat_epi)
 epi_betadisper <- betadisper(epi_pt_dist, comp_3yrs_meta$combo)
-anova(epi_betadisper)
 permutest(epi_betadisper, pairwise = TRUE)
 TukeyHSD(epi_betadisper, which = "group", ordered = FALSE,
          conf.level = 0.95)
@@ -924,7 +960,6 @@ epi_start_after_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
 epi_pt_dist_altgower <- vegdist(comp_3yrs_epi, method = "altGower")
 epi_betadisper_altgower <- betadisper(epi_pt_dist_altgower, comp_3yrs_meta$combo)
 permutest(epi_betadisper_altgower, pairwise = TRUE)
-anova(epi_betadisper_altgower)
 TukeyHSD(epi_betadisper_altgower)
 # significantly different dispersions
 # control dispersions different between during and after, start and after
@@ -964,7 +999,7 @@ epi_pt_altgower_continual_plot <- nmds_plot_fxn(
   labs(shape = "Time period",
        color = "Time period", 
        fill = "Time period",
-       title = "(a) Removal") +
+       title = "(c) Removal") +
   theme(legend.position = "none", # c(0.2, 0.8), 
         panel.grid = element_blank(),
         legend.background = element_blank())
@@ -996,7 +1031,7 @@ epi_pt_altgower_control_plot <- nmds_plot_fxn(
   # labels
   labs(shape = "Site",
        color = "Time period", fill = "Time period",
-       title = "(b) Reference") +
+       title = "(d) Reference") +
   # theme
   theme(legend.position = "none",
         panel.grid = element_blank()) 
@@ -1392,10 +1427,18 @@ comm_comp_together_arrows_altgower <- algae_pt_altgower_continual_plot_arrows + 
 
 comm_comp_control <- algae_pt_bray_control_plot + epi_pt_bray_control_plot 
 
+algae_pt_bray_control_outlier_plot
+
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S7_", today(), ".jpg", sep = "")),
 #        plot = comm_comp_control,
 #        height = 6, width = 16, units = "cm",
+#        dpi = 300)
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S3_", today(), ".jpg", sep = "")),
+#        plot = algae_pt_bray_control_outlier_plot,
+#        height = 10, width = 10, units = "cm",
 #        dpi = 300)
 
 

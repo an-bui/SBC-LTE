@@ -272,7 +272,7 @@ delta_continual_sites_epi_raw <- delta_epi_continual %>%
   scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
-       y = expression(Epilithic~invertebrate~biomass~(dry~g/m^{"2"}))) +
+       y = expression(Sessile~invertebrate~biomass~(dry~g/m^{"2"}))) +
   facet_wrap(~strip, scales = "free_y")
 delta_continual_sites_epi_raw
 
