@@ -190,14 +190,20 @@ continual_sites_raw <- delta_continual %>%
     site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
   ggplot() +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   # control
-  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.3, linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.3, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = control), 
+            alpha = 0.9, 
+            linewidth = 2,
+            color = reference_col) +
+  # geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.3, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual, col = site), linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual), 
+            alpha = 0.9, 
+            linewidth = 2,
+            color = removal_col) +
+  # geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
@@ -942,8 +948,8 @@ recovery_emtrends <- emmeans::emtrends(lm_kelp_recovery_zigamma_02, "treatment",
 
 overall_kelp <- ggplot() +
   # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data points
   geom_point(data = continual_long, aes(x = time_since_end, y = kelp_biomass, color = treatment),
@@ -1011,8 +1017,8 @@ overall_kelp
 
 overall_kelp_removal <- ggplot() +
   # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data points
   geom_point(data = continual_long %>% filter(treatment == "removal"), aes(x = time_since_end, y = kelp_biomass), shape = 1, size = 1, alpha = 0.4, color = removal_col) +
@@ -1052,8 +1058,8 @@ overall_kelp_removal
 
 overall_kelp_reference <- ggplot() +
   # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data points
   geom_point(data = continual_long %>% filter(treatment == "reference"), aes(x = time_since_end, y = kelp_biomass), shape = 1, size = 1, alpha = 0.4, color = reference_col) +
@@ -1203,8 +1209,8 @@ delta_predictions_after <- predicted_kelp_after_raw %>%
   mutate(exp_dates = "after")
 
 overall_predictions <- ggplot() +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   geom_point(data = delta_continual,
              aes(x = time_since_end, y = delta_continual), 
              shape = 2, 

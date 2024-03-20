@@ -121,8 +121,8 @@ delta_algae_vs_kelp_lm <- delta_algae_continual %>%
   filter(exp_dates == "after" & sample_ID != "napl_2023-05-18_Q2") %>% 
   # two points missing from delta kelp: MOHK 2010-06-14, NAPL 2014-11-14
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
-  geom_hline(aes(yintercept = 0), lty = 2) +
-  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_hline(aes(yintercept = 0), lty = 2, alpha = 0.5) +
+  geom_vline(aes(xintercept = 0), lty = 2, alpha = 0.5) +
   geom_point(size = 1, shape = 5, alpha = 0.4, color = under_col) + 
   geom_ribbon(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.1) +
   geom_line(data = predicted_delta_algae_vs_kelp, aes(x = x, y = predicted), 
@@ -145,8 +145,8 @@ delta_algae_vs_kelp_lm_outlier <- delta_algae_continual %>%
   filter(exp_dates == "after") %>% 
   # two points missing from delta kelp: MOHK 2010-06-14, NAPL 2014-11-14
   ggplot(aes(x = delta_continual, y = delta_continual_algae)) +
-  geom_hline(aes(yintercept = 0), lty = 2) +
-  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_hline(aes(yintercept = 0), lty = 2, alpha = 0.5) +
+  geom_vline(aes(xintercept = 0), lty = 2, alpha = 0.5) +
   geom_point(size = 1, shape = 5, alpha = 0.4, color = under_col) + 
   geom_ribbon(data = predicted_delta_algae_vs_kelp_outlier, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.1) +
   geom_line(data = predicted_delta_algae_vs_kelp_outlier, aes(x = x, y = predicted), 
@@ -295,8 +295,8 @@ delta_epi_vs_kelp_lm <- delta_epi_continual %>%
   filter(exp_dates == "after") %>% 
   # two points missing from delta kelp: MOHK 2010-06-14, NAPL 2014-11-14
   ggplot(aes(x = delta_continual, y = delta_continual_epi)) +
-  geom_hline(aes(yintercept = 0), lty = 2) +
-  geom_vline(aes(xintercept = 0), lty = 2) +
+  geom_hline(aes(yintercept = 0), lty = 2, alpha = 0.5) +
+  geom_vline(aes(xintercept = 0), lty = 2, alpha = 0.5) +
   geom_point(size = 1, shape = 5, alpha = 0.4) + 
   # geom_ribbon(data = predicted_delta_epi_vs_kelp, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high), alpha = 0.1) +
   # geom_line(data = predicted_delta_epi_vs_kelp, aes(x = x, y = predicted), size = 2) +

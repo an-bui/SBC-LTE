@@ -1288,6 +1288,133 @@ anova_3yrs_altgower_tables <- rbind(anova_summary_fxn(algae_pt_perma_3yrs_altgow
   rename_with(., .fn = ~paste(., "_3yrs_altgower", sep = "", .cols = everything(cols)))
 anova_3yrs_altgower_tables
 
+anova_12_tables_altgower <- cbind(anova_1yr_altgower_tables, anova_2yrs_altgower_tables) %>% 
+  mutate(group = case_when(
+    str_detect(model_1yr_altgower1, "algae") ~ "Understory macroalgae",
+    str_detect(model_1yr_altgower1, "epi") ~ "Sessile invertebrates"
+  )) %>% 
+  # take out unwanted columns
+  select(!c("model_1yr_altgower1", "model_2yrs_altgower1", 
+            "SumOfSqs_1yr_altgower1", "SumOfSqs_2yrs_altgower1",
+            "R2_1yr_altgower1", "R2_2yrs_altgower1")) %>% 
+  # turn the whole thing into a gt
+  gt() %>% 
+  # group labels
+  # tab_row_group(
+  #   label = "Sessile invertebrates", rows = 6:10
+  # ) %>% 
+  # tab_row_group(
+  #   label = "Understory macroalgae", rows = 1:5
+  # ) %>% 
+  # 1, 2, and 3 year comparisons
+  tab_spanner(
+    label = "1 year comparison",
+    columns = c(variables_1yr_altgower1, Df_1yr_altgower1, F_1yr_altgower1, p_1yr_altgower1)
+  ) %>% 
+  tab_spanner(
+    label = "2 year comparison",
+    columns = c(variables_2yrs_altgower1, Df_2yrs_altgower1, F_2yrs_altgower1, p_2yrs_altgower1)
+  ) %>% 
+  # change column names
+  cols_label(
+    variables_1yr_altgower1 = "Source of variation",
+    Df_1yr_altgower1 = "df",
+    F_1yr_altgower1 = "pseudo-F",
+    p_1yr_altgower1 = "p-value", 
+    variables_2yrs_altgower1 = "Source of variation",
+    Df_2yrs_altgower1 = "df",
+    F_2yrs_altgower1 = "pseudo-F",
+    p_2yrs_altgower1 = "p-value"
+  ) %>% 
+  # increase spacing between cells
+  tab_style(
+    style = "padding-left:15px;padding-right:15px;",
+    locations = cells_body()
+  ) %>% 
+  # align columns
+  cols_align(columns = everything(),
+             align = "center") %>% 
+  # bold p < 0.05
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_1yr_altgower1,
+      rows = p_1yr_altgower1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_2yrs_altgower1,
+      rows = p_2yrs_altgower1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()
+  ) %>% 
+  sub_missing(
+    columns = everything(),
+    missing_text = "--"
+  ) %>% 
+  tab_options(table.font.names = "Times New Roman") 
+anova_12_tables_altgower
+
+anova_3_tables_altgower <- anova_3yrs_altgower_tables %>% 
+  mutate(group = case_when(
+    str_detect(model_3yrs_altgower1, "algae") ~ "Understory macroalgae",
+    str_detect(model_3yrs_altgower1, "epi") ~ "Sessile invertebrates"
+  )) %>% 
+  # take out unwanted columns
+  select(!c("model_3yrs_altgower1", 
+            "SumOfSqs_3yrs_altgower1",
+            "R2_3yrs_altgower1")) %>% 
+  # turn the whole thing into a gt
+  gt() %>% 
+  tab_spanner(
+    label = "3 year comparison",
+    columns = c(variables_3yrs_altgower1, Df_3yrs_altgower1, F_3yrs_altgower1, p_3yrs_altgower1)
+  ) %>% 
+  # change column names
+  cols_label(
+    variables_3yrs_altgower1 = "Source of variation",
+    Df_3yrs_altgower1 = "Degrees of freedom",
+    F_3yrs_altgower1 = "pseudo-F",
+    p_3yrs_altgower1 = "p-value"
+  ) %>% 
+  # increase spacing between cells
+  tab_style(
+    style = "padding-left:15px;padding-right:15px;",
+    locations = cells_body()
+  ) %>% 
+  # align columns
+  cols_align(columns = everything(),
+             align = "center") %>% 
+  # bold p < 0.05
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = p_3yrs_altgower1,
+      rows = p_3yrs_altgower1 < 0.05
+    )
+  ) %>% 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_row_groups()
+  ) %>% 
+  sub_missing(
+    columns = everything(),
+    missing_text = "--"
+  ) %>% 
+  tab_options(table.font.names = "Times New Roman") 
+anova_3_tables_altgower
+
 anova_together_tables_altgower <- cbind(anova_1yr_altgower_tables, anova_2yrs_altgower_tables, anova_3yrs_altgower_tables) %>% 
   mutate(group = case_when(
     str_detect(model_1yr_altgower1, "algae") ~ "Understory macroalgae",
@@ -1381,8 +1508,16 @@ anova_together_tables_altgower <- cbind(anova_1yr_altgower_tables, anova_2yrs_al
   tab_options(table.font.names = "Times New Roman") 
 anova_together_tables_altgower
 
-# gtsave(anova_together_tables,
+# gtsave(anova_together_tables_altgower,
 #        here::here("tables", "ms-tables", paste("tbl-S4_altgower_", today(), ".docx", sep = "")),
+#        vwidth = 1500, vheight = 1000)
+
+# gtsave(anova_12_tables_altgower,
+#        here::here("tables", "ms-tables", paste("tbl-S4_altgower_12comp_", today(), ".docx", sep = "")),
+#        vwidth = 1500, vheight = 1000)
+
+# gtsave(anova_3_tables_altgower,
+#        here::here("tables", "ms-tables", paste("tbl-S4_altgower_3comp_", today(), ".docx", sep = "")),
 #        vwidth = 1500, vheight = 1000)
 
 ##########################################################################-

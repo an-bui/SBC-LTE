@@ -21,7 +21,9 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
   # dev.new(width=10, height=5)
   # par(mfrow=c(1,2))
   plot(delta~time.true, type="n")
-  time.model.of.impact=max(which(time.model==0))
+  
+  # counts the number of observations at "time = 0" (i.e. during disturbance)
+  time.model.of.impact = max(which(time.model == 0))
   rect(time.model.of.impact, min(delta)-100, max(time.model)+10, max(delta)+100, col = "grey")
   points(delta~time.true, pch=24, bg="white", cex=2)
   
@@ -149,6 +151,8 @@ ProgressiveChangeBACIPS<-function(control, impact, time.true, time.model)
            sigmoid.model.summary = sigmoid.Model))
 }
 
+
+
 # Function to add a column in the biomass data frame for each site called `time.model` that has the timesteps labelled the way the function wants them
 
 time.model.fxn.new <- function(site, treatment, season_choice) {
@@ -205,6 +209,9 @@ biomass.pcbacips <- function(df) {
   )
 }
 
+# **** Note: for visualization purposes, we fit new models based on the selection 
+# from BACIPS using time since end as a predictor for all observations.
+
 ##########################################################################-
 # 2. models ---------------------------------------------------------------
 ##########################################################################-
@@ -215,10 +222,12 @@ aque_biomass_continual <- time.model.fxn.new("aque", "continual", "all")
 
 aque_continual_bacips_results <- biomass.pcbacips(aque_biomass_continual)
 
-aque_bacips_linear <- lm(delta_continual ~ time.model, data = aque_biomass_continual)
+# fitting linear model to extract model predictions
+aque_bacips_linear <- lm(delta_continual ~ time_since_end, 
+                         data = aque_biomass_continual %>% filter(exp_dates == "after"))
 
 aque_bacips_predictions <- ggpredict(aque_bacips_linear, 
-                                     terms = "time.model[0:23]",
+                                     terms = "time_since_end",
                                      type = "fixed")
 
 aque_bacips_plot <- aque_biomass_continual %>% 
@@ -226,8 +235,9 @@ aque_bacips_plot <- aque_biomass_continual %>%
     date < "2017-08-16" ~ -0.25,
     TRUE ~ time_since_end
   )) %>% 
-  ggplot(aes(x = time.model, y = delta_continual)) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
+  # filter(exp_dates == "after") %>% 
+  ggplot(aes(x = time_since_end_model, y = delta_continual)) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   geom_point(aes(alpha = exp_dates), 
              shape = aque_shape, fill = aque_col, size = 4) +
   geom_line(data = aque_bacips_predictions,
@@ -239,7 +249,7 @@ aque_bacips_plot <- aque_biomass_continual %>%
             alpha = 0.1) + 
   # scale_x_continuous(breaks = time_since_end) +
   scale_alpha_discrete(range = c(during = 0.3, after = 1)) +
-  labs(x = "Timesteps after removal", 
+  labs(x = "Time since end of experiment (years)", 
        y = "\U0394 giant kelp biomass\n(removal \U2212 reference, dry g/m\U00B2)",
        title = "(a) Arroyo Quemado") +
   theme_bw() + 
@@ -248,7 +258,8 @@ aque_bacips_plot <- aque_biomass_continual %>%
         plot.title.position = "plot",
         axis.text = element_text(size = 16),
         legend.text = element_text(size = 16), 
-        legend.position = "none") 
+        legend.position = "none",
+        panel.grid = element_blank()) 
 aque_bacips_plot 
 
 # ⟞ b. Naples -------------------------------------------------------------
@@ -259,16 +270,16 @@ napl_continual_bacips_results <- biomass.pcbacips(napl_biomass_continual)
 
 napl_bacips_plot <- napl_biomass_continual %>% 
   mutate(time_since_end_model = case_when(
-    date < "2017-08-16" ~ -0.25,
+    date < "2016-05-17" ~ -0.25,
     TRUE ~ time_since_end
   )) %>% 
-  ggplot(aes(x = time.model, y = delta_continual)) +
+  ggplot(aes(x = time_since_end_model, y = delta_continual)) +
   geom_point(aes(alpha = exp_dates), 
              fill = napl_col, size = 4, shape = 21) +
   geom_hline(yintercept = 0, linewidth = 1) +
   # scale_x_continuous(breaks = time_since_end) +
   scale_alpha_discrete(range = c(during = 0.3, after = 1)) +
-  labs(x = "Timesteps after removal", 
+  labs(x = "Time since end of experiment (years)", 
        y = "\U0394 giant kelp biomass\n(removal \U2212 reference, dry g/m\U00B2)",
        title = "(b) Naples") +
   theme_bw() + 
@@ -277,7 +288,8 @@ napl_bacips_plot <- napl_biomass_continual %>%
         plot.title.position = "plot",
         axis.text = element_text(size = 16),
         legend.text = element_text(size = 16), 
-        legend.position = "none") 
+        legend.position = "none",
+        panel.grid = element_blank()) 
 napl_bacips_plot 
 
 
@@ -287,18 +299,18 @@ mohk_biomass_continual <- time.model.fxn.new("mohk", "continual", "all")
 
 mohk_continual_bacips_results <- biomass.pcbacips(mohk_biomass_continual)
 
-mohk_bacips_linear <- lm(delta_continual ~ time.model, data = mohk_biomass_continual)
+mohk_bacips_linear <- lm(delta_continual ~ time_since_end, data = mohk_biomass_continual %>% filter(exp_dates == "after"))
 
 mohk_bacips_predictions <- ggpredict(mohk_bacips_linear, 
-                                     terms = "time.model[0:23]",
+                                     terms = "time_since_end",
                                      type = "fixed")
 
 mohk_bacips_plot <- mohk_biomass_continual %>% 
   mutate(time_since_end_model = case_when(
-    date < "2017-08-16" ~ -0.25,
+    date < "2017-08-11" ~ -0.25,
     TRUE ~ time_since_end
   )) %>% 
-  ggplot(aes(x = time.model, y = delta_continual)) +
+  ggplot(aes(x = time_since_end_model, y = delta_continual)) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
   geom_point(aes(alpha = exp_dates), 
              shape = 21, fill = mohk_col, size = 4) +
@@ -311,7 +323,7 @@ mohk_bacips_plot <- mohk_biomass_continual %>%
               alpha = 0.1) + 
   # scale_x_continuous(breaks = time_since_end) +
   scale_alpha_discrete(range = c(during = 0.3, after = 1)) +
-  labs(x = "Timesteps after removal", 
+  labs(x = "Time since end of experiment (years)", 
        y = "\U0394 giant kelp biomass\n(removal \U2212 reference, dry g/m\U00B2)",
        title = "(c) Mohawk") +
   theme_bw() + 
@@ -320,7 +332,8 @@ mohk_bacips_plot <- mohk_biomass_continual %>%
         plot.title.position = "plot",
         axis.text = element_text(size = 16),
         legend.text = element_text(size = 16), 
-        legend.position = "none") 
+        legend.position = "none",
+        panel.grid = element_blank()) 
 mohk_bacips_plot 
 
 # ⟞ d. Carpinteria --------------------------------------------------------
@@ -329,15 +342,19 @@ carp_biomass_continual <- time.model.fxn.new("carp", "continual", "all")
 
 carp_continual_bacips_results <- biomass.pcbacips(carp_biomass_continual)
 
-carp_bacips_linear <- lm(delta_continual ~ time.model, data = carp_biomass_continual)
+carp_bacips_linear <- lm(delta_continual ~ time_since_end, data = carp_biomass_continual %>% filter(exp_dates == "after"))
 
 carp_bacips_predictions <- ggpredict(carp_bacips_linear, 
-                                     terms = "time.model[0:23]",
+                                     terms = "time_since_end",
                                      type = "fixed")
 
 carp_bacips_plot <- carp_biomass_continual %>% 
-  ggplot(aes(x = time.model, y = delta_continual)) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.3) +
+  mutate(time_since_end_model = case_when(
+    date < "2017-08-10" ~ -0.25,
+    TRUE ~ time_since_end
+  )) %>%  
+  ggplot(aes(x = time_since_end_model, y = delta_continual)) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   geom_point(aes(alpha = exp_dates), 
              shape = 21, fill = carp_col, size = 4) +
   geom_line(data = carp_bacips_predictions,
@@ -349,7 +366,7 @@ carp_bacips_plot <- carp_biomass_continual %>%
               alpha = 0.1) + 
   # scale_x_continuous(breaks = time_since_end) +
   scale_alpha_discrete(range = c(during = 0.3, after = 1)) +
-  labs(x = "Timesteps after removal", 
+  labs(x = "Time since end of experiment (years)", 
        y = "\U0394 giant kelp biomass\n(removal \U2212 reference, dry g/m\U00B2)",
        title = "(d) Carpinteria") +
   theme_bw() + 
@@ -358,7 +375,8 @@ carp_bacips_plot <- carp_biomass_continual %>%
         plot.title.position = "plot",
         axis.text = element_text(size = 16),
         legend.text = element_text(size = 16), 
-        legend.position = "none") 
+        legend.position = "none",
+        panel.grid = element_blank()) 
 carp_bacips_plot
 
 

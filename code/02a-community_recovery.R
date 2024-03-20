@@ -230,14 +230,20 @@ delta_continual_sites_algae_raw <- delta_algae_continual %>%
     site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
   ggplot() +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   # control
-  geom_line(aes(x = time_since_end, y = control_algae, col = site), alpha = 0.5, linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = control_algae, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = control_algae),            
+            alpha = 0.9, 
+            linewidth = 2,
+            color = reference_col) +
+  # geom_point(aes(x = time_since_end, y = control_algae), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual_algae, col = site), linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = continual_algae, shape = site, col = site), size = 1, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual_algae),            
+            alpha = 0.9, 
+            linewidth = 2,
+            color = removal_col) +
+  # geom_point(aes(x = time_since_end, y = continual_algae), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
@@ -258,14 +264,20 @@ delta_continual_sites_epi_raw <- delta_epi_continual %>%
     site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
   ggplot() +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   # control
-  geom_line(aes(x = time_since_end, y = control_epi, col = site), alpha = 0.5, linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = control_epi, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = control_epi, col = site),            
+            alpha = 0.9, 
+            linewidth = 2,
+            color = reference_col) +
+  # geom_point(aes(x = time_since_end, y = control_epi, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
-  geom_line(aes(x = time_since_end, y = continual_epi, col = site), linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = continual_epi, shape = site, col = site), size = 1, fill = "#FFFFFF") +
+  geom_line(aes(x = time_since_end, y = continual_epi, col = site),            
+            alpha = 0.9, 
+            linewidth = 2,
+            color = removal_col) +
+  # geom_point(aes(x = time_since_end, y = continual_epi, shape = site, col = site), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
@@ -503,8 +515,8 @@ predicted_raw_algae_recovery <- ggpredict(lm_raw_algae_recovery_zigamma_02, term
 
 raw_algae_time <- ggplot() +
   # reference lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data
   geom_point(data = algae_continual_long, 
@@ -564,8 +576,8 @@ raw_algae_time
 
 raw_algae_removal <- ggplot() +
   # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data points
   geom_point(data = algae_continual_long %>% filter(treatment == "removal"), aes(x = time_since_end, y = algae_biomass), shape = 1, size = 1, alpha = 0.4, color = removal_col) +
@@ -603,8 +615,8 @@ raw_algae_removal <- ggplot() +
 
 raw_algae_reference <- ggplot() +
   # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data points
   geom_point(data = algae_continual_long %>% filter(treatment == "reference"), aes(x = time_since_end, y = algae_biomass), shape = 1, size = 1, alpha = 0.2, color = reference_col) +
@@ -649,8 +661,8 @@ delta_algae_predictions_after <- predicted_raw_algae_recovery %>%
   mutate(exp_dates = "after")
 
 overall_algae_predictions <- ggplot() +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   geom_point(data = delta_algae_continual,
              aes(x = time_since_end, y = delta_continual_algae), 
              shape = 2, 
@@ -680,9 +692,6 @@ overall_algae_predictions <- ggplot() +
        title = "(d) Removal \U2212 reference")
 
 overall_algae_predictions
-
-algae_title/raw_algae_removal/raw_algae_reference/overall_algae_predictions +
-  plot_layout(heights = c(3, 20, 20, 20))
 
 ##########################################################################-
 # 4. epi. invert linear model ---------------------------------------------
@@ -893,8 +902,8 @@ predicted_raw_epi_recovery <- ggpredict(lm_raw_epi_recovery_zigamma_02, terms = 
 
 raw_epi_time <- ggplot() +
   # reference lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data
   geom_point(data = epi_continual_long, 
@@ -943,8 +952,8 @@ raw_epi_time
 
 raw_epi_removal <- ggplot() +
   # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data points
   geom_point(data = epi_continual_long %>% filter(treatment == "removal"), 
@@ -985,8 +994,8 @@ raw_epi_removal
 
 raw_epi_reference <- ggplot() +
   # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   
   # raw data points
   geom_point(data = epi_continual_long %>% filter(treatment == "reference"), aes(x = time_since_end, y = epi_biomass), shape = 1, size = 1, alpha = 0.4, color = reference_col) +
@@ -1033,8 +1042,8 @@ delta_epi_predictions_after <- predicted_raw_epi_recovery %>%
   mutate(exp_dates = "after")
 
 overall_epi_predictions <- ggplot() +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
+  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
   geom_point(data = delta_epi_continual,
              aes(x = time_since_end, y = delta_continual_epi), 
              shape = 2, 
@@ -1185,11 +1194,11 @@ fig2_v1 <- plot_grid(kelp_column, algae_column, ncol = 2) %>%
 #        dpi = 400)
 
 # v1: legend position c(0.86, 0.88)
-ggsave(here::here("figures", "ms-figures",
-                  paste("fig-2_new-model_v1_", today(), ".jpg", sep = "")),
-       plot = fig2_v1,
-       height = 15, width = 24, units = "cm",
-       dpi = 400)
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-2_new-model_v1_", today(), ".jpg", sep = "")),
+#        plot = fig2_v1,
+#        height = 15, width = 24, units = "cm",
+#        dpi = 400)
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-2_new-model_v2_", today(), ".jpg", sep = "")),
