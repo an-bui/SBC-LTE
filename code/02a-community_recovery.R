@@ -229,19 +229,32 @@ delta_continual_sites_algae_raw <- delta_algae_continual %>%
     site == "mohk" ~ paste("(c) ", site_full, sep = ""),
     site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
+  mutate(removal_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ "Removal"
+  ),
+  recovery_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ "Recovery"
+  ),
+  annotation_y = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ 360
+  )) %>% 
   ggplot() +
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", alpha = 0.3) +
+  geom_text(aes(x = -6.75, y = annotation_y, label = removal_annotation), size = 2) +
+  geom_text(aes(x = 5.5, y = annotation_y, label = recovery_annotation), size = 2) +
   # control
   geom_line(aes(x = time_since_end, y = control_algae),            
             alpha = 0.9, 
-            linewidth = 2,
+            linewidth = 0.5,
             color = reference_col) +
   # geom_point(aes(x = time_since_end, y = control_algae), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
   geom_line(aes(x = time_since_end, y = continual_algae),            
             alpha = 0.9, 
-            linewidth = 2,
+            linewidth = 0.5,
             color = removal_col) +
   # geom_point(aes(x = time_since_end, y = continual_algae), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
@@ -251,7 +264,7 @@ delta_continual_sites_algae_raw <- delta_algae_continual %>%
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = expression(Understory~macroalgae~biomass~(dry~g/m^{"2"}))) +
-  facet_wrap(~strip, scales = "free_y")
+  facet_wrap(~strip, scales = "free_y", nrow = 4)
 delta_continual_sites_algae_raw
 
 # ⟞ ⟞ ii. epi inverts ----------------------------------------------------
@@ -263,19 +276,32 @@ delta_continual_sites_epi_raw <- delta_epi_continual %>%
     site == "mohk" ~ paste("(c) ", site_full, sep = ""),
     site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
+  mutate(removal_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ "Removal"
+  ),
+  recovery_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ "Recovery"
+  ),
+  annotation_y = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ 60
+  )) %>% 
   ggplot() +
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", alpha = 0.3) +
+  geom_text(aes(x = -7.5, y = annotation_y, label = removal_annotation), size = 2) +
+  geom_text(aes(x = 6.5, y = annotation_y, label = recovery_annotation), size = 2) +
   # control
   geom_line(aes(x = time_since_end, y = control_epi, col = site),            
             alpha = 0.9, 
-            linewidth = 2,
+            linewidth = 0.5,
             color = reference_col) +
   # geom_point(aes(x = time_since_end, y = control_epi, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
   # continual
   geom_line(aes(x = time_since_end, y = continual_epi, col = site),            
             alpha = 0.9, 
-            linewidth = 2,
+            linewidth = 0.5,
             color = removal_col) +
   # geom_point(aes(x = time_since_end, y = continual_epi, shape = site, col = site), size = 1, fill = "#FFFFFF") +
   scale_shape_manual(values = shape_palette_site) +
@@ -285,7 +311,7 @@ delta_continual_sites_epi_raw <- delta_epi_continual %>%
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = expression(Sessile~invertebrate~biomass~(dry~g/m^{"2"}))) +
-  facet_wrap(~strip, scales = "free_y")
+  facet_wrap(~strip, scales = "free_y", nrow = 4)
 delta_continual_sites_epi_raw
 
 # ⟞ ⟞ iii. endo inverts --------------------------------------------------
@@ -514,21 +540,22 @@ predicted_raw_algae_recovery <- ggpredict(lm_raw_algae_recovery_zigamma_02, term
 # ⟞ ⟞ new model -----------------------------------------------------------
 
 raw_algae_time <- ggplot() +
-  # reference lines
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", alpha = 0.3) +
   
   # raw data
   geom_point(data = algae_continual_long, 
              aes(x = time_since_end, y = algae_biomass, color = treatment), 
              shape = 21,
-             alpha = 0.1,
+             alpha = 0.15,
              size = 0.75) +
   
   # model predictions
-  geom_line(data = predicted_raw_algae_recovery, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_line(data = predicted_raw_algae_recovery, aes(x = x, y = predicted, color = group), linewidth = 1) +
   geom_ribbon(data = predicted_raw_algae_recovery, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.05) +
-  geom_line(data = predicted_raw_algae_during, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_line(data = predicted_raw_algae_during, aes(x = x, y = predicted, color = group), linewidth = 1) +
   geom_ribbon(data = predicted_raw_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.05) +
   
   # colors and shapes
@@ -542,6 +569,10 @@ raw_algae_time <- ggplot() +
   #                    labels = c("Reference", "Removal")) +
   # scale_size_manual(values = c(reference = 1, removal = 1.3),
   #                   labels = c("Reference", "Removal")) +
+  
+  # removal/recovery labels
+  annotate(geom = "text", x = -6.75, y = 775, label = "Removal", size = 3) +
+  annotate(geom = "text", x = 5.5, y = 775, label = "Recovery", size = 3) +
   
   # theming
   theme_bw() + 
@@ -661,12 +692,14 @@ delta_algae_predictions_after <- predicted_raw_algae_recovery %>%
   mutate(exp_dates = "after")
 
 overall_algae_predictions <- ggplot() +
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", alpha = 0.3) +
   geom_point(data = delta_algae_continual,
              aes(x = time_since_end, y = delta_continual_algae), 
              shape = 2, 
-             alpha = 0.1,
+             alpha = 0.15,
              size = 0.75) +
   
   # overall
@@ -901,21 +934,22 @@ predicted_raw_epi_recovery <- ggpredict(lm_raw_epi_recovery_zigamma_02, terms = 
  # ⟞ ⟞ new model -----------------------------------------------------------
 
 raw_epi_time <- ggplot() +
-  # reference lines
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", alpha = 0.3) +
   
   # raw data
   geom_point(data = epi_continual_long, 
              aes(x = time_since_end, y = epi_biomass, color = treatment), 
              shape = 21,
-             alpha = 0.1,
+             alpha = 0.15,
              size = 0.75) +
   
   # model predictions
-  geom_line(data = predicted_raw_epi_recovery, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_line(data = predicted_raw_epi_recovery, aes(x = x, y = predicted, color = group), linewidth = 1) +
   geom_ribbon(data = predicted_raw_epi_recovery, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.05) +
-  geom_line(data = predicted_raw_epi_during, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_line(data = predicted_raw_epi_during, aes(x = x, y = predicted, color = group), linewidth = 1) +
   geom_ribbon(data = predicted_raw_epi_during, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.05) +
   
   # colors and shapes
@@ -929,6 +963,10 @@ raw_epi_time <- ggplot() +
                      labels = c("Reference", "Removal")) +
   scale_size_manual(values = c(reference = 1, removal = 1.3),
                     labels = c("Reference", "Removal")) +
+  
+  # removal/recovery labels
+  annotate(geom = "text", x = -6.75, y = 150, label = "Removal", size = 3) +
+  annotate(geom = "text", x = 5.5, y = 150, label = "Recovery", size = 3) +
   
   # theming
   theme_bw() + 
@@ -1042,12 +1080,14 @@ delta_epi_predictions_after <- predicted_raw_epi_recovery %>%
   mutate(exp_dates = "after")
 
 overall_epi_predictions <- ggplot() +
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", alpha = 0.3) +
   geom_point(data = delta_epi_continual,
              aes(x = time_since_end, y = delta_continual_epi), 
              shape = 2, 
-             alpha = 0.1,
+             alpha = 0.15,
              size = 0.75) +
   
   # overall
@@ -1137,13 +1177,13 @@ lm_zigamma_summary_tables %>%
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S4_", today(), ".jpg", sep = "")),
 #        plot = delta_continual_sites_algae_raw,
-#        height = 8, width = 16, units = "cm",
+#        height = 12, width = 8, units = "cm",
 #        dpi = 300)
 # 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S5_", today(), ".jpg", sep = "")),
 #        plot = delta_continual_sites_epi_raw,
-#        height = 8, width = 16, units = "cm",
+#        height = 12, width = 8, units = "cm",
 #        dpi = 300)
 # 
 # ggsave(here::here("figures", "ms-figures",

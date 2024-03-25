@@ -133,6 +133,9 @@ delta_algae_vs_kelp_lm <- delta_algae_continual %>%
   labs(x = "\U0394 giant kelp biomass\n(removal - reference, dry g/m\U00B2)",
        y = "\U0394 understory macroalgae biomass\n(removal - reference, dry g/m\U00B2)", 
        title = "(a) Understory macroalgae") +
+  annotate("text", x = -1100, y = -200,
+           label = "conditional R\U00B2 = 0.44\nmarginal R\U00B2 = 0.26\np < 0.001",
+           size = 1.5) +
   theme_bw() + 
   theme(axis.title = element_text(size = 6),
         axis.text = element_text(size = 5),

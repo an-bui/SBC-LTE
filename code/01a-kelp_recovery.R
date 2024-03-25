@@ -189,21 +189,43 @@ continual_sites_raw <- delta_continual %>%
     site == "mohk" ~ paste("(c) ", site_full, sep = ""),
     site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
+  mutate(removal_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ "Removal"
+    # sample_ID == "napl_2010-06-11_Q2" ~ "Removal",
+    # sample_ID == "mohk_2010-07-23_Q3" ~ "Removal",
+    # sample_ID == "carp_2010-06-09_Q2" ~ "Removal"
+  ),
+  recovery_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ "Recovery"
+    # sample_ID == "napl_2010-06-11_Q2" ~ "Recovery",
+    # sample_ID == "mohk_2010-07-23_Q3" ~ "Recovery",
+    # sample_ID == "carp_2010-06-09_Q2" ~ "Recovery"
+  ),
+  annotation_y = case_when(
+    sample_ID == "aque_2010-06-15_Q2" ~ 840
+    # sample_ID == "napl_2010-06-11_Q2" ~ 1010,
+    # sample_ID == "mohk_2010-07-23_Q3" ~ 1700,
+    # sample_ID == "carp_2010-06-09_Q2" ~ 650
+  )) %>% 
   ggplot() +
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+            fill = "grey", alpha = 0.3) +
+  geom_text(aes(x = -6.75, y = annotation_y, label = removal_annotation), size = 2) +
+  geom_text(aes(x = 5.5, y = annotation_y, label = recovery_annotation), size = 2) +
   # control
   geom_line(aes(x = time_since_end, y = control), 
             alpha = 0.9, 
-            linewidth = 2,
+            linewidth = 0.5,
             color = reference_col) +
-  # geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.3, fill = "#FFFFFF") +
+  # geom_point(aes(x = time_since_end, y = control), shape = 21, color = "#FFFFFF", stroke = 0.5, fill = reference_col, size = 0.75) +
   # continual
   geom_line(aes(x = time_since_end, y = continual), 
             alpha = 0.9, 
-            linewidth = 2,
+            linewidth = 0.5,
             color = removal_col) +
-  # geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1, fill = "#FFFFFF") +
+  # geom_point(aes(x = time_since_end, y = continual), shape = 21, color = "#FFFFFF", stroke = 0.5, fill = removal_col, size = 0.75) +
   scale_shape_manual(values = shape_palette_site) +
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
@@ -211,7 +233,7 @@ continual_sites_raw <- delta_continual %>%
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
        y = "Giant kelp biomass (dry g/m\U00B2)") +
-  facet_wrap(~strip, scales = "free_y")
+  facet_wrap(~strip, scales = "free_y", nrow = 4)
 
 continual_sites_raw
 
@@ -948,18 +970,20 @@ recovery_emtrends <- emmeans::emtrends(lm_kelp_recovery_zigamma_02, "treatment",
 
 overall_kelp <- ggplot() +
   # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", alpha = 0.3) +
   
   # raw data points
   geom_point(data = continual_long, aes(x = time_since_end, y = kelp_biomass, color = treatment),
-             alpha = 0.1,
+             alpha = 0.15,
              size = 0.75,
              shape = 21) +
   
   # prediction lines
-  geom_line(data = predicted_kelp_during_raw, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
-  geom_line(data = predicted_kelp_after_raw, aes(x = x, y = predicted, lty = group, color = group), linewidth = 1) +
+  geom_line(data = predicted_kelp_during_raw, aes(x = x, y = predicted, color = group), linewidth = 1) +
+  geom_line(data = predicted_kelp_after_raw, aes(x = x, y = predicted, color = group), linewidth = 1) +
   
   # confidence intervals
   geom_ribbon(data = predicted_kelp_during_raw, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.05) +
@@ -971,6 +995,10 @@ overall_kelp <- ggplot() +
   scale_linetype_manual(values = c(reference = 2, removal = 1),
                      labels = c("Reference", "Removal")) +
   
+  # removal/recovery labels
+  annotate(geom = "text", x = -6.75, y = 1925, label = "Removal", size = 3) +
+  annotate(geom = "text", x = 5.5, y = 1925, label = "Recovery", size = 3) +
+  
   theme_bw() + 
   scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
   coord_cartesian(ylim = c(-10, 2000)) +
@@ -980,7 +1008,8 @@ overall_kelp <- ggplot() +
         legend.title = element_text(size = 6),
         legend.background = element_blank(),
         # plot.margin = margin(0, 0, 0, 0),
-        legend.position = c(0.85, 0.9),
+        # legend.position = c(0.85, 0.9),
+        legend.position = "none",
         legend.key.size = unit(0.5, units = "cm"),
         legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
         legend.spacing.y = unit(0.1, units = "cm"),
@@ -1000,6 +1029,7 @@ overall_kelp <- ggplot() +
        title = "(a)")
 
 overall_kelp
+
 # napl_raw <- ggplot(data = continual_long %>% filter(site == "napl"),
 #        aes(x = time_since_end, y = kelp_biomass, color = treatment)) +
 #   # x at 0 and y at 0 lines
@@ -1209,12 +1239,14 @@ delta_predictions_after <- predicted_kelp_after_raw %>%
   mutate(exp_dates = "after")
 
 overall_predictions <- ggplot() +
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", alpha = 0.3) +
   geom_point(data = delta_continual,
              aes(x = time_since_end, y = delta_continual), 
              shape = 2, 
-             alpha = 0.1,
+             alpha = 0.15,
              size = 0.75) +
 
   # overall
@@ -1438,7 +1470,7 @@ lm_kelp_zigamma_tables <- tbl_merge(tbls = list(lm_kelp_during_zigamma_summary, 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S1_", today(), ".jpg", sep = "")),
 #        plot = continual_sites_raw,
-#        height = 8, width = 16, units = "cm",
+#        height = 12, width = 8, units = "cm",
 #        dpi = 300)
 
 # ⟞ c. recovery time vs biomass -------------------------------------------

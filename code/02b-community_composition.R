@@ -596,9 +596,7 @@ algae_simper_treatment <- simper_algae_treatment$continual_control %>%
 algae_pt_altgower_plotdf <- scores(algae_pt_altgower, display = "sites") %>% 
   as_tibble(rownames = "sample_ID") %>% 
   # join with metadata
-  left_join(., comm_meta, by = "sample_ID") %>% 
-  # taking out outlier for visualization
-  filter(sample_ID != "mohk_control_2020-08-12")
+  left_join(., comm_meta, by = "sample_ID") 
 
 # pull top species from simper analysis
 simper_algae_spp <- algae_comp3yrs %>% 
@@ -616,8 +614,8 @@ algae_pt_altgower_continual_plot <- nmds_plot_fxn(
   algae_pt_altgower_plotdf, "continual", algae_pt_altgower_species
 ) +
   # axis limits
-  scale_x_continuous(limits = c(-0.5, 0.55), breaks = c(-0.5, 0, 0.5)) +
-  scale_y_continuous(limits = c(-0.5, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_x_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
   labs(shape = "Time period",
        color = "Time period", 
        fill = "Time period",
@@ -648,8 +646,8 @@ algae_pt_altgower_control_plot <- nmds_plot_fxn(
   algae_pt_altgower_plotdf, "control", algae_pt_altgower_species
 ) +
   # axis limits
-  scale_x_continuous(limits = c(-0.5, 0.55), breaks = c(-0.5, 0, 0.5)) +
-  scale_y_continuous(limits = c(-0.5, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_x_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
   # labels
   labs(shape = "Site",
        color = "Time period", fill = "Time period",
@@ -671,6 +669,84 @@ algae_pt_altgower_both_plot <- nmds_plot_fxn(
   # stress annotation
   # annotate("text", x = -1.2, y = -1.25, label = "Stress = 0.22", size = 4)
 algae_pt_altgower_both_plot
+
+algae_pt_altgower_start_plot <- algae_pt_altgower_plotdf %>% 
+  filter(comp_3yrs == "start") %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2, color = treatment, fill = treatment, shape = treatment, linetype = treatment)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse() +
+  scale_linetype_manual(values = c("continual" = 1, "control" = 2)) +
+  scale_color_manual(values = c("continual" = removal_col, "control" = reference_col)) +
+  scale_x_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  annotate("text", x = -0.35, y = 0.5, label = "Reference", color = reference_col, size = 2) +
+  annotate("text", x = 0.4, y = 0.1, label = "Removal", color = removal_col, size = 2) +
+  labs(title = "(a) Start of removal") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1)
+algae_pt_altgower_start_plot
+
+algae_pt_altgower_during_plot <- algae_pt_altgower_plotdf %>% 
+  filter(comp_3yrs == "during") %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2, color = treatment, fill = treatment, shape = treatment, linetype = treatment)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse() +
+  scale_linetype_manual(values = c("continual" = 1, "control" = 2)) +
+  scale_color_manual(values = c("continual" = removal_col, "control" = reference_col)) +
+  scale_x_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  labs(title = "(b) End of removal") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1)
+algae_pt_altgower_during_plot
+
+algae_pt_altgower_after_plot <- algae_pt_altgower_plotdf %>% 
+  filter(comp_3yrs == "after") %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2, color = treatment, fill = treatment, shape = treatment, linetype = treatment)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse() +
+  scale_linetype_manual(values = c("continual" = 1, "control" = 2)) +
+  scale_color_manual(values = c("continual" = removal_col, "control" = reference_col)) +
+  scale_x_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  labs(title = "(c) Recovery period") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1)
+algae_pt_altgower_after_plot
+
 
 # ⟞ b. epi inverts --------------------------------------------------------
 
@@ -974,9 +1050,7 @@ TukeyHSD(epi_betadisper_altgower)
 epi_pt_altgower_plotdf <- scores(epi_pt_altgower, display = "sites") %>% 
   as_tibble(rownames = "sample_ID") %>% 
   # join with metadata
-  left_join(., comm_meta, by = "sample_ID") %>% 
-  # taking out outlier for visualization
-  filter(sample_ID != "mohk_control_2020-08-12")
+  left_join(., comm_meta, by = "sample_ID") 
 
 # pull top species from simper analysis
 simper_epi_spp <- epi_comp3yrs %>% 
@@ -1049,6 +1123,83 @@ epi_pt_altgower_both_plot <- nmds_plot_fxn(
 # stress annotation
 # annotate("text", x = -1.2, y = -1.25, label = "Stress = 0.22", size = 4)
 epi_pt_altgower_both_plot
+
+epi_pt_altgower_start_plot <- epi_pt_altgower_plotdf %>% 
+  filter(comp_3yrs == "start") %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2, color = treatment, fill = treatment, shape = treatment, linetype = treatment)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse() +
+  scale_linetype_manual(values = c("continual" = 1, "control" = 2)) +
+  scale_color_manual(values = c("continual" = removal_col, "control" = reference_col)) +
+  scale_x_continuous(limits = c(-0.35, 0.25)) +
+  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  annotate("text", x = 0.15, y = 0.2, label = "Reference", color = reference_col, size = 2) +
+  annotate("text", x = -0.2, y = -0.2, label = "Removal", color = removal_col, size = 2) +
+  labs(title = "(d) Start of removal") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1)
+epi_pt_altgower_start_plot
+
+epi_pt_altgower_during_plot <- epi_pt_altgower_plotdf %>% 
+  filter(comp_3yrs == "during") %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2, color = treatment, fill = treatment, shape = treatment, linetype = treatment)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse() +
+  scale_linetype_manual(values = c("continual" = 1, "control" = 2)) +
+  scale_color_manual(values = c("continual" = removal_col, "control" = reference_col)) +
+  scale_x_continuous(limits = c(-0.35, 0.25)) +
+  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  labs(title = "(e) End of removal") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1)
+epi_pt_altgower_during_plot
+
+epi_pt_altgower_after_plot <- epi_pt_altgower_plotdf %>% 
+  filter(comp_3yrs == "after") %>% 
+  ggplot(aes(x = NMDS1, y = NMDS2, color = treatment, fill = treatment, shape = treatment, linetype = treatment)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse() +
+  scale_linetype_manual(values = c("continual" = 1, "control" = 2)) +
+  scale_color_manual(values = c("continual" = removal_col, "control" = reference_col)) +
+  scale_x_continuous(limits = c(-0.35, 0.25)) +
+  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  labs(title = "(f) Recovery period") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1)
+epi_pt_altgower_after_plot
 
 ##########################################################################-
 # 3. individual species ---------------------------------------------------
@@ -1664,7 +1815,7 @@ plot_legend_altgower <- nmds_plot_fxn(
   labs(shape = "Time period",
        color = "Time period", 
        fill = "Time period") 
-legend <- cowplot::get_legend(plot_legend)
+legend <- cowplot::get_legend(plot_legend_altgower)
 
 # putting plots together
 all_altgower_plots <- plot_grid(algae_altgower_labelled, epi_altgower_labelled, ncol = 2,
@@ -1678,6 +1829,40 @@ final_altgower_plot <- plot_grid(all_altgower_plots, legend, ncol = 2, rel_width
 #                   paste("fig-3_altgower_", today(), ".jpg", sep = "")),
 #        plot = final_altgower_plot,
 #        height = 13, width = 15, units = "cm",
+#        dpi = 300)
+
+# ⟞ ⟞ iii. modified Gower v2 ----------------------------------------------
+
+# putting algae plots together
+algae_altgower_plots <- plot_grid(algae_pt_altgower_start_plot, 
+                                  algae_pt_altgower_during_plot, 
+                                  algae_pt_altgower_after_plot,
+                                  ncol = 1)
+
+epi_altgower_plots <- plot_grid(epi_pt_altgower_start_plot, 
+                                  epi_pt_altgower_during_plot, 
+                                  epi_pt_altgower_after_plot,
+                                ncol = 1)
+
+# group plots with labels
+algae_altgower_labelled <- plot_grid(algae_title, algae_altgower_plots, 
+                                     rel_heights = c(1, 9), 
+                                     ncol = 1)
+
+
+epi_altgower_labelled <- plot_grid(epi_title, epi_altgower_plots, 
+                                   rel_heights = c(1, 9), 
+                                   ncol = 1)
+
+# putting plots together
+all_altgower_plots <- plot_grid(algae_altgower_labelled, epi_altgower_labelled, ncol = 2,
+                                rel_widths = c(1, 1))
+
+# saving
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-3_altgower_v2_", today(), ".jpg", sep = "")),
+#        plot = all_altgower_plots,
+#        height = 16, width = 12, units = "cm",
 #        dpi = 300)
 
 

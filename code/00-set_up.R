@@ -1021,4 +1021,19 @@ kelp_title <- ggplot(data.frame(l = "Giant kelp", x = 1, y = 1)) +
   theme_void() +
   coord_cartesian(clip = "off")
 
+start_title <- ggplot(data.frame(l = "Start of removal", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), size = 4.5) + 
+  theme_void() +
+  coord_cartesian(clip = "off")
+
+during_title <- ggplot(data.frame(l = "End of removal", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), size = 4.5) + 
+  theme_void() +
+  coord_cartesian(clip = "off")
+
+after_title <- ggplot(data.frame(l = "Recovery period", x = 1, y = 1)) +
+  geom_text(aes(x, y, label = l), size = 4.5) + 
+  theme_void() +
+  coord_cartesian(clip = "off")
+
 
