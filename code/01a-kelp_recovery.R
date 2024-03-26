@@ -208,8 +208,8 @@ continual_sites_raw <- delta_continual %>%
     # sample_ID == "carp_2010-06-09_Q2" ~ 650
   )) %>% 
   ggplot() +
-  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, color = "grey") +
   annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
             fill = "grey", alpha = 0.3) +
   geom_text(aes(x = -6.75, y = annotation_y, label = removal_annotation), size = 2) +
@@ -218,12 +218,14 @@ continual_sites_raw <- delta_continual %>%
   geom_line(aes(x = time_since_end, y = control), 
             alpha = 0.9, 
             linewidth = 0.5,
+            linetype = "B3",
             color = reference_col) +
   # geom_point(aes(x = time_since_end, y = control), shape = 21, color = "#FFFFFF", stroke = 0.5, fill = reference_col, size = 0.75) +
   # continual
   geom_line(aes(x = time_since_end, y = continual), 
             alpha = 0.9, 
             linewidth = 0.5,
+            linetype = 1,
             color = removal_col) +
   # geom_point(aes(x = time_since_end, y = continual), shape = 21, color = "#FFFFFF", stroke = 0.5, fill = removal_col, size = 0.75) +
   scale_shape_manual(values = shape_palette_site) +
