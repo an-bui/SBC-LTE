@@ -1,50 +1,89 @@
-##########################################################################-
-# 0. set up ---------------------------------------------------------------
-##########################################################################-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------- 0. set up -------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # only have to run this once per session
 source(here::here("code", "02a-community_recovery.R"))
 
-##########################################################################-
-# 1. data frames and wranging functions -----------------------------------
-##########################################################################-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ---------------- 1. data frames and wrangling functions -----------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# ⟞ a. continual removal communities --------------------------------------
+# This section contains code for creating two data frames:
+# `comm_df`: a data frame with all species biomass and metadata
+# `comm_meta`: a data frame with just the metadata for each sampling point
+
+# ⟞ a. species biomass with metadata --------------------------------------
 
 comm_df <- biomass %>% 
   filter(treatment %in% c("control", "continual")) %>% 
   # select columns of interest 
-  dplyr::select(site, year, month, treatment, date, new_group, sp_code, dry_gm2) %>% 
+  dplyr::select(site, year, month, treatment, 
+                date, new_group, sp_code, dry_gm2) %>% 
   unite("sample_ID_short", site, date, remove = FALSE) %>% 
   # filtered from kelp delta data frame created in upstream script
   filter(sample_ID_short %in% (delta_continual$sample_ID_short)) %>% 
+  # add column for experiment during/after
   exp_dates_column_continual() %>% 
+  # add column for time since end of the experiment
   time_since_columns_continual() %>% 
+  # add column for kelp year
   kelp_year_column() %>% 
+  # add column for 1 year, 2 years, 3 years comparison
   comparison_column_continual_new() %>% 
-  full_join(., site_quality, by = "site") %>% 
-  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  # join with site quality data frame and data frame of full names of site
+  full_join(., site_quality, 
+            by = "site") %>% 
+  left_join(., enframe(sites_full), 
+            by = c("site" = "name")) %>% 
   rename(site_full = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>%
+  mutate(site_full = fct_relevel(
+    site_full, 
+    "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>%
   # create new sample ID with treatment
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
   # only include 3 year sampling sites
   drop_na(comp_3yrs)
 
+# ⟞ b. metadata only ------------------------------------------------------
+
 # metadata for all plots
 comm_meta <- comm_df %>% 
-  select(sample_ID, site, date, year, month, treatment, exp_dates, quarter, time_yrs, time_since_start, time_since_end, kelp_year, comp_1yrs, comp_2yrs, comp_3yrs, quality, site_full) %>% 
+  select(sample_ID, site, date, year, month, 
+         treatment, exp_dates, quarter, time_yrs, 
+         time_since_start, time_since_end, kelp_year, 
+         comp_1yrs, comp_2yrs, comp_3yrs, quality, site_full) %>% 
   unique()
 
 # metadata for continual removal plots
-comm_meta_continual <- comm_meta %>% 
-  filter(treatment == "continual")
+# comm_meta_continual <- comm_meta %>% 
+#   filter(treatment == "continual")
 
 # metadata for control plots
-comm_meta_control <- comm_meta %>% 
-  filter(treatment == "control")
-# weird point?
-# filter(sample_ID != "mohk_control_2020-08-12") 
+# comm_meta_control <- comm_meta %>% 
+#   filter(treatment == "control")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------- 2. community analyses -------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# This section uses nested data frames to clean and analyse the data in 
+# `comm_df` created in the previous section. 
+
+# ⟞ a. community matrix and metadata --------------------------------------
+
+# This section creates a nested data frame called `comm_df_nested`. This data
+# frame includes nested data frames for understory algae and sessile inverts.
+
+# The column `comm_mat_filtered` contains the community matrix. Rows are 
+# sampling points and columns are species, with each cell representing biomass. 
+# The community matrices are filtered to only include surveys where there were 
+# any species detected (300/300 surveys) and only include species that were 
+# detected at least once (thus excludes HPAC, MT, SC for sessile invertebrates, 
+# and EA, FR, IR, NEO, SELO for understory algae).
+
+# The column `comm_meta_filtered` contains the metadata for each
+# sampling point.
 
 # making a nested data frame
 comm_df_nested <- comm_df %>% 
@@ -52,62 +91,383 @@ comm_df_nested <- comm_df %>%
   filter(sp_code != "MAPY") %>% 
   # create nested columns
   nest(data = everything(), .by = new_group) %>% 
+  # only include understory algae and sessile inverts
+  filter(new_group %in% c("algae", "epilithic.sessile.invert")) %>% 
   # get data into community matrix format
-  mutate(comm_mat = map(data, 
-                        ~ # select columns of interest
-                          select(.x, sample_ID, sp_code, dry_gm2) %>% 
-                          # get into wide format for community analysis
-                          pivot_wider(names_from = sp_code, values_from = dry_gm2) %>% 
-                          # make the sample_ID column row names
-                          column_to_rownames("sample_ID") %>% 
-                          replace(is.na(.), 0))) %>% 
+  mutate(comm_mat = map(
+    data, 
+    ~ # select columns of interest
+      select(.x, sample_ID, sp_code, dry_gm2) %>% 
+      # get into wide format for community analysis
+      pivot_wider(names_from = sp_code, 
+                  values_from = dry_gm2) %>% 
+      # make the sample_ID column row names
+      column_to_rownames("sample_ID") %>% 
+      replace(is.na(.), 0))) %>% 
   # get metadata
-  mutate(comm_meta = map(data, 
-                         ~ select(.x, sample_ID, site, date, year, month, treatment,
-                                  exp_dates, quarter, time_yrs, time_since_start,
-                                  time_since_end, kelp_year, comp_2yrs, comp_3yrs,
-                                  quality, site_full) %>% 
-                           unique()
+  mutate(comm_meta = map(
+    data, 
+    ~ select(.x, sample_ID, site, date, year, month, 
+             treatment, exp_dates, quarter, time_yrs, 
+             time_since_start, time_since_end, kelp_year, 
+             comp_1yrs, comp_2yrs, comp_3yrs,
+             quality, site_full) %>% 
+      unique()
   )) %>% 
   # find species that do occur (exclude species that never occur)
-  mutate(keepspp = map(comm_mat, 
-                       ~ colSums(.x, na.rm = FALSE) %>% 
-                         enframe() %>% 
-                         filter(value > 0) %>% 
-                         pull(name))) %>% 
+  mutate(keepspp = map(
+    comm_mat, 
+    ~ colSums(.x, na.rm = FALSE) %>% 
+      enframe() %>% 
+      filter(value > 0) %>% 
+      pull(name))) %>% 
   # find surveys where there was actually something there
-  mutate(keepsurveys = map(comm_mat,
-                           ~ rowSums(.x, na.rm = FALSE) %>% 
-                             enframe() %>% 
-                             filter(value > 0) %>% 
-                             pull(name))) %>% 
+  mutate(keepsurveys = map(
+    comm_mat,
+    ~ rowSums(.x, na.rm = FALSE) %>% 
+      enframe() %>% 
+      filter(value > 0) %>% 
+      pull(name))) %>% 
   # only retain species that do occur
-  mutate(comm_mat_step1 = map2(comm_mat, keepspp,
-                               ~ select(.x, .y))) %>% 
+  mutate(comm_mat_step1 = map2(
+    comm_mat, keepspp,
+    ~ select(.x, any_of(.y)))) %>% 
   # only retain surveys where there was something there
-  mutate(comm_mat_filtered = map2(comm_mat_step1, keepsurveys,
-                                  ~ rownames_to_column(.x, "surveys") %>% 
-                                    filter(surveys %in% .y) %>% 
-                                    column_to_rownames("surveys"))) %>% 
+  mutate(comm_mat_filtered = map2(
+    comm_mat_step1, keepsurveys,
+    ~ rownames_to_column(.x, "surveys") %>% 
+      filter(surveys %in% .y) %>% 
+      column_to_rownames("surveys"))) %>% 
   # filter metadata
-  mutate(comm_meta_filtered = map2(comm_meta, comm_mat_filtered, 
-                                   ~ filter(.x, sample_ID %in% rownames(.y))))
+  mutate(comm_meta_filtered = map2(
+    comm_meta, comm_mat_filtered, 
+    ~ filter(.x, sample_ID %in% rownames(.y))))
 
+# ⟞ b. non-metric multidimensional scaling (NMDS) -------------------------
 
-comm_analyses <- comm_df_nested %>% 
+# This section generates `comm_nmds`, another nested data frame that includes
+# ordinations using Bray-Curtis dissimilarity and modified Gower dissimilarity
+# for understory algae and sessile inverts. This data frame also includes
+# stress plots to visualize ordination stress and biplots as a preview of what
+# the ordination should look like.
+
+comm_nmds <- comm_df_nested %>% 
   select(new_group, comm_mat_filtered, comm_meta_filtered) %>% 
-  # bray-curtis: will get a warning for fish and endolithic inverts
-  mutate(nmds_bray = map(comm_mat_filtered, 
-                         ~ metaMDS(.x, "bray"))) %>% 
-  # mutate(nmds_bray_plot = map(nmds_bray,
-  #                             ~ plot(.x))) %>% 
-  # # jaccard
-  # mutate(nmds_jacc = map(comm_mat_filtered,
-  #                         ~ metaMDS(.x, "jacc"))) %>% 
-  # mutate(nmds_jacc_plot = map(nmds_jacc,
-  #                             ~ plot(.x))) %>% 
-  mutate(simper = map2(comm_mat_filtered, comm_meta_filtered,
-                       ~ simper(.x, .y$treatment, ordered = TRUE)))
+  # bray-curtis
+  mutate(nmds_bray = map(
+    comm_mat_filtered, 
+    ~ metaMDS(.x, "bray"))) %>% 
+  # modified Gower
+  mutate(nmds_altgower = map(
+    comm_mat_filtered, 
+    ~ metaMDS(.x, "altGower"))) %>% 
+  # bray stress plot
+  mutate(bray_stressplot = map(
+    nmds_bray,
+    ~ stressplot(.x))) %>% 
+  # bray biplot
+  mutate(bray_plot = map(
+    nmds_bray,
+    ~ plot(.x))) %>% 
+  # modified Gower stress plot
+  mutate(altgower_stressplot = map(
+    nmds_altgower,
+    ~ stressplot(.x))) %>% 
+  # modified Gower biplot
+  mutate(altgower_plot = map(
+    nmds_altgower,
+    ~ plot(.x)))
+
+# ⟞ c. analyses -----------------------------------------------------------
+
+# This section creates `comm_permanova`, a nested data frame that includes
+# subsets of the community matrices and metadata data frames corresponding to 
+# the 1 year, 2 year, and 3 year comparisons. There are columns displaying the
+# output of the permutational analysis of variance (PERMANOVA) for each 
+# comparison with treatment (reference or removal) and time period (start,
+# during, and after) as predictors, with site as grouping variable. Similarly
+# to section b, these analyses are repeated using Bray-Curtis dissimilarity
+# and modified Gower dissimilarity.
+
+comm_permanova <- comm_nmds %>% 
+  
+  # filter metadata data frame to only include comparison years of interest
+  mutate(comp_1yr_meta = map(
+    comm_meta_filtered,
+    ~ drop_na(.x, comp_1yrs))) %>% 
+  # pull sample_ID column to get names of surveys to keep
+  mutate(comp_1yr_sampleID = map(
+    comp_1yr_meta,
+    ~ pull(.x, sample_ID))) %>% 
+  # filter community matrix to only include surveys of interest
+  mutate(comp_1yr_mat = map2(
+    comm_mat_filtered, comp_1yr_sampleID,
+    ~ filter(.x, row.names(.x) %in% .y))) %>% 
+  # same for the two year comparison
+  mutate(comp_2yrs_meta = map(
+    comm_meta_filtered,
+    ~ drop_na(.x, comp_2yrs))) %>% 
+  mutate(comp_2yrs_sampleID = map(
+    comp_2yrs_meta,
+    ~ pull(.x, sample_ID))) %>% 
+  mutate(comp_2yrs_mat = map2(
+    comm_mat_filtered, comp_2yrs_sampleID,
+    ~ filter(.x, row.names(.x) %in% .y))) %>% 
+  # same for the 3 year comparison
+  mutate(comp_3yrs_meta = map(
+    comm_meta_filtered,
+    ~ drop_na(.x, comp_3yrs))) %>% 
+  mutate(comp_3yrs_sampleID = map(
+    comp_3yrs_meta,
+    ~ pull(.x, sample_ID))) %>% 
+  mutate(comp_3yrs_mat = map2(
+    comm_mat_filtered, comp_3yrs_sampleID,
+    ~ filter(.x, row.names(.x) %in% .y))) %>% 
+  
+  # 1 year comparison with bray-curtis
+  mutate(bray_comp_1yr_permanova = map2(
+    comp_1yr_mat, comp_1yr_meta,
+    ~ adonis2(.x ~ treatment*comp_1yrs,
+              data = .y,
+              strata = .y$site,
+              method = "bray"))) %>% 
+  # 2 year comparison with bray-curtis
+  mutate(bray_comp_2yrs_permanova = map2(
+    comp_2yrs_mat, comp_2yrs_meta,
+    ~ adonis2(.x ~ treatment*comp_2yrs,
+              data = .y,
+              strata = .y$site,
+              method = "bray"))) %>% 
+  # 3 year comparison with bray-curtis
+  mutate(bray_comp_3yrs_permanova = map2(
+    comp_3yrs_mat, comp_3yrs_meta,
+    ~ adonis2(.x ~ treatment*comp_3yrs,
+              data = .y,
+              strata = .y$site,
+              method = "bray"))) %>% 
+  # 1 year comparison with modified Gower
+  mutate(altgower_comp_1yr_permanova = map2(
+    comp_1yr_mat, comp_1yr_meta,
+    ~ adonis2(.x ~ treatment*comp_1yrs,
+              data = .y,
+              strata = .y$site,
+              method = "altGower"))) %>% 
+  # 2 year comparison with modified Gower
+  mutate(altgower_comp_2yrs_permanova = map2(
+    comp_2yrs_mat, comp_2yrs_meta,
+    ~ adonis2(.x ~ treatment*comp_2yrs,
+              data = .y,
+              strata = .y$site,
+              method = "altGower"))) %>% 
+  # 3 year comparison with modified Gower
+  mutate(altgower_comp_3yrs_permanova = map2(
+    comp_3yrs_mat, comp_3yrs_meta,
+    ~ adonis2(.x ~ treatment*comp_3yrs,
+              data = .y,
+              strata = .y$site,
+              method = "altGower")))
+
+# PERMANOVA results indicated that there was no interaction between treatment 
+# and time period for understory algae though there was a significant 
+# interaction between these two terms for sessile inverts.
+
+# Thus, in this next section, I compared beta dispersion for treatment and time
+# period independently for understory algae, and in combination for sessile
+# invertebrates, following guidance by Marti Anderson in this R-sig-eco forum
+# post from 2010-09-02: 
+# https://stat.ethz.ch/pipermail/r-sig-ecology/2010-September/001524.html
+
+comm_betadisper <- comm_df_nested %>% 
+  select(new_group, comm_mat_filtered, comm_meta_filtered) %>% 
+  mutate(comm_meta_filtered = map(
+    comm_meta_filtered,
+    ~ unite(., "combo", comp_3yrs, treatment, sep = "-", remove = FALSE) 
+  )) %>% 
+  mutate(dist_bray = map(
+    comm_mat_filtered,
+    ~ vegdist(., method = "bray")
+  )) %>% 
+  mutate(dist_altgower = map(
+    comm_mat_filtered,
+    ~ vegdist(., method = "altGower")
+  )) 
+
+algae_betadisper_treatment <- betadisper(
+  comm_betadisper[[5]][[2]], comm_betadisper[[3]][[2]]$treatment) 
+permutest(algae_betadisper_treatment)
+# difference in dispersion between reference and removal (so differences
+# in community composition could be due to changes in location and dispersion)
+
+algae_betadisper_time <- betadisper(
+  comm_betadisper[[5]][[2]], comm_betadisper[[3]][[2]]$comp_3yrs) 
+permutest(algae_betadisper_time)
+# no difference in dispersion through time (so differences in community 
+# composition are due to changes in location, not dispersion)
+
+epi_betadisper_combo <- betadisper(
+  comm_betadisper[[5]][[1]], comm_betadisper[[3]][[1]]$combo
+)
+permutest(epi_betadisper_combo)
+# difference in dispersions
+TukeyHSD(epi_betadisper_combo)
+# pairwise comparisons of differences between dispersions that are meaningful:
+# during control and after control: reference plots differed in dispersion
+# in the last 3 years of the experiment and in the recovery period
+# start control and start continual: reference and removal plots differed in
+# dispersion at the start of the experiment
+
+# ⟞ d. control pairwise comparisons ---------------------------------------
+
+# This section 
+
+control_pairwise <- comm_analyses %>% 
+  select(new_group, comp_3yrs_meta, comp_3yrs_mat) %>% 
+  mutate(control_start_during_meta = map(
+    comp_3yrs_meta,
+    ~ filter(.x, comp_3yrs %in% c("start", "during") & treatment == "control"))) %>% 
+  mutate(control_during_after_meta = map(
+    comp_3yrs_meta,
+    ~ filter(.x, comp_3yrs %in% c("during", "after") & treatment == "control"))) %>% 
+  mutate(control_start_after_meta = map(
+    comp_3yrs_meta,
+    ~ filter(.x, comp_3yrs %in% c("start", "after") & treatment == "control"))) %>% 
+  mutate(control_start_during_sample_ID = map(
+    control_start_during_meta,
+    ~ pull(.x, sample_ID)
+  )) %>% 
+  mutate(control_during_after_sample_ID = map(
+    control_during_after_meta,
+    ~ pull(.x, sample_ID)
+  )) %>% 
+  mutate(control_start_after_sample_ID = map(
+    control_start_after_meta,
+    ~ pull(.x, sample_ID)
+  )) %>% 
+  mutate(control_start_during_mat = map2(
+    comp_3yrs_mat, control_start_during_sample_ID,
+    ~ filter(.x, row.names(.x) %in% .y))) %>% 
+  mutate(control_during_after_mat = map2(
+    comp_3yrs_mat, control_during_after_sample_ID,
+    ~ filter(.x, row.names(.x) %in% .y))) %>%   
+  mutate(control_start_after_mat = map2(
+    comp_3yrs_mat, control_start_after_sample_ID,
+    ~ filter(.x, row.names(.x) %in% .y))) %>% 
+  mutate(start_during_altgower = map2(
+    control_start_during_mat, control_start_during_meta,
+    ~ adonis2(.x ~ comp_3yrs,
+              data = .y,
+              strata = .y$site,
+              method = "altGower") 
+  )) %>% 
+  mutate(during_after_altgower = map2(
+    control_during_after_mat, control_during_after_meta,
+    ~ adonis2(.x ~ comp_3yrs,
+              data = .y,
+              strata = .y$site,
+              method = "altGower") 
+  )) %>% 
+  mutate(start_after_altgower = map2(
+    control_start_after_mat, control_start_after_meta,
+    ~ adonis2(.x ~ comp_3yrs,
+              data = .y,
+              strata = .y$site,
+              method = "altGower") 
+  )) %>% 
+  mutate(start_during_altgower_table = map(
+    start_during_altgower,
+    ~ as_tibble(.x) %>% 
+      mutate(Components = c("Time period", "Residual", "Total")) %>% 
+      relocate(Components, .before = Df) %>% 
+      mutate(comparison = "start-during") %>% 
+      mutate(across(SumOfSqs:`F`, ~ round(., digits = 2)))
+  )) %>% 
+  mutate(during_after_altgower_table = map(
+    during_after_altgower,
+    ~ as_tibble(.x) %>% 
+      mutate(Components = c("Time period", "Residual", "Total")) %>% 
+      relocate(Components, .before = Df) %>% 
+      mutate(comparison = "during-after") %>% 
+      mutate(across(SumOfSqs:`F`, ~ round(., digits = 2)))
+  )) %>% 
+  mutate(start_after_altgower_table = map(
+    start_after_altgower,
+    ~ as_tibble(.x) %>% 
+      mutate(Components = c("Time period", "Residual", "Total")) %>% 
+      relocate(Components, .before = Df) %>% 
+      mutate(comparison = "start-after") %>% 
+      mutate(across(SumOfSqs:`F`, ~ round(., digits = 2)))
+  ))
+
+algae_pairwise <- bind_cols(
+  control_pairwise[[16]][[2]], control_pairwise[[17]][[2]], control_pairwise[[18]][[2]]
+  ) %>% 
+  mutate(group = "understory algae") %>% 
+  relocate(group, .before = "Components...1")
+
+inverts_pairwise <- bind_cols(
+  control_pairwise[[16]][[1]], control_pairwise[[17]][[1]], control_pairwise[[18]][[1]]
+) %>% 
+  mutate(group = "sessile inverts") %>% 
+  relocate(group, .before = "Components...1")
+
+all_pairwise <- bind_rows(algae_pairwise, inverts_pairwise) %>% 
+  select(!contains("comparison")) %>% 
+  gt(
+    groupname_col = "group",
+    row_group_as_column = TRUE
+  ) %>% 
+  sub_missing(
+    columns = everything(),
+    missing_text = "--"
+  ) %>% 
+  tab_spanner(label = "start-during",
+              columns = c("Components...2", 
+                          "Df...3", 
+                          "SumOfSqs...4", 
+                          "R2...5", 
+                          "F...6", 
+                          "Pr(>F)...7")) %>% 
+  tab_spanner(label = "during-after",
+              columns = c("Components...9", 
+                          "Df...10", 
+                          "SumOfSqs...11", 
+                          "R2...12", 
+                          "F...13", 
+                          "Pr(>F)...14")) %>% 
+  tab_spanner(label = "start-after",
+              columns = c("Components...16", 
+                          "Df...17",
+                          "SumOfSqs...18",
+                          "R2...19",
+                          "F...20",
+                          "Pr(>F)...21")) %>% 
+  # change column names
+  cols_label(
+    `Components...2` = "Components",
+    `Components...9` = "Components",
+    `Components...16` = "Components",
+    `Df...3` = "df",
+    `Df...10` = "df",
+    `Df...17` = "df",
+    `SumOfSqs...4` = "Sum of squares",
+    `SumOfSqs...11` = "Sum of squares",
+    `SumOfSqs...18` = "Sum of squares",
+    `R2...5` = "R\U00B2",
+    `R2...12` = "R\U00B2",
+    `R2...19` = "R\U00B2",
+    `F...6` = "F",
+    `F...13` = "F",
+    `F...20` = "F",
+    `Pr(>F)...7` = "Pr(>F)",
+    `Pr(>F)...14` = "Pr(>F)",
+    `Pr(>F)...21` = "Pr(>F)"
+  ) 
+
+all_pairwise
+
+# gtsave(all_pairwise,
+#        here::here("tables", "ms-tables", paste("tbl-S6_", today(), ".docx", sep = "")),
+#        vwidth = 1500, vheight = 1000)
 
 # putting in separate df because it takes a while
 simper_analysis <- comm_analyses %>% 
@@ -417,7 +777,7 @@ algae_pt_bray_control_plot <- nmds_plot_fxn(
         panel.grid = element_blank()) 
 algae_pt_bray_control_plot
 
-# control plot with outlier
+# control plot with outlier: mohk_control_2020-08-12
 algae_pt_bray_control_outlier_plot <- nmds_plot_fxn(
   algae_pt_bray_plotdf, "control", algae_pt_bray_species
 ) +
@@ -482,7 +842,7 @@ algae_pt_perma_2yrs_altgower <- adonis2(comp_2yrs_algae ~ treatment*comp_2yrs,
                                method = "altGower")
 algae_pt_perma_2yrs_altgower
 
-algae_pt_perma_3yrs_altgower <- adonis2(comp_3yrs_algae ~ comp_3yrs*treatment, 
+algae_pt_perma_3yrs_altgower <- adonis2(comp_3yrs_algae ~ treatment*comp_3yrs, 
                                data = comp_3yrs_meta,
                                strata = comp_3yrs_meta$site,
                                method = "altGower")
@@ -494,46 +854,49 @@ algae_pairwise_altgower <- pairwise.adonis2(comp_3yrs_algae ~ comp_3yrs*treatmen
                                             method = "altGower")
 
 test_meta <- comp_3yrs_meta %>% 
-  filter(comp_3yrs %in% c("start", "during"))
+  filter(comp_3yrs %in% c("start", "during") & treatment == "control")
 test_ID <- test_meta %>% pull(sample_ID)
 test_mat <- comm_mat_algae[test_ID, ]
-algae_start_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+algae_start_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs,
         data = test_meta,
         strata = test_meta$site,
         method = "altGower") %>% 
   as_tibble() %>% 
-  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  mutate(names = c("comp_3yrs", "Residual", "Total")) %>% 
   relocate(names, .before = Df) %>% 
   mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
   flextable()
+# when comparing start and during, reference communities are different
 
 test_meta <- comp_3yrs_meta %>% 
-  filter(comp_3yrs %in% c("after", "during"))
+  filter(comp_3yrs %in% c("after", "during") & treatment == "control")
 test_ID <- test_meta %>% pull(sample_ID)
 test_mat <- comm_mat_algae[test_ID, ]
-algae_after_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+algae_after_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs,
                                                 data = test_meta,
                                                 strata = test_meta$site,
                                                 method = "altGower") %>% 
   as_tibble() %>% 
-  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  mutate(names = c("comp_3yrs", "Residual", "Total")) %>% 
   relocate(names, .before = Df) %>% 
   mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
   flextable()
+# when comparing after and during, reference communities are not different
 
 test_meta <- comp_3yrs_meta %>% 
-  filter(comp_3yrs %in% c("start", "after"))
+  filter(comp_3yrs %in% c("start", "after") & treatment == "control")
 test_ID <- test_meta %>% pull(sample_ID)
 test_mat <- comm_mat_algae[test_ID, ]
-algae_start_after_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
+algae_start_after_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs,
                                                 data = test_meta,
                                                 strata = test_meta$site,
                                                 method = "altGower") %>% 
   as_tibble() %>% 
-  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  mutate(names = c("comp_3yrs", "Residual", "Total")) %>% 
   relocate(names, .before = Df) %>% 
   mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
   flextable()
+# when comparing start and after, reference communities are not different
 
 # beta dispersion
 algae_pt_dist_altgower <- vegdist(comp_3yrs_algae, method = "altGower")
@@ -990,47 +1353,64 @@ epi_pairwise_altgower <- pairwise.adonis2(comp_3yrs_epi ~ comp_3yrs*treatment,
                                             strata = comp_3yrs_meta$site,
                                             method = "altGower")
 
-test_meta <- comp_3yrs_meta %>% 
-  filter(comp_3yrs %in% c("start", "during"))
-test_ID <- test_meta %>% pull(sample_ID)
-test_mat <- comm_mat_epi[test_ID, ]
-epi_start_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
-                                                data = test_meta,
-                                                strata = test_meta$site,
-                                                method = "altGower") %>% 
+epi_start_during_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "during") & treatment == "control")
+epi_start_during_ID <- epi_start_during_meta %>% pull(sample_ID)
+epi_start_during_mat <- comm_mat_epi[epi_start_during_ID, ]
+epi_start_during_pairwise_altgower <- adonis2(
+    epi_start_during_mat ~ comp_3yrs,
+    data = epi_start_during_meta,
+    strata = epi_start_during_meta$site,
+    method = "altGower") %>% 
   as_tibble() %>% 
-  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
+  mutate(names = c("Time period", "Residual", "Total")) %>% 
   relocate(names, .before = Df) %>% 
   mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  mutate(group = "inverts", 
+         comparison = "start-during") 
+# when comparing start and during, composition is different
+
+epi_during_after_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("after", "during") & treatment == "control")
+epi_during_after_ID <- epi_during_after_meta %>% pull(sample_ID)
+epi_during_after_mat <- comm_mat_epi[epi_during_after_ID, ]
+epi_during_after_pairwise_altgower <- adonis2(
+  epi_during_after_mat ~ comp_3yrs,
+    data = epi_during_after_meta,
+    strata = epi_during_after_meta$site,
+    method = "altGower") %>% 
+  as_tibble() %>% 
+  mutate(names = c("Time period", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  mutate(group = "inverts", 
+         comparison = "during-after") 
+# when comparing after and during, composition is different
+
+start_after_meta <- comp_3yrs_meta %>% 
+  filter(comp_3yrs %in% c("start", "after") & treatment == "control")
+start_after_ID <- test_meta %>% pull(sample_ID)
+start_after_mat <- comm_mat_epi[test_ID, ]
+epi_start_after_pairwise_altgower <- adonis2(start_after_mat ~ comp_3yrs,
+                                             data = start_after_meta,
+                                             strata = start_after_meta$site,
+                                             method = "altGower") %>% 
+  as_tibble() %>% 
+  mutate(names = c("Time period", "Residual", "Total")) %>% 
+  relocate(names, .before = Df) %>% 
+  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
+  mutate(group = "inverts", 
+       comparison = "start-after") 
+# when comparing start and after, composition is different
+
+table <- bind_rows(epi_start_during_pairwise_altgower, 
+                   epi_after_during_pairwise_altgower,
+                   epi_start_after_pairwise_altgower) %>% 
+  relocate(group, .before = names) %>% 
+  relocate(comparison, .after = group) %>% 
   flextable()
 
-test_meta <- comp_3yrs_meta %>% 
-  filter(comp_3yrs %in% c("after", "during"))
-test_ID <- test_meta %>% pull(sample_ID)
-test_mat <- comm_mat_epi[test_ID, ]
-epi_after_during_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
-                                                data = test_meta,
-                                                strata = test_meta$site,
-                                                method = "altGower") %>% 
-  as_tibble() %>% 
-  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
-  relocate(names, .before = Df) %>% 
-  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
-  flextable()
-
-test_meta <- comp_3yrs_meta %>% 
-  filter(comp_3yrs %in% c("start", "after"))
-test_ID <- test_meta %>% pull(sample_ID)
-test_mat <- comm_mat_epi[test_ID, ]
-epi_start_after_pairwise_altgower <- adonis2(test_mat ~ comp_3yrs*treatment,
-                                               data = test_meta,
-                                               strata = test_meta$site,
-                                               method = "altGower") %>% 
-  as_tibble() %>% 
-  mutate(names = c("comp_3yrs", "treatment", "comp_3yrs:treatment", "Residual", "Total")) %>% 
-  relocate(names, .before = Df) %>% 
-  mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>% 
-  flextable()
+table
 
 # beta dispersion
 epi_pt_dist_altgower <- vegdist(comp_3yrs_epi, method = "altGower")
