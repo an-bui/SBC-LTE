@@ -151,6 +151,8 @@ comm_df_nested <- comm_df %>%
 # stress plots to visualize ordination stress and biplots as a preview of what
 # the ordination should look like.
 
+set.seed(1)
+
 comm_nmds <- comm_df_nested %>% 
   select(new_group, comm_mat_filtered, comm_meta_filtered) %>% 
   # bray-curtis
@@ -185,9 +187,11 @@ comm_nmds <- comm_df_nested %>%
 # the 1 year, 2 year, and 3 year comparisons. There are columns displaying the
 # output of the permutational analysis of variance (PERMANOVA) for each 
 # comparison with treatment (reference or removal) and time period (start,
-# during, and after) as predictors, with site as grouping variable. Similarly
-# to section b, these analyses are repeated using Bray-Curtis dissimilarity
-# and modified Gower dissimilarity.
+# during, and after) as predictors, with site as grouping variable. As in
+# section b, these analyses are repeated using Bray-Curtis dissimilarity and
+# modified Gower dissimilarity.
+
+set.seed(1)
 
 comm_permanova <- comm_nmds %>% 
   
@@ -277,6 +281,8 @@ comm_permanova <- comm_nmds %>%
 # post from 2010-09-02: 
 # https://stat.ethz.ch/pipermail/r-sig-ecology/2010-September/001524.html
 
+set.seed(1)
+
 comm_betadisper <- comm_df_nested %>% 
   select(new_group, comm_mat_filtered, comm_meta_filtered) %>% 
   mutate(comm_meta_filtered = map(
@@ -292,23 +298,38 @@ comm_betadisper <- comm_df_nested %>%
     ~ vegdist(., method = "altGower")
   )) 
 
+set.seed(1)
+
+# calculating beta dispersion between treatments for algae
 algae_betadisper_treatment <- betadisper(
-  comm_betadisper[[5]][[2]], comm_betadisper[[3]][[2]]$treatment) 
+  comm_betadisper[[5]][[2]], 
+  comm_betadisper[[3]][[2]]$treatment) 
+
 permutest(algae_betadisper_treatment)
 # difference in dispersion between reference and removal (so differences
 # in community composition could be due to changes in location and dispersion)
 
+set.seed(1)
+
+# calculating beta dispersion between time periods for algae
 algae_betadisper_time <- betadisper(
-  comm_betadisper[[5]][[2]], comm_betadisper[[3]][[2]]$comp_3yrs) 
+  comm_betadisper[[5]][[2]], 
+  comm_betadisper[[3]][[2]]$comp_3yrs) 
+
 permutest(algae_betadisper_time)
 # no difference in dispersion through time (so differences in community 
 # composition are due to changes in location, not dispersion)
 
+set.seed(1)
+
+# calculating beta dispersion between treatments and time periods for inverts
 epi_betadisper_combo <- betadisper(
-  comm_betadisper[[5]][[1]], comm_betadisper[[3]][[1]]$combo
-)
+  comm_betadisper[[5]][[1]], 
+  comm_betadisper[[3]][[1]]$combo)
+
 permutest(epi_betadisper_combo)
-# difference in dispersions
+# there is a difference in dispersions
+
 TukeyHSD(epi_betadisper_combo)
 # pairwise comparisons of differences between dispersions that are meaningful:
 # during control and after control: reference plots differed in dispersion
@@ -318,19 +339,36 @@ TukeyHSD(epi_betadisper_combo)
 
 # ⟞ d. control pairwise comparisons ---------------------------------------
 
-# This section 
+# This section compares composition in reference plots between time periods:
+# the "start" of the removal, "during" the removal, and "after" the removal 
+# (in the kelp recovery period). The purpose is to show that reference plot
+# community composition has also changed through time.
+
+# The `control_pairwise` data frame is a nested data frame that includes 
+# PERMANOVA output that is put into summary tables to compare start-during, 
+# start-after, and during-after compositions for understory algae and sessile
+# inverts. 
+
+set.seed(1)
 
 control_pairwise <- comm_analyses %>% 
   select(new_group, comp_3yrs_meta, comp_3yrs_mat) %>% 
+  # create subsetted metadata data frames 
+  # to only include time periods being compared
   mutate(control_start_during_meta = map(
     comp_3yrs_meta,
-    ~ filter(.x, comp_3yrs %in% c("start", "during") & treatment == "control"))) %>% 
+    ~ filter(.x, 
+             comp_3yrs %in% c("start", "during") & treatment == "control"))) %>% 
   mutate(control_during_after_meta = map(
     comp_3yrs_meta,
-    ~ filter(.x, comp_3yrs %in% c("during", "after") & treatment == "control"))) %>% 
+    ~ filter(.x, 
+             comp_3yrs %in% c("during", "after") & treatment == "control"))) %>% 
   mutate(control_start_after_meta = map(
     comp_3yrs_meta,
-    ~ filter(.x, comp_3yrs %in% c("start", "after") & treatment == "control"))) %>% 
+    ~ filter(.x, 
+             comp_3yrs %in% c("start", "after") & treatment == "control"))) %>% 
+  
+  # extract sample_IDs corresponding to surveys to compare
   mutate(control_start_during_sample_ID = map(
     control_start_during_meta,
     ~ pull(.x, sample_ID)
@@ -343,6 +381,8 @@ control_pairwise <- comm_analyses %>%
     control_start_after_meta,
     ~ pull(.x, sample_ID)
   )) %>% 
+  
+  # create subsetted community matrices that only include surveys to compare
   mutate(control_start_during_mat = map2(
     comp_3yrs_mat, control_start_during_sample_ID,
     ~ filter(.x, row.names(.x) %in% .y))) %>% 
@@ -352,6 +392,8 @@ control_pairwise <- comm_analyses %>%
   mutate(control_start_after_mat = map2(
     comp_3yrs_mat, control_start_after_sample_ID,
     ~ filter(.x, row.names(.x) %in% .y))) %>% 
+  
+  # compare composition using PERMANOVA
   mutate(start_during_altgower = map2(
     control_start_during_mat, control_start_during_meta,
     ~ adonis2(.x ~ comp_3yrs,
@@ -373,6 +415,8 @@ control_pairwise <- comm_analyses %>%
               strata = .y$site,
               method = "altGower") 
   )) %>% 
+
+  # generate tables from PERMANOVA output
   mutate(start_during_altgower_table = map(
     start_during_altgower,
     ~ as_tibble(.x) %>% 
@@ -398,19 +442,26 @@ control_pairwise <- comm_analyses %>%
       mutate(across(SumOfSqs:`F`, ~ round(., digits = 2)))
   ))
 
+# extract algae tables
 algae_pairwise <- bind_cols(
-  control_pairwise[[16]][[2]], control_pairwise[[17]][[2]], control_pairwise[[18]][[2]]
+    control_pairwise[[16]][[2]], 
+    control_pairwise[[17]][[2]], 
+    control_pairwise[[18]][[2]]
   ) %>% 
   mutate(group = "understory algae") %>% 
   relocate(group, .before = "Components...1")
 
-inverts_pairwise <- bind_cols(
-  control_pairwise[[16]][[1]], control_pairwise[[17]][[1]], control_pairwise[[18]][[1]]
-) %>% 
+# extract sessile invert tables
+epi_pairwise <- bind_cols(
+    control_pairwise[[16]][[1]], 
+    control_pairwise[[17]][[1]], 
+    control_pairwise[[18]][[1]]
+  ) %>% 
   mutate(group = "sessile inverts") %>% 
   relocate(group, .before = "Components...1")
 
-all_pairwise <- bind_rows(algae_pairwise, inverts_pairwise) %>% 
+# create table using gt
+all_pairwise <- bind_rows(algae_pairwise, epi_pairwise) %>% 
   select(!contains("comparison")) %>% 
   gt(
     groupname_col = "group",
@@ -465,22 +516,174 @@ all_pairwise <- bind_rows(algae_pairwise, inverts_pairwise) %>%
 
 all_pairwise
 
+# save table
 # gtsave(all_pairwise,
-#        here::here("tables", "ms-tables", paste("tbl-S6_", today(), ".docx", sep = "")),
+#        here::here("tables",
+#                   "ms-tables",
+#                   paste("tbl-S6_", today(), ".docx", sep = "")),
 #        vwidth = 1500, vheight = 1000)
 
-# putting in separate df because it takes a while
-simper_analysis <- comm_analyses %>% 
-  # create a vector of species identified as important in SIMPER analyses
-  mutate(simper_spp = map(simper, 
-                          ~ .x$control_continual$cusum %>% 
-                            enframe() %>% 
-                            head(10) %>% 
-                            pull(name))) %>% 
-  mutate(simper_spp_info = map(simper_spp,
-                               ~ spp_names %>% 
-                                 filter(sp_code %in% .x)))
+# ⟞ e. SIMPER analysis ----------------------------------------------------
 
+# This section of code calculates similarity percentages (SIMPER) to show what
+# species contribute to differences between time periods within the removal
+# plots only. SIMPER is based on Bray-Curtis dissimilarity, not modified Gower; 
+# thus, we did this analysis to determine which species to highlight in
+# individual supplementary figures rather than to determine exactly how each 
+# species contributes to differences between communities at each time period.
+
+comm_simper <- comm_df_nested %>%
+  select(new_group, comm_mat_filtered, comm_meta_filtered) %>% 
+  mutate(removal_3yrs_meta = map(
+    comm_meta_filtered,
+    ~ filter(.x, treatment == "continual") %>% 
+      drop_na(comp_3yrs)
+  )) %>% 
+  mutate(removal_3yrs_IDs = map(
+    removal_3yrs_meta,
+    ~ pull(.x, sample_ID)
+  )) %>% 
+  mutate(removal_3yrs_mat = map2(
+    comm_mat_filtered, removal_3yrs_IDs,
+    ~ filter(.x, rownames(.x) %in% .y)
+  )) %>% 
+  mutate(simper_time = map2(
+    removal_3yrs_mat, removal_3yrs_meta,
+    ~ simper(comm = .x, 
+             group = .y$comp_3yrs)
+  )) %>% 
+  mutate(simper_start_during_spp = map(
+    simper_time,
+    ~ .x$start_during$cusum %>% 
+      enframe() %>% 
+      head(10) %>% 
+      pull(name)
+  )) %>% 
+  mutate(simper_start_after_spp = map(
+    simper_time,
+    ~ .x$start_after$cusum %>% 
+      enframe() %>% 
+      head(10) %>% 
+      pull(name)
+  )) %>% 
+  mutate(simper_during_after_spp = map(
+    simper_time,
+    ~ .x$during_after$cusum %>% 
+      enframe() %>% 
+      head(10) %>% 
+      pull(name)
+  )) %>% 
+  mutate(simper_list = pmap(
+    list(simper_start_during_spp, 
+         simper_start_after_spp, 
+         simper_during_after_spp),
+    c 
+  )) %>% 
+  mutate(simper_no_dupes = map(
+    simper_list,
+    ~ unique(.x)
+  ))
+
+algae_simper_spp <- pluck(comm_simper, 13, 2)
+
+epi_simper_spp <- pluck(comm_simper, 13, 1)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ---------------------------- 3. visualization ---------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+comm_visualizations <- comm_nmds %>% 
+  select(new_group, comm_meta_filtered, nmds_altgower) %>% 
+  mutate(nmds_scores = map2(
+    nmds_altgower, comm_meta_filtered,
+    ~ scores(.x, display = "sites") %>% 
+      as_tibble(rownames = "sample_ID") %>% 
+      left_join(., .y, by = "sample_ID")
+  ))
+
+algae_scores <- pluck(comm_visualizations, 4, 2)
+
+epi_scores <- pluck(comm_visualizations, 4, 1)
+
+nmds_plot_fxn_v2 <- function(df, time_period) {
+  df %>% 
+    filter(comp_3yrs == time_period) %>% 
+    ggplot(aes(x = NMDS1, y = NMDS2,
+               color = treatment,
+               fill = treatment,
+               shape = treatment,
+               linetype = treatment)) +
+    coord_fixed(ratio = 1) +
+    geom_vline(xintercept = 0, color = "grey", lty = 2) +
+    geom_hline(yintercept = 0, color = "grey", lty = 2) +
+    geom_point(size = 1, alpha = 0.9) +
+    stat_ellipse() +
+    scale_linetype_manual(values = c("continual" = 1, "control" = 2)) +
+    scale_color_manual(values = c("continual" = removal_col, "control" = reference_col)) +
+    theme_bw() +
+    theme(axis.title = element_text(size = 8),
+          axis.text = element_text(size = 7),
+          legend.text = element_text(size = 7), 
+          legend.position = "none",
+          panel.grid = element_blank(),
+          plot.title = element_text(size = 8),
+          plot.title.position = "plot",
+          legend.key.size = unit(0.5, units = "cm"),
+          aspect.ratio = 1)
+}
+
+algae_start_plot <- nmds_plot_fxn_v2(
+  algae_scores,
+  "start") +
+  scale_x_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  annotate("text", x = -0.35, y = 0.5, label = "Reference", color = reference_col, size = 2) +
+  annotate("text", x = 0.4, y = 0.1, label = "Removal", color = removal_col, size = 2) +
+  labs(title = "(a) Start of removal") 
+
+algae_during_plot <- nmds_plot_fxn_v2(algae_scores,
+                                     "during") +
+  scale_x_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  labs(title = "(b) End of removal") 
+
+algae_after_plot <- nmds_plot_fxn_v2(algae_scores,
+                                      "after") +
+  scale_x_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  scale_y_continuous(limits = c(-0.55, 0.55), breaks = c(-0.5, 0, 0.5)) +
+  labs(title = "(c) Recovery period") 
+
+algae_start_plot
+algae_during_plot
+algae_after_plot
+
+epi_start_plot <- nmds_plot_fxn_v2(epi_scores,
+                                     "start") +
+  scale_x_continuous(limits = c(-0.35, 0.22)) +
+  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  annotate("text", x = 0.15, y = 0.25, label = "Reference", color = reference_col, size = 2) +
+  annotate("text", x = -0.2, y = -0.2, label = "Removal", color = removal_col, size = 2) +
+  labs(title = "(d) Start of removal") 
+
+epi_during_plot <- nmds_plot_fxn_v2(epi_scores,
+                                      "during") +
+  scale_x_continuous(limits = c(-0.35, 0.25)) +
+  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  labs(title = "(e) End of removal") 
+
+epi_after_plot <- nmds_plot_fxn_v2(epi_scores,
+                                     "after") +
+  scale_x_continuous(limits = c(-0.35, 0.25)) +
+  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  labs(title = "(f) Recovery period") 
+
+epi_start_plot
+epi_during_plot
+epi_after_plot
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ---------------------OLD CODE DOWN HERE-----------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # ⟞ b. widening function --------------------------------------------------
 
@@ -2214,14 +2417,14 @@ final_altgower_plot <- plot_grid(all_altgower_plots, legend, ncol = 2, rel_width
 # ⟞ ⟞ iii. modified Gower v2 ----------------------------------------------
 
 # putting algae plots together
-algae_altgower_plots <- plot_grid(algae_pt_altgower_start_plot, 
-                                  algae_pt_altgower_during_plot, 
-                                  algae_pt_altgower_after_plot,
+algae_altgower_plots <- plot_grid(algae_start_plot, 
+                                  algae_during_plot, 
+                                  algae_after_plot,
                                   ncol = 1)
 
-epi_altgower_plots <- plot_grid(epi_pt_altgower_start_plot, 
-                                  epi_pt_altgower_during_plot, 
-                                  epi_pt_altgower_after_plot,
+epi_altgower_plots <- plot_grid(epi_start_plot, 
+                                epi_during_plot, 
+                                epi_after_plot,
                                 ncol = 1)
 
 # group plots with labels
