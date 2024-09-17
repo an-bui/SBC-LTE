@@ -12,7 +12,7 @@ source(here::here("code", "02a-community_recovery.R"))
 
 # This is a function to generate the NMDS plots in section 3a.
 
-nmds_plot_fxn_v2 <- function(df, time_period) {
+nmds_plot_fxn <- function(df, time_period) {
   df %>% 
     filter(comp_3yrs == time_period) %>% 
     ggplot(aes(x = NMDS1, y = NMDS2,
@@ -607,7 +607,7 @@ epi_scores <- pluck(comm_visualizations, 4, 1)
 # plotting start of experiment reference and removal plots
 # `nmds_plot_fxn_v2` is a function generated in the 00-set_up.R script
 
-algae_start_plot <- nmds_plot_fxn_v2(algae_scores,
+algae_start_plot <- nmds_plot_fxn(algae_scores,
                                      "start") +
   scale_x_continuous(limits = c(-0.55, 0.55), 
                      breaks = c(-0.5, 0, 0.5)) +
@@ -625,7 +625,7 @@ algae_start_plot <- nmds_plot_fxn_v2(algae_scores,
            size = 2) +
   labs(title = "(a) Start of removal") 
 
-algae_during_plot <- nmds_plot_fxn_v2(algae_scores,
+algae_during_plot <- nmds_plot_fxn(algae_scores,
                                      "during") +
   scale_x_continuous(limits = c(-0.55, 0.55), 
                      breaks = c(-0.5, 0, 0.5)) +
@@ -633,7 +633,7 @@ algae_during_plot <- nmds_plot_fxn_v2(algae_scores,
                      breaks = c(-0.5, 0, 0.5)) +
   labs(title = "(b) End of removal") 
 
-algae_after_plot <- nmds_plot_fxn_v2(algae_scores,
+algae_after_plot <- nmds_plot_fxn(algae_scores,
                                       "after") +
   scale_x_continuous(limits = c(-0.55, 0.55), 
                      breaks = c(-0.5, 0, 0.5)) +
@@ -645,7 +645,7 @@ algae_start_plot
 algae_during_plot
 algae_after_plot
 
-epi_start_plot <- nmds_plot_fxn_v2(epi_scores,
+epi_start_plot <- nmds_plot_fxn(epi_scores,
                                      "start") +
   scale_x_continuous(limits = c(-0.35, 0.22)) +
   scale_y_continuous(limits = c(-0.3, 0.3)) +
@@ -661,13 +661,13 @@ epi_start_plot <- nmds_plot_fxn_v2(epi_scores,
            size = 2) +
   labs(title = "(d) Start of removal") 
 
-epi_during_plot <- nmds_plot_fxn_v2(epi_scores,
+epi_during_plot <- nmds_plot_fxn(epi_scores,
                                       "during") +
   scale_x_continuous(limits = c(-0.35, 0.25)) +
   scale_y_continuous(limits = c(-0.3, 0.3)) +
   labs(title = "(e) End of removal") 
 
-epi_after_plot <- nmds_plot_fxn_v2(epi_scores,
+epi_after_plot <- nmds_plot_fxn(epi_scores,
                                      "after") +
   scale_x_continuous(limits = c(-0.35, 0.25)) +
   scale_y_continuous(limits = c(-0.3, 0.3)) +
