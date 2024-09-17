@@ -1,9 +1,64 @@
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ------------------------------- 0. set up -------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# ⟞ a. source -------------------------------------------------------------
+
 # only have to run this once per session
 source(here::here("code", "02a-community_recovery.R"))
+
+# ⟞ b. functions ----------------------------------------------------------
+
+# This is a function to generate the NMDS plots in section 3a.
+
+nmds_plot_fxn_v2 <- function(df, time_period) {
+  df %>% 
+    filter(comp_3yrs == time_period) %>% 
+    ggplot(aes(x = NMDS1, y = NMDS2,
+               color = treatment,
+               fill = treatment,
+               shape = treatment,
+               linetype = treatment)) +
+    coord_fixed(ratio = 1) +
+    geom_vline(xintercept = 0, color = "grey", lty = 2) +
+    geom_hline(yintercept = 0, color = "grey", lty = 2) +
+    geom_point(size = 1, alpha = 0.9) +
+    stat_ellipse() +
+    scale_linetype_manual(values = c("continual" = 1, 
+                                     "control" = 2)) +
+    scale_color_manual(values = c("continual" = removal_col, 
+                                  "control" = reference_col)) +
+    theme_bw() +
+    theme(axis.title = element_text(size = 8),
+          axis.text = element_text(size = 7),
+          legend.text = element_text(size = 7), 
+          legend.position = "none",
+          panel.grid = element_blank(),
+          plot.title = element_text(size = 8),
+          plot.title.position = "plot",
+          legend.key.size = unit(0.5, units = "cm"),
+          aspect.ratio = 1)
+}
+
+# This is a function to generate the PERMANOVA summary tables in section 4a.
+
+anova_summary_fxn <- function(adonis2.obj, name) {
+ adonis2.obj %>% 
+    # turn adonis2 result into data frame
+    as.data.frame() %>% 
+    # make rownames "variables"
+    rownames_to_column("variables") %>% 
+    # rename Pr(>F) column into something intelligible
+    rename(p = `Pr(>F)`) %>% 
+    # round values to 2 decimal points
+    mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
+    # replace comp_.yrs with time period
+    mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
+    mutate(variables = str_replace(variables, "comp_.yr", "time period")) %>% 
+    # make object name column
+    mutate(model = name) 
+}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ---------------- 1. data frames and wrangling functions -----------------
