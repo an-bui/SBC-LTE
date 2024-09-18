@@ -14,15 +14,14 @@ source(here::here("code", "01a-kelp_recovery.R"))
 
 # This section includes code to prepare data frames for down stream analysis.
 
-delta_biomass_wrangle <- function(df) {
+group_biomass_wrangle <- function(df) {
   df %>% 
     dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
     group_by(site, year, month, treatment, date) %>% 
     summarize(total_dry = sum(dry_gm2, na.rm = TRUE)) %>% 
     ungroup() %>% 
     pivot_wider(names_from = treatment, values_from = total_dry) %>% 
-    mutate(delta_annual = annual - control,
-           delta_continual = continual - control) %>% 
+    mutate(delta_continual = continual - control) %>% 
     select(site, year, month, date, control, continual, delta_continual) %>% 
     # take out years where continual removal hadn't happened yet
     drop_na(delta_continual) %>% 
@@ -56,154 +55,53 @@ delta_biomass_wrangle <- function(df) {
               by = "sample_ID")
 }
 
+delta_biomass_wrangle <- function(df) {
+  df %>% 
+    dplyr::select(site, year, month, treatment, date, biomass) %>% 
+    pivot_wider(names_from = treatment, values_from = biomass) %>% 
+    mutate(delta_continual = removal - reference) %>% 
+    select(site, year, month, date, reference, removal, delta_continual) %>% 
+    # take out years where continual removal hadn't happened yet
+    drop_na(delta_continual) %>% 
+    mutate(exp_dates = case_when(
+      # after removal ended
+      site == "aque" & date >= aque_after_date_continual ~ "after",
+      site == "napl" & date >= napl_after_date_continual ~ "after",
+      site == "mohk" & date >= mohk_after_date_continual ~ "after",
+      site == "carp" & date >= carp_after_date_continual ~ "after",
+      # everything else is "during" removal
+      TRUE ~ "during"
+    ),
+    exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+    time_since_columns_continual() %>% 
+    kelp_year_column() %>% 
+    comparison_column_continual_new() %>% 
+    left_join(., site_quality, by = "site") %>% 
+    left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+    rename("site_full" = value) %>% 
+    mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+    mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
+}
+
 # ⟞ b. understory macroalgae ----------------------------------------------
 
-# total biomass
-algae_biomass <- biomass %>% 
+algae_continual_long <- biomass %>% 
   # exclude giant kelp
-  filter(new_group == "algae" & sp_code != "MAPY")
-
-# long format
-algae_continual_long <- delta_biomass_wrangle(algae_biomass) %>% 
+  filter(new_group == "algae" & sp_code != "MAPY") %>% 
+  group_biomass_wrangle() %>% 
   mutate(group = "understory algae")
 
 # ⟞ c. sessile invertebrates ----------------------------------------------
 
-# total biomass
-epi_biomass <- biomass %>% 
+epi_continual_long <- biomass %>% 
   filter(new_group == "epilithic.sessile.invert") %>% 
   # take out endos
-  filter(taxon_family != "Pholadidae")
-
-# long format
-epi_continual_long <- delta_biomass_wrangle(epi_biomass) %>% 
+  filter(taxon_family != "Pholadidae") %>% 
+  group_biomass_wrangle() %>% 
   mutate(group = "sessile inverts")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# -------------------------- 2. timeseries plots --------------------------
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# This section includes code to generate timeseries of understory algae and
-# sessile invertebrate biomass in reference and removal plots with separate
-# panels for each site. These correspond to Supplemental Material figures ____.
-
-# The `raw_biomass_plot_theme()` used below is generated in the 00-set_up.R 
-# script because it is also used in the 01a-kelp_recovery.R script.
-
-# ⟞ a. understory macroalgae ----------------------------------------------
-
-delta_continual_sites_algae_raw <- algae_continual_long %>% 
-  mutate(strip = case_when(
-    site == "aque" ~ "(a) Arroyo Quemado",
-    site == "napl" ~ "(b) Naples",
-    site == "mohk" ~ "(c) Mohawk",
-    site == "carp" ~ "(d) Carpinteria"
-  )) %>% 
-  mutate(removal_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Removal"
-  ),
-  recovery_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Recovery"
-  ),
-  annotation_y = case_when(
-    sample_ID == "aque_2010-06-15_Q2_reference" ~ 360
-  )) %>% 
-  ggplot(aes(x = time_since_end,
-             y = biomass,
-             color = treatment,
-             group = treatment)) +
-  geom_line(alpha = 0.9,
-            linewidth = 0.5) +
-  scale_color_manual(values = c("reference" = reference_col,
-                                "removal" = removal_col)) +
-  geom_vline(xintercept = 0, 
-             linewidth = 0.5, 
-             linetype = 2, 
-             color = "grey") +
-  geom_hline(yintercept = 0, 
-             linewidth = 0.5, 
-             linetype = 2, 
-             color = "grey") +
-  annotate(geom = "rect", 
-           xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
-           fill = "grey", 
-           alpha = 0.3) +
-  geom_text(aes(x = -6.75, 
-                y = annotation_y, 
-                label = removal_annotation), 
-            size = 2, color = "black") +
-  geom_text(aes(x = 5.5, 
-                y = annotation_y, 
-                label = recovery_annotation), 
-            size = 2, color = "black") +
-  scale_x_continuous(limits = c(-8, 7), 
-                     breaks = seq(-8, 7, by = 1), 
-                     minor_breaks = NULL) +
-  raw_biomass_plot_theme() +
-  labs(x = "Time since end of experiment (years)", 
-       y = "Understory macroalgae biomass (dry g/m\U00B2)") +
-  facet_wrap(~strip, scales = "free_y", nrow = 4)
-
-delta_continual_sites_algae_raw 
-
-# ⟞ b. sessile invertebrates ----------------------------------------------
-
-delta_continual_sites_epi_raw <- epi_continual_long %>% 
-  mutate(strip = case_when(
-    site == "aque" ~ "(a) Arroyo Quemado",
-    site == "napl" ~ "(b) Naples",
-    site == "mohk" ~ "(c) Mohawk",
-    site == "carp" ~ "(d) Carpinteria"
-  )) %>% 
-  mutate(removal_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Removal"
-  ),
-  recovery_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Recovery"
-  ),
-  annotation_y = case_when(
-    sample_ID == "aque_2010-06-15_Q2_reference" ~ 60
-  )) %>% 
-  ggplot(aes(x = time_since_end,
-             y = biomass,
-             color = treatment,
-             group = treatment)) +
-  geom_line(alpha = 0.9,
-            linewidth = 0.5) +
-  scale_color_manual(values = c("reference" = reference_col,
-                                "removal" = removal_col)) +
-  geom_vline(xintercept = 0, 
-             linewidth = 0.5, 
-             linetype = 2, 
-             color = "grey") +
-  geom_hline(yintercept = 0, 
-             linewidth = 0.5, 
-             linetype = 2, 
-             color = "grey") +
-  annotate(geom = "rect", 
-           xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
-           fill = "grey", 
-           alpha = 0.3) +
-  geom_text(aes(x = -6.75, 
-                y = annotation_y, 
-                label = removal_annotation), 
-            size = 2, color = "black") +
-  geom_text(aes(x = 5.5, 
-                y = annotation_y, 
-                label = recovery_annotation), 
-            size = 2, color = "black") +
-  scale_x_continuous(limits = c(-8, 7), 
-                     breaks = seq(-8, 7, by = 1), 
-                     minor_breaks = NULL) +
-  raw_biomass_plot_theme() +
-  labs(x = "Time since end of experiment (years)", 
-       y = "Sessile invertebrate biomass (dry g/m\U00B2)") +
-  facet_wrap(~strip, scales = "free_y", nrow = 4)
-
-delta_continual_sites_epi_raw
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# --------------------------- 3. linear models ----------------------------
+# --------------------------- 2. linear models ----------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # This section includes code to construct, diagnose, and extract predictions
@@ -265,7 +163,7 @@ models <- bind_rows(algae_continual_long, epi_continual_long) %>%
     ~ r.squaredGLMM(.x)
   )) %>% 
   
-  # generate predictions from models
+  # generate predictions from models using ggeffects
   mutate(during_predictions = map(
     fit_model_during,
     ~ ggpredict(.x,
@@ -277,6 +175,28 @@ models <- bind_rows(algae_continual_long, epi_continual_long) %>%
     ~ ggpredict(.x,
                 terms = c("time_since_end[0:6.75 by = 0.25]", "treatment"),
                 type = "fixed")
+  )) %>% 
+  
+  # calculate delta biomass
+  mutate(delta_biomass = map(
+    data,
+    ~ delta_biomass_wrangle(.x)
+  )) %>% 
+  mutate(delta_during_predictions = map(
+    during_predictions,
+    ~ as.data.frame(.x) %>% 
+      select(x, group, predicted) %>% 
+      pivot_wider(names_from = group, values_from = predicted) %>% 
+      mutate(delta = removal - reference) %>% 
+      mutate(exp_dates = "during")
+  )) %>% 
+  mutate(delta_after_predictions = map(
+    after_predictions,
+    ~ as.data.frame(.x) %>% 
+      select(x, group, predicted) %>% 
+      pivot_wider(names_from = group, values_from = predicted) %>% 
+      mutate(delta = removal - reference) %>% 
+      mutate(exp_dates = "after")
   ))
 
 # This throws the following warning twice: 
@@ -297,12 +217,476 @@ plot(models[[6]][[1]])
 plot(models[[6]][[2]])
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ----------------------- 4. model visualizations -------------------------
+# ----------------------- 3. model visualizations -------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ⟞ a. model predictions --------------------------------------------------
+
+# This section includes code to create panels b and d from Figure 2. These 
+# figures depict modeled predictions for understory macroalgae and sessile
+# invertebrate biomass as a function of time since the end of the removal and
+# treatment (reference or removal). The data underlying these predictions (i.e.
+# the observed biomass at each sampling point) is plotted underneath the
+# predictions.
+
+# The  figures in this section and the following section rely on aesthetics 
+# that are saved in objects in the `00-set_up.R` script because they are also
+# used in the `01a-kelp_recovery.R` script.
+
+# ⟞ ⟞ i. understory macroalgae --------------------------------------------
+
+overall_algae_predictions <- ggplot() +
+  model_predictions_background +
+  
+  # raw data 
+  geom_point(data = algae_continual_long, 
+             aes(x = time_since_end, 
+                 y = biomass, 
+                 color = treatment), 
+             shape = 21,
+             alpha = 0.15,
+             size = 0.75) +
+  
+  # model predictions
+  geom_line(data = models[[9]][[1]], 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+  geom_ribbon(data = models[[9]][[1]], 
+              aes(x = x, 
+                  ymax = conf.high, 
+                  ymin = conf.low, 
+                  group = group), 
+              alpha = 0.05) +
+  geom_line(data = models[[10]][[1]], 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+  geom_ribbon(data = models[[10]][[1]], 
+              aes(x = x, 
+                  ymax = conf.high, 
+                  ymin = conf.low, 
+                  group = group), 
+              alpha = 0.05) +
+  # theming
+  model_predictions_theme + 
+  model_predictions_aesthetics + 
+  coord_cartesian(ylim = c(30, 800)) +
+  labs(title = "(c)") 
+
+overall_algae_predictions
+
+# ⟞ ⟞ ii. sessile invertebrates -------------------------------------------
+
+overall_epi_predictions <- ggplot() +
+  model_predictions_background +
+  
+  # raw data 
+  geom_point(data = epi_continual_long, 
+             aes(x = time_since_end, 
+                 y = biomass, 
+                 color = treatment), 
+             shape = 21,
+             alpha = 0.15,
+             size = 0.75) +
+  
+  # model predictions
+  geom_line(data = models[[9]][[2]], 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+  geom_ribbon(data = models[[9]][[2]], 
+              aes(x = x, 
+                  ymax = conf.high, 
+                  ymin = conf.low, 
+                  group = group), 
+              alpha = 0.05) +
+  geom_line(data = models[[10]][[2]], 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+  geom_ribbon(data = models[[10]][[2]], 
+              aes(x = x, 
+                  ymax = conf.high, 
+                  ymin = conf.low, 
+                  group = group), 
+              alpha = 0.05) +
+  # theming
+  model_predictions_theme + 
+  model_predictions_aesthetics + 
+  coord_cartesian(ylim = c(5, 155)) +
+  labs(title = "(e)") 
+
+overall_epi_predictions
+
+# ⟞ b. delta biomass  -----------------------------------------------------
+
+# This section includes code to create panels b and d from Figure 2. These are
+# figures depicting the "deltas", or difference in predicted biomass between
+# reference and removal plots throughout the experimental removal and recovery
+# period. The data for the lines is taken from the `models` object created in
+# section 3a. 
+
+# ⟞ ⟞ i. understory macroalgae --------------------------------------------
+
+delta_algae_predictions <- ggplot() +
+  model_predictions_background +
+  geom_point(data = models[[11]][[1]],
+             aes(x = time_since_end, 
+                 y = delta_continual), 
+             shape = 2, 
+             alpha = 0.15,
+             size = 0.75) +
+  
+  # delta biomass
+  geom_line(data = models[[12]][[1]], 
+            aes(x = x, 
+                y = delta), 
+            linewidth = 1) +
+  geom_line(data = models[[13]][[1]], 
+            aes(x = x, 
+                y = delta), 
+            linewidth = 1) +
+  
+  delta_aesthetics +
+  model_predictions_theme +
+  labs(title = "(d)")
+
+delta_algae_predictions
+
+# ⟞ ⟞ ii. sessile invertebrates -------------------------------------------
+
+delta_epi_predictions <- ggplot() +
+  model_predictions_background +
+  geom_point(data = models[[11]][[2]],
+             aes(x = time_since_end, 
+                 y = delta_continual), 
+             shape = 2, 
+             alpha = 0.15,
+             size = 0.75) +
+  
+  # delta biomass
+  geom_line(data = models[[12]][[2]], 
+            aes(x = x, 
+                y = delta), 
+            linewidth = 1) +
+  geom_line(data = models[[13]][[2]], 
+            aes(x = x, 
+                y = delta), 
+            linewidth = 1) +
+  
+  delta_aesthetics +
+  model_predictions_theme +
+  labs(title = "(f)")
+
+delta_epi_predictions
+
+# ⟞ c. saving outputs -----------------------------------------------------
+
+# This section combines the `overall_kelp` and `delta_kelp_predictions` objects
+# from the `01a-kelp_recovery.R` script to create Figure 2 panels a-f. 
+
+# The legend is extracted into a separate object called `legend`, then all the
+# plots are arranged into columns.
+
+# The kelp plots are generated in the `01a-kelp_recovery.R` script and combined
+# with the other plots in this section.
+
+# ⟞ ⟞ i. extracting legend ------------------------------------------------
+
+obj <- ggplot() +
+  model_predictions_background +
+  
+  # model predictions
+  geom_line(data = models[[9]][[1]], 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+
+  geom_line(data = models[[10]][[1]], 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+
+  # theming
+  model_predictions_theme + 
+  model_predictions_aesthetics + 
+  theme(legend.position = "right")
+
+legend <-  get_plot_component(obj, "guide-box-right", return_all = TRUE)
+
+# ⟞ ⟞ ii. plot arrangement ------------------------------------------------
+
+kelp_column <- plot_grid(kelp_title, 
+                         overall_kelp, 
+                         delta_kelp_predictions, 
+                         nrow = 3, 
+                         rel_heights = c(1, 13, 13)) 
+
+algae_column <- plot_grid(algae_title, 
+                          overall_algae_predictions, 
+                          delta_algae_predictions, 
+                          nrow = 3, 
+                          rel_heights = c(1, 13, 13))
+
+epi_column <- plot_grid(epi_title, 
+                        overall_epi_predictions, 
+                        delta_epi_predictions, 
+                        nrow = 3, 
+                        rel_heights = c(1, 13, 13))
+
+legend_column <- plot_grid(legend, NULL, nrow = 2)
+
+all_columns_with_legend <- plot_grid(kelp_column, 
+                                     algae_column, 
+                                     epi_column, 
+                                     legend_column,
+                                     nrow = 1,
+                                     rel_widths = c(4, 4, 4, 1))
+
+# ⟞ ⟞ iii. saving ---------------------------------------------------------
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-2_new-model_v1_", today(), ".jpg", sep = "")),
+#        plot = all_columns_with_legend,
+#        height = 16, width = 24, units = "cm",
+#        dpi = 400)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# -------------------------- 4. timeseries plots --------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# This section includes code to generate timeseries of understory algae and
+# sessile invertebrate biomass in reference and removal plots with separate
+# panels for each site. These correspond to Supplemental Material figures ____.
+
+# The `raw_biomass_plot_theme()` used below is generated in the 00-set_up.R 
+# script because it is also used in the 01a-kelp_recovery.R script.
+
+# Running the code for both these figures will throw an error about removing
+# rows outside the scale range; this is due to the "Removal" and "Recovery
+# labels that are drawn from a column in the actual data frame, which contains
+# one row of labels with the rest of the rows being "NA".
+
+# ⟞ a. understory macroalgae ----------------------------------------------
+
+delta_continual_sites_algae_raw <- algae_continual_long %>% 
+  mutate(strip = case_when(
+    site == "aque" ~ "(a) Arroyo Quemado",
+    site == "napl" ~ "(b) Naples",
+    site == "mohk" ~ "(c) Mohawk",
+    site == "carp" ~ "(d) Carpinteria"
+  )) %>% 
+  mutate(removal_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Removal"
+  ),
+  recovery_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Recovery"
+  ),
+  annotation_y = case_when(
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ 360
+  )) %>% 
+  ggplot(aes(x = time_since_end,
+             y = biomass,
+             color = treatment,
+             group = treatment)) +
+  geom_line(alpha = 0.9,
+            linewidth = 0.5) +
+  scale_color_manual(values = c("reference" = reference_col,
+                                "removal" = removal_col)) +
+  model_predictions_background +
+  geom_text(aes(x = -6.75, 
+                y = annotation_y, 
+                label = removal_annotation), 
+            size = 2, color = "black") +
+  geom_text(aes(x = 5.5, 
+                y = annotation_y, 
+                label = recovery_annotation), 
+            size = 2, color = "black") +
+  scale_x_continuous(limits = c(-8, 7), 
+                     breaks = seq(-8, 7, by = 1), 
+                     minor_breaks = NULL) +
+  raw_biomass_plot_theme +
+  labs(x = "Time since end of experiment (years)", 
+       y = "Understory macroalgae biomass (dry g/m\U00B2)") +
+  facet_wrap(~strip, scales = "free_y", nrow = 4)
+
+delta_continual_sites_algae_raw 
+
+# ⟞ b. sessile invertebrates ----------------------------------------------
+
+delta_continual_sites_epi_raw <- epi_continual_long %>% 
+  mutate(strip = case_when(
+    site == "aque" ~ "(a) Arroyo Quemado",
+    site == "napl" ~ "(b) Naples",
+    site == "mohk" ~ "(c) Mohawk",
+    site == "carp" ~ "(d) Carpinteria"
+  )) %>% 
+  mutate(removal_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Removal"
+  ),
+  recovery_annotation = case_when(
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Recovery"
+  ),
+  annotation_y = case_when(
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ 60
+  )) %>% 
+  ggplot(aes(x = time_since_end,
+             y = biomass,
+             color = treatment,
+             group = treatment)) +
+  geom_line(alpha = 0.9,
+            linewidth = 0.5) +
+  scale_color_manual(values = c("reference" = reference_col,
+                                "removal" = removal_col)) +
+  model_predictions_background +
+  geom_text(aes(x = -6.75, 
+                y = annotation_y, 
+                label = removal_annotation), 
+            size = 2, color = "black") +
+  geom_text(aes(x = 5.5, 
+                y = annotation_y, 
+                label = recovery_annotation), 
+            size = 2, color = "black") +
+  scale_x_continuous(limits = c(-8, 7), 
+                     breaks = seq(-8, 7, by = 1), 
+                     minor_breaks = NULL) +
+  raw_biomass_plot_theme +
+  labs(x = "Time since end of experiment (years)", 
+       y = "Sessile invertebrate biomass (dry g/m\U00B2)") +
+  facet_wrap(~strip, scales = "free_y", nrow = 4)
+
+delta_continual_sites_epi_raw
+
+# ⟞ c. saving outputs -----------------------------------------------------
+
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S4_", today(), ".jpg", sep = "")),
+#        plot = delta_continual_sites_algae_raw,
+#        height = 12, width = 8, units = "cm",
+#        dpi = 300)
+# 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S5_", today(), ".jpg", sep = "")),
+#        plot = delta_continual_sites_epi_raw,
+#        height = 12, width = 8, units = "cm",
+#        dpi = 300)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ------------------------------ 5. tables --------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# This section includes code to extract the model summaries for each model.
+
+model_summary_fxn <- function(model) {
+  model %>% 
+    tidy(conf.int = TRUE) %>% 
+    filter(effect == "fixed" & component == "cond") %>%
+    select(term, estimate, p.value, conf.low, conf.high) %>% 
+    mutate(signif = case_when(
+      p.value <= 0.05 ~ "yes",
+      TRUE ~ "no"
+    )) %>% 
+    mutate(p.value = case_when(
+      p.value <= 0.001 ~ "<0.001",
+      TRUE ~ as.character(round(p.value, digits = 3))
+    )) %>%
+    mutate(across(where(is.numeric), ~ round(., digits = 3))) %>%
+    unite(`95% CI`, conf.low, conf.high, sep = ", ") %>%
+    mutate(term = case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "time_since_end" ~ "Time since end",
+      term == "treatmentremoval" ~ "Treatment (removal)",
+      term == "time_since_end:treatmentremoval" ~ "Time since end × treatment (removal)"
+    )) %>%
+    rename(Term = term, Estimate = estimate, `p-value` = p.value)
+}
+
+table_formatting_fxn <- function(df) {
+  df %>% 
+  gt() %>%
+    tab_style(
+      style = list(
+        cell_text(weight = "bold")
+      ),
+      locations = cells_body(
+        columns = `p-value.x`,
+        rows = `signif.x` == "yes"
+      )
+    ) %>%
+    tab_style(
+      style = list(
+        cell_text(weight = "bold")
+      ),
+      locations = cells_body(
+        columns = `p-value.y`,
+        rows = `signif.y` == "yes"
+      )
+    ) %>% 
+    cols_hide(c(signif.x, signif.y)) %>% 
+    tab_spanner(label = "Kelp removal", 
+                columns = c(contains(".x"))) %>% 
+    tab_spanner(label = "Recovery", 
+                columns = c(contains(".y")))
+}
+
+model_summaries <- models %>% 
+  select(group, fit_model_during, fit_model_after) %>% 
+  mutate(during_summary = map(
+    fit_model_during,
+    ~ model_summary_fxn(.x)
+  )) %>% 
+  mutate(after_summary = map(
+    fit_model_after,
+    ~ model_summary_fxn(.x) 
+  )) %>% 
+  mutate(merged_tables = map2(
+    during_summary, after_summary,
+    ~ left_join(.x, .y, by = "Term") %>% 
+      table_formatting_fxn()
+  ))
+
+
+model_summaries[[6]][[1]] %>%
+  save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
+
+model_summaries[[4]][[1]]
+model_summaries[[4]][[2]]
+
+model_summaries[[5]][[1]]
+model_summaries[[5]][[2]]
+
+model_summaries[[6]][[1]]
+
+# individual group tables
+lm_algae_zigamma_tables <- tbl_merge(tbls = list(lm_raw_algae_during_zigamma_summary, lm_raw_algae_recovery_zigamma_summary),
+                                     tab_spanner = c("**Kelp removal**", "**Recovery**")) 
+
+lm_ep_zigamma_tables <- tbl_merge(tbls = list(lm_raw_epi_during_zigamma_summary, lm_raw_epi_recovery_zigamma_summary),
+                                  tab_spanner = c("**Kelp removal**", "**Recovery**")) 
+
+# stack tables
+lm_zigamma_summary_tables <- tbl_stack(
+  tbls = list(lm_kelp_zigamma_tables, lm_algae_zigamma_tables, lm_ep_zigamma_tables),
+  group_header = c("Giant kelp", "Understory macroalgae", "Sessile invertebrates"),
+  quiet = TRUE) %>% 
+  as_flex_table() %>% 
+  font(fontname = "Times New Roman", part = "all")
+
+lm_zigamma_summary_tables %>%
+  save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # -------------------------- OLD CODE BELOW HERE --------------------------
@@ -499,192 +883,7 @@ predicted_raw_algae_recovery <- ggpredict(lm_raw_algae_recovery_zigamma_02, term
 
 # ⟞ ⟞ new model -----------------------------------------------------------
 
-raw_algae_time <- ggplot() +
-  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
-           fill = "grey", alpha = 0.3) +
-  
-  # raw data
-  geom_point(data = algae_continual_long, 
-             aes(x = time_since_end, y = algae_biomass, color = treatment), 
-             shape = 21,
-             alpha = 0.15,
-             size = 0.75) +
-  
-  # model predictions
-  geom_line(data = predicted_raw_algae_recovery, aes(x = x, y = predicted, color = group), linewidth = 1) +
-  geom_ribbon(data = predicted_raw_algae_recovery, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.05) +
-  geom_line(data = predicted_raw_algae_during, aes(x = x, y = predicted, color = group), linewidth = 1) +
-  geom_ribbon(data = predicted_raw_algae_during, aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.05) +
-  
-  # colors and shapes
-  scale_color_manual(values = c(reference = reference_col, removal = removal_col),
-                     labels = c("Reference", "Removal")) +
-  # scale_fill_manual(values = c(reference = "#6D5A1800", removal = "#CC754066"),
-  #                    labels = c("Reference", "Removal")) +
-  scale_linetype_manual(values = c(reference = 2, removal = 1),
-                        labels = c("Reference", "Removal")) +
-  # scale_shape_manual(values = c(reference = 1, removal = 16),
-  #                    labels = c("Reference", "Removal")) +
-  # scale_size_manual(values = c(reference = 1, removal = 1.3),
-  #                   labels = c("Reference", "Removal")) +
-  
-  # removal/recovery labels
-  annotate(geom = "text", x = -6.75, y = 775, label = "Removal", size = 3) +
-  annotate(geom = "text", x = 5.5, y = 775, label = "Recovery", size = 3) +
-  
-  # theming
-  theme_bw() + 
-  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
-  coord_cartesian(ylim = c(30, 800)) +
-  theme(axis.title = element_text(size = 8),
-        axis.text = element_text(size = 7),
-        legend.text = element_text(size = 6), 
-        legend.title = element_text(size = 6),
-        legend.position = "none",
-        # legend.position = c(0.86, 0.88),
-        legend.background = element_blank(),
-        legend.key.size = unit(0.5, units = "cm"),
-        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
-        legend.spacing.y = unit(0.01, "cm"),
-        panel.grid = element_blank(),
-        plot.title.position = "plot",
-        plot.title = element_text(size = 10)) +
-  guides(color = guide_legend(keyheight = 0.6),
-         shape = guide_legend(keyheight = 0.6),
-         lty = guide_legend(keyheight = 0.6),
-         keyheight = 1) +
-  labs(x = "Time since end of removal (years)", 
-       y = "Biomass (dry g/m\U00B2)", 
-       linetype = "Treatment",
-       color = "Treatment",
-       shape = "Treatment",
-       size = "Treatment",
-       title = "(c)")
 
-raw_algae_time
-
-raw_algae_removal <- ggplot() +
-  # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
-  
-  # raw data points
-  geom_point(data = algae_continual_long %>% filter(treatment == "removal"), aes(x = time_since_end, y = algae_biomass), shape = 1, size = 1, alpha = 0.4, color = removal_col) +
-  
-  # prediction lines
-  geom_line(data = predicted_raw_algae_during %>% filter(group == "removal"), aes(x = x, y = predicted), linewidth = 1, color = removal_col) +
-  geom_line(data = predicted_raw_algae_recovery %>% filter(group == "removal"), aes(x = x, y = predicted), linewidth = 1, color = removal_col) +
-  
-  # confidence intervals
-  geom_ribbon(data = predicted_raw_algae_during %>% filter(group == "removal"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
-  geom_ribbon(data = predicted_raw_algae_recovery %>% filter(group == "removal"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
-  
-  theme_bw() + 
-  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(limits = c(-10, 800)) +
-  theme(axis.title = element_text(size = 8),
-        axis.text = element_text(size = 7),
-        legend.text = element_text(size = 6), 
-        legend.title = element_text(size = 6),
-        # plot.margin = margin(0, 0, 0, 0),
-        legend.position = c(0.88, 0.73),
-        legend.key.size = unit(0.5, units = "cm"),
-        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
-        legend.spacing.y = unit(0.1, units = "cm"),
-        panel.grid = element_blank(),
-        plot.title.position = "plot",
-        plot.title = element_text(size = 10)) +
-  guides(color = guide_legend(keyheight = 0.6),
-         shape = guide_legend(keyheight = 0.6),
-         lty = guide_legend(keyheight = 0.6),
-         keyheight = 1) +
-  labs(x = "Time since end of removal (years)", 
-       y = "Biomass (dry g/m\U00B2)",
-       title = "(a) Removal")
-
-raw_algae_reference <- ggplot() +
-  # x at 0 and y at 0 lines
-  geom_vline(xintercept = 0, lty = 2, alpha = 0.5) +
-  geom_hline(yintercept = 0, lty = 2, alpha = 0.5) +
-  
-  # raw data points
-  geom_point(data = algae_continual_long %>% filter(treatment == "reference"), aes(x = time_since_end, y = algae_biomass), shape = 1, size = 1, alpha = 0.2, color = reference_col) +
-  
-  # prediction lines
-  geom_line(data = predicted_raw_algae_during %>% filter(group == "reference"), aes(x = x, y = predicted), linewidth = 1, color = reference_col) +
-  geom_line(data = predicted_raw_algae_recovery %>% filter(group == "reference"), aes(x = x, y = predicted), linewidth = 1, color = reference_col) +
-  
-  # confidence intervals
-  geom_ribbon(data = predicted_raw_algae_during %>% filter(group == "reference"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
-  geom_ribbon(data = predicted_raw_algae_recovery %>% filter(group == "reference"), aes(x = x, ymax = conf.high, ymin = conf.low, group = group), alpha = 0.2) +
-  
-  theme_bw() + 
-  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
-  scale_y_continuous(limits = c(-10, 800)) +
-  theme(axis.title = element_text(size = 8),
-        axis.text = element_text(size = 7),
-        panel.grid = element_blank(),
-        plot.title.position = "plot",
-        plot.title = element_text(size = 10)) +
-  guides(color = guide_legend(keyheight = 0.6),
-         shape = guide_legend(keyheight = 0.6),
-         lty = guide_legend(keyheight = 0.6),
-         keyheight = 1) +
-  labs(x = "Time since end of reference (years)", 
-       y = "Biomass (dry g/m\U00B2)",
-       title = "(b) Reference")
-
-# data frame of predictions
-delta_algae_predictions_during <- predicted_raw_algae_during %>% 
-  as.data.frame() %>% 
-  select(x, group, predicted) %>% 
-  pivot_wider(names_from = group, values_from = predicted) %>% 
-  mutate(delta = removal - reference) %>% 
-  mutate(exp_dates = "during")
-
-delta_algae_predictions_after <- predicted_raw_algae_recovery %>% 
-  as.data.frame() %>% 
-  select(x, group, predicted) %>% 
-  pivot_wider(names_from = group, values_from = predicted) %>% 
-  mutate(delta = removal - reference) %>% 
-  mutate(exp_dates = "after")
-
-overall_algae_predictions <- ggplot() +
-  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
-           fill = "grey", alpha = 0.3) +
-  geom_point(data = delta_algae_continual,
-             aes(x = time_since_end, y = delta_continual_algae), 
-             shape = 2, 
-             alpha = 0.15,
-             size = 0.75) +
-  
-  # overall
-  geom_line(data = delta_algae_predictions_during, aes(x = x, y = delta), linewidth = 1) +
-  geom_line(data = delta_algae_predictions_after, aes(x = x, y = delta), linewidth = 1) +
-  
-  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
-  # scale_y_continuous(breaks = seq(-250, 800, by = 200), limits = c(-250, 775)) +
-  theme_bw() + 
-  theme(axis.title = element_text(size = 8),
-        axis.text = element_text(size = 7),
-        legend.text = element_text(size = 6), 
-        legend.title = element_text(size = 6),
-        # plot.margin = margin(0, 0, 0, 0),
-        legend.position = "none",
-        panel.grid = element_blank(),
-        plot.title.position = "plot",
-        plot.title = element_text(size = 10)) +
-  labs(x = "Time since end of removal (years)", 
-       y = "\U0394 biomass \n (removal \U2212 reference, dry g/m\U00B2)",
-       fill = "Site",
-       shape = "Site",
-       title = "(d) Removal \U2212 reference")
-
-overall_algae_predictions
 
 ##########################################################################-
 # 4. epi. invert linear model ---------------------------------------------
@@ -893,7 +1092,7 @@ predicted_raw_epi_recovery <- ggpredict(lm_raw_epi_recovery_zigamma_02, terms = 
 
  # ⟞ ⟞ new model -----------------------------------------------------------
 
-raw_epi_time <- ggplot() +
+overall_epi_predictions <- ggplot() +
   geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
@@ -946,7 +1145,7 @@ raw_epi_time <- ggplot() +
        y = "Biomass (dry g/m\U00B2)", 
        title = "(e)")
 
-raw_epi_time
+overall_epi_predictions
 
 raw_epi_removal <- ggplot() +
   # x at 0 and y at 0 lines
@@ -1039,7 +1238,7 @@ delta_epi_predictions_after <- predicted_raw_epi_recovery %>%
   mutate(delta = removal - reference) %>% 
   mutate(exp_dates = "after")
 
-overall_epi_predictions <- ggplot() +
+delta_epi_predictions <- ggplot() +
   geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
@@ -1072,7 +1271,7 @@ overall_epi_predictions <- ggplot() +
        shape = "Site",
        title = "(f) Removal \U2212 reference")
 
-overall_epi_predictions
+delta_epi_predictions
 
 ##########################################################################-
 # 5. manuscript tables ----------------------------------------------------
@@ -1155,15 +1354,15 @@ lm_zigamma_summary_tables %>%
 # ⟞ b. raw algae and epi model --------------------------------------------
 
 # fig2_v1 <-  (kelp_title + algae_title + epi_title) /
-#             (overall_kelp + raw_algae_time + raw_epi_time) /
-#             (overall_predictions + overall_algae_predictions + overall_epi_predictions) +
+#             (overall_kelp + overall_algae_predictions + overall_epi_predictions) /
+#             (overall_predictions + overall_algae_predictions + delta_epi_predictions) +
 #   plot_layout(heights = c(1, 10, 10), widths = c(1, 1, 1))
 # fig2_v1
 
 # fig2_v2 <- (algae_title + epi_title) /
 #   (raw_algae_removal + raw_epi_removal) /
 #   (raw_algae_reference + raw_epi_reference) /
-#   (overall_algae_predictions + overall_epi_predictions) +
+#   (overall_algae_predictions + delta_epi_predictions) +
 #   plot_layout(heights = c(1, 10, 10, 10))
 # fig2_v2
 
@@ -1172,12 +1371,12 @@ kelp_column <- plot_grid(overall_kelp, overall_predictions, nrow = 2) %>%
             nrow = 2,
             rel_heights = c(1, 20))
 
-algae_column <- plot_grid(raw_algae_time, overall_algae_predictions, nrow = 2) %>% 
+algae_column <- plot_grid(overall_algae_predictions, overall_algae_predictions, nrow = 2) %>% 
   plot_grid(algae_title, ., 
             nrow = 2,
             rel_heights = c(1, 20))
 
-epi_column <- plot_grid(raw_epi_time, overall_epi_predictions, nrow = 2) %>% 
+epi_column <- plot_grid(overall_epi_predictions, delta_epi_predictions, nrow = 2) %>% 
   plot_grid(epi_title, ., 
             nrow = 2,
             rel_heights = c(1, 20))
