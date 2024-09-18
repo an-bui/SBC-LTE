@@ -1,353 +1,312 @@
 
-##########################################################################-
-# 0. set up ---------------------------------------------------------------
-##########################################################################-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------- 0. set up -------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # only have to run this once per session
 source(here::here("code", "01a-kelp_recovery.R"))
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ----------------------- 1. data frame preparation -----------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-##########################################################################-
-# 1. data frames ----------------------------------------------------------
-##########################################################################-
+# ⟞ a. functions ----------------------------------------------------------
 
-# ⟞ a. algae -------------------------------------------------------------
+# This section includes code to prepare data frames for down stream analysis.
+
+delta_biomass_wrangle <- function(df) {
+  df %>% 
+    dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
+    group_by(site, year, month, treatment, date) %>% 
+    summarize(total_dry = sum(dry_gm2, na.rm = TRUE)) %>% 
+    ungroup() %>% 
+    pivot_wider(names_from = treatment, values_from = total_dry) %>% 
+    mutate(delta_annual = annual - control,
+           delta_continual = continual - control) %>% 
+    select(site, year, month, date, control, continual, delta_continual) %>% 
+    # take out years where continual removal hadn't happened yet
+    drop_na(delta_continual) %>% 
+    select(!delta_continual) %>% 
+    mutate(exp_dates = case_when(
+      # after for continual removal:
+      site == "aque" & date >= aque_after_date_continual ~ "after",
+      site == "napl" & date >= napl_after_date_continual ~ "after",
+      site == "mohk" & date >= mohk_after_date_continual ~ "after",
+      site == "carp" & date >= carp_after_date_continual ~ "after",
+      # everything else is "during" the experiment
+      TRUE ~ "during"
+    ),
+    exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+    time_since_columns_continual() %>% 
+    kelp_year_column() %>% 
+    comparison_column_continual() %>% 
+    # make it longer
+    pivot_longer(cols = c(control, continual)) %>% 
+    # rename columns
+    rename(treatment = name, biomass = value) %>% 
+    # change treatment names
+    mutate(treatment = case_match(
+      treatment, 
+      "control" ~ "reference", 
+      "continual" ~ "removal")) %>% 
+    # create a new sample ID that is site, year, quarter, treatment
+    unite("sample_ID", site, date, quarter, treatment, remove = FALSE) %>% 
+    # join only with kelp biomass (long format)
+    left_join(., select(.data = continual_long, sample_ID, kelp_biomass), 
+              by = "sample_ID")
+}
+
+# ⟞ b. understory macroalgae ----------------------------------------------
 
 # total biomass
 algae_biomass <- biomass %>% 
+  # exclude giant kelp
   filter(new_group == "algae" & sp_code != "MAPY")
 
-# delta biomass
-delta_algae_biomass <- algae_biomass %>% 
-  dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
-  group_by(site, year, month, treatment, date) %>% 
-  summarize(total_dry = sum(dry_gm2, na.rm = TRUE)) %>% 
-  ungroup() %>% 
-  pivot_wider(names_from = treatment, values_from = total_dry) %>% 
-  mutate(delta_annual = annual - control,
-         delta_continual = continual - control) 
-
-# joined with kelp deltas and raw biomass
-delta_algae_continual <- delta_algae_biomass %>% 
-  dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
-  # take out years where continual removal hadn't happened yet
-  drop_na(delta_continual) %>% 
-  mutate(exp_dates = case_when(
-    # after for annual removal:
-    site == "aque" & date >= aque_after_date_continual ~ "after",
-    site == "napl" & date >= napl_after_date_continual ~ "after",
-    site == "mohk" & date >= mohk_after_date_continual ~ "after",
-    site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" the experiment
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_continual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_continual() %>% 
-  # create a new sample ID that is site, year, quarter
-  unite("sample_ID", site, date, quarter, remove = FALSE) %>% 
-  # create new column that is the column to join with 
-  # unite("join_ID", site, date, remove = FALSE) %>% 
-  rename("control_algae" = control,
-         "continual_algae" = continual,
-         "delta_continual_algae" = delta_continual) %>% 
-  full_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID") %>% 
-  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-  rename("site_full" = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
-  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
-
 # long format
-algae_continual_long <- delta_algae_biomass %>% 
-  dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
-  # take out years where continual removal hadn't happened yet
-  drop_na(delta_continual) %>% 
-  select(!delta_continual) %>% 
-  mutate(exp_dates = case_when(
-    # after for annual removal:
-    site == "aque" & date >= aque_after_date_continual ~ "after",
-    site == "napl" & date >= napl_after_date_continual ~ "after",
-    site == "mohk" & date >= mohk_after_date_continual ~ "after",
-    site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" the experiment
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_continual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_continual() %>% 
-  # make it longer
-  pivot_longer(cols = c(control, continual)) %>% 
-  # rename columns
-  rename(treatment = name, algae_biomass = value) %>% 
-  # change treatment names
-  mutate(treatment = case_match(treatment, "control" ~ "reference", "continual" ~ "removal")) %>% 
-  # create a new sample ID that is site, year, quarter, treatment
-  unite("sample_ID", site, date, quarter, treatment, remove = FALSE) %>% 
-  # join only with kelp biomass (long format)
-  left_join(., select(.data = continual_long, sample_ID, kelp_biomass), by = "sample_ID")
+algae_continual_long <- delta_biomass_wrangle(algae_biomass) %>% 
+  mutate(group = "understory algae")
 
-# ⟞ b. epilithic invertebrates -------------------------------------------
+# ⟞ c. sessile invertebrates ----------------------------------------------
 
 # total biomass
 epi_biomass <- biomass %>% 
   filter(new_group == "epilithic.sessile.invert") %>% 
-  # # take out endos
+  # take out endos
   filter(taxon_family != "Pholadidae")
 
-# delta biomass
-delta_epi_biomass <- epi_biomass %>% 
-  dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
-  group_by(site, year, month, treatment, date) %>% 
-  summarize(total_dry = sum(dry_gm2, na.rm = TRUE)) %>% 
-  ungroup() %>% 
-  pivot_wider(names_from = treatment, values_from = total_dry) %>% 
-  mutate(delta_annual = annual - control,
-         delta_continual = continual - control) 
-
-# join with kelp deltas and raw biomass
-delta_epi_continual <- delta_epi_biomass %>% 
-  dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
-  # take out years where continual removal hadn't happened yet
-  drop_na(delta_continual) %>% 
-  mutate(exp_dates = case_when(
-    # after for annual removal:
-    site == "aque" & date >= aque_after_date_continual ~ "after",
-    site == "napl" & date >= napl_after_date_continual ~ "after",
-    site == "mohk" & date >= mohk_after_date_continual ~ "after",
-    site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" the experiment
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_continual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_continual() %>% 
-  # create a new sample ID that is site, year, quarter
-  unite("sample_ID", site, date, quarter, remove = FALSE) %>% 
-  # create new column that is the column to join with 
-  # unite("join_ID", site, date, remove = FALSE) %>% 
-  rename("control_epi" = control,
-         "continual_epi" = continual,
-         "delta_continual_epi" = delta_continual) %>% 
-  full_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID") %>% 
-  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-  rename("site_full" = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
-  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
-
 # long format
-epi_continual_long <- delta_epi_biomass %>% 
-  dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
-  # take out years where continual removal hadn't happened yet
-  drop_na(delta_continual) %>% 
-  select(!delta_continual) %>% 
-  mutate(exp_dates = case_when(
-    # after for annual removal:
-    site == "aque" & date >= aque_after_date_continual ~ "after",
-    site == "napl" & date >= napl_after_date_continual ~ "after",
-    site == "mohk" & date >= mohk_after_date_continual ~ "after",
-    site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" the experiment
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_continual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_continual() %>% 
-  # make it longer
-  pivot_longer(cols = c(control, continual)) %>% 
-  # rename columns
-  rename(treatment = name, epi_biomass = value) %>% 
-  # change treatment names
-  mutate(treatment = case_match(treatment, "control" ~ "reference", "continual" ~ "removal")) %>% 
-  # create a new sample ID that is site, year, quarter, treatment
-  unite("sample_ID", site, date, quarter, treatment, remove = FALSE) %>% 
-  # join only with kelp biomass (long format)
-  left_join(., select(.data = continual_long, sample_ID, kelp_biomass), by = "sample_ID")
+epi_continual_long <- delta_biomass_wrangle(epi_biomass) %>% 
+  mutate(group = "sessile inverts")
 
-# ⟞ c. endolithic invertebrates ------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# -------------------------- 2. timeseries plots --------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# total biomass
-# endo_biomass <- biomass %>% 
-#   filter(taxon_family == "Pholadidae")
+# This section includes code to generate timeseries of understory algae and
+# sessile invertebrate biomass in reference and removal plots with separate
+# panels for each site. These correspond to Supplemental Material figures ____.
 
-# delta biomass
-# delta_endo_biomass <- endo_biomass %>% 
-#   dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
-#   group_by(site, year, month, treatment, date) %>% 
-#   summarize(total_dry = sum(dry_gm2)) %>% 
-#   ungroup() %>% 
-#   pivot_wider(names_from = treatment, values_from = total_dry) %>% 
-#   mutate(delta_annual = annual - control,
-#          delta_continual = continual - control) 
+# The `raw_biomass_plot_theme()` used below is generated in the 00-set_up.R 
+# script because it is also used in the 01a-kelp_recovery.R script.
 
-# joining with kelp deltas and biomass
-# delta_endo_continual <- delta_endo_biomass %>% 
-#   dplyr::select(site, year, month, date, control, continual, delta_continual) %>% 
-#   # take out years where continual removal hadn't happened yet
-#   drop_na(delta_continual) %>% 
-#   mutate(exp_dates = case_when(
-#     # after for annual removal:
-#     site == "aque" & date >= aque_after_date_continual ~ "after",
-#     site == "napl" & date >= napl_after_date_continual ~ "after",
-#     site == "mohk" & date >= mohk_after_date_continual ~ "after",
-#     site == "carp" & date >= carp_after_date_continual ~ "after",
-#     # everything else is "during" the experiment
-#     TRUE ~ "during"
-#   ),
-#   exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-#   time_since_columns_continual() %>% 
-#   kelp_year_column() %>% 
-#   comparison_column_continual() %>% 
-#   # create a new sample ID that is site, year, quarter
-#   unite("sample_ID", site, date, quarter, remove = FALSE) %>% 
-#   # create new column that is the column to join with 
-#   # unite("join_ID", site, date, remove = FALSE) %>% 
-#   rename("control_endo" = control,
-#          "continual_endo" = continual,
-#          "delta_continual_endo" = delta_continual) %>% 
-#   full_join(., delta_continual %>% dplyr::select(sample_ID, continual, control, delta_continual), by = "sample_ID") %>% 
-#   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-#   rename("site_full" = value) %>% 
-#   mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
-#   mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
+# ⟞ a. understory macroalgae ----------------------------------------------
 
-##########################################################################-
-# 2. timeseries plots -----------------------------------------------------
-##########################################################################-
-
-# ⟞ a. raw biomass --------------------------------------------------------
-
-# ⟞ ⟞ i. algae -----------------------------------------------------------
-
-delta_continual_sites_algae_raw <- delta_algae_continual %>% 
+delta_continual_sites_algae_raw <- algae_continual_long %>% 
   mutate(strip = case_when(
-    site == "aque" ~ paste("(a) ", site_full, sep = ""),
-    site == "napl" ~ paste("(b) ", site_full, sep = ""),
-    site == "mohk" ~ paste("(c) ", site_full, sep = ""),
-    site == "carp" ~ paste("(d) ", site_full, sep = "")
+    site == "aque" ~ "(a) Arroyo Quemado",
+    site == "napl" ~ "(b) Naples",
+    site == "mohk" ~ "(c) Mohawk",
+    site == "carp" ~ "(d) Carpinteria"
   )) %>% 
   mutate(removal_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ "Removal"
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Removal"
   ),
   recovery_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ "Recovery"
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Recovery"
   ),
   annotation_y = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ 360
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ 360
   )) %>% 
-  ggplot() +
-  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
-           fill = "grey", alpha = 0.3) +
-  geom_text(aes(x = -6.75, y = annotation_y, label = removal_annotation), size = 2) +
-  geom_text(aes(x = 5.5, y = annotation_y, label = recovery_annotation), size = 2) +
-  # control
-  geom_line(aes(x = time_since_end, y = control_algae),            
-            alpha = 0.9, 
-            linewidth = 0.5,
-            color = reference_col) +
-  # geom_point(aes(x = time_since_end, y = control_algae), size = 1, alpha = 0.5, fill = "#FFFFFF") +
-  # continual
-  geom_line(aes(x = time_since_end, y = continual_algae),            
-            alpha = 0.9, 
-            linewidth = 0.5,
-            color = removal_col) +
-  # geom_point(aes(x = time_since_end, y = continual_algae), size = 1, fill = "#FFFFFF") +
-  scale_shape_manual(values = shape_palette_site) +
-  scale_color_manual(values = color_palette_site) +
-  scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  ggplot(aes(x = time_since_end,
+             y = biomass,
+             color = treatment,
+             group = treatment)) +
+  geom_line(alpha = 0.9,
+            linewidth = 0.5) +
+  scale_color_manual(values = c("reference" = reference_col,
+                                "removal" = removal_col)) +
+  geom_vline(xintercept = 0, 
+             linewidth = 0.5, 
+             linetype = 2, 
+             color = "grey") +
+  geom_hline(yintercept = 0, 
+             linewidth = 0.5, 
+             linetype = 2, 
+             color = "grey") +
+  annotate(geom = "rect", 
+           xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", 
+           alpha = 0.3) +
+  geom_text(aes(x = -6.75, 
+                y = annotation_y, 
+                label = removal_annotation), 
+            size = 2, color = "black") +
+  geom_text(aes(x = 5.5, 
+                y = annotation_y, 
+                label = recovery_annotation), 
+            size = 2, color = "black") +
+  scale_x_continuous(limits = c(-8, 7), 
+                     breaks = seq(-8, 7, by = 1), 
+                     minor_breaks = NULL) +
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
-       y = expression(Understory~macroalgae~biomass~(dry~g/m^{"2"}))) +
+       y = "Understory macroalgae biomass (dry g/m\U00B2)") +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
-delta_continual_sites_algae_raw
 
-# ⟞ ⟞ ii. epi inverts ----------------------------------------------------
+delta_continual_sites_algae_raw 
 
-delta_continual_sites_epi_raw <- delta_epi_continual %>% 
+# ⟞ b. sessile invertebrates ----------------------------------------------
+
+delta_continual_sites_epi_raw <- epi_continual_long %>% 
   mutate(strip = case_when(
-    site == "aque" ~ paste("(a) ", site_full, sep = ""),
-    site == "napl" ~ paste("(b) ", site_full, sep = ""),
-    site == "mohk" ~ paste("(c) ", site_full, sep = ""),
-    site == "carp" ~ paste("(d) ", site_full, sep = "")
+    site == "aque" ~ "(a) Arroyo Quemado",
+    site == "napl" ~ "(b) Naples",
+    site == "mohk" ~ "(c) Mohawk",
+    site == "carp" ~ "(d) Carpinteria"
   )) %>% 
   mutate(removal_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ "Removal"
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Removal"
   ),
   recovery_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ "Recovery"
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ "Recovery"
   ),
   annotation_y = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ 60
+    sample_ID == "aque_2010-06-15_Q2_reference" ~ 60
   )) %>% 
-  ggplot() +
-  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
-           fill = "grey", alpha = 0.3) +
-  geom_text(aes(x = -7.5, y = annotation_y, label = removal_annotation), size = 2) +
-  geom_text(aes(x = 6.5, y = annotation_y, label = recovery_annotation), size = 2) +
-  # control
-  geom_line(aes(x = time_since_end, y = control_epi, col = site),            
-            alpha = 0.9, 
-            linewidth = 0.5,
-            color = reference_col) +
-  # geom_point(aes(x = time_since_end, y = control_epi, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
-  # continual
-  geom_line(aes(x = time_since_end, y = continual_epi, col = site),            
-            alpha = 0.9, 
-            linewidth = 0.5,
-            color = removal_col) +
-  # geom_point(aes(x = time_since_end, y = continual_epi, shape = site, col = site), size = 1, fill = "#FFFFFF") +
-  scale_shape_manual(values = shape_palette_site) +
-  scale_color_manual(values = color_palette_site) +
-  scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  ggplot(aes(x = time_since_end,
+             y = biomass,
+             color = treatment,
+             group = treatment)) +
+  geom_line(alpha = 0.9,
+            linewidth = 0.5) +
+  scale_color_manual(values = c("reference" = reference_col,
+                                "removal" = removal_col)) +
+  geom_vline(xintercept = 0, 
+             linewidth = 0.5, 
+             linetype = 2, 
+             color = "grey") +
+  geom_hline(yintercept = 0, 
+             linewidth = 0.5, 
+             linetype = 2, 
+             color = "grey") +
+  annotate(geom = "rect", 
+           xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+           fill = "grey", 
+           alpha = 0.3) +
+  geom_text(aes(x = -6.75, 
+                y = annotation_y, 
+                label = removal_annotation), 
+            size = 2, color = "black") +
+  geom_text(aes(x = 5.5, 
+                y = annotation_y, 
+                label = recovery_annotation), 
+            size = 2, color = "black") +
+  scale_x_continuous(limits = c(-8, 7), 
+                     breaks = seq(-8, 7, by = 1), 
+                     minor_breaks = NULL) +
   raw_biomass_plot_theme() +
   labs(x = "Time since end of experiment (years)", 
-       y = expression(Sessile~invertebrate~biomass~(dry~g/m^{"2"}))) +
+       y = "Sessile invertebrate biomass (dry g/m\U00B2)") +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
+
 delta_continual_sites_epi_raw
 
-# ⟞ ⟞ iii. endo inverts --------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# --------------------------- 3. linear models ----------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# delta_continual_sites_endo_raw <- delta_endo_continual %>% 
-#   mutate(strip = case_when(
-#     site == "aque" ~ paste("(a) ", site_full, sep = ""),
-#     site == "napl" ~ paste("(b) ", site_full, sep = ""),
-#     site == "mohk" ~ paste("(c) ", site_full, sep = ""),
-#     site == "carp" ~ paste("(d) ", site_full, sep = "")
-#   )) %>% 
-#   ggplot() +
-#   geom_vline(xintercept = 0, lty = 2) +
-#   geom_hline(yintercept = 0, lty = 2) +
-#   geom_line(aes(x = time_since_end, y = control_endo, col = site), alpha = 0.5, linewidth = 2) +
-#   # control
-#   geom_point(aes(x = time_since_end, y = control_endo, shape = site), size = 1, alpha = 0.5, fill = "#FFFFFF") +
-#   # continual
-#   geom_line(aes(x = time_since_end, y = continual_endo, col = site), linewidth = 2) +
-#   geom_point(aes(x = time_since_end, y = continual_endo, shape = site, col = site), size = 1, fill = "#FFFFFF") +
-#   scale_shape_manual(values = shape_palette_site) +
-#   scale_color_manual(values = color_palette_site) +
-#   scale_fill_manual(values = color_palette_site) +
-#   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
-#   raw_biomass_plot_theme() +
-#   labs(x = "Time since end of experiment (years)", 
-#        y = expression(Endolithic~invertebrate~biomass~(dry~g/m^{"2"}))) +
-#   facet_wrap(~strip, scales = "free_y")
-# 
-# delta_continual_sites_endo_raw
+# This section includes code to construct, diagnose, and extract predictions
+# from linear models describing the relationship between time since the end of 
+# the removal experiment with understory algae and sessile invertebrate biomass. 
+# I used a nested data frame to fit the same models to subsets of the full 
+# dataset corresponding to each group. 
 
+# The `models` data frame includes the fit models during the kelp removal and
+# after the kelp removal, residuals for each, calculations for R2, and model
+# predictions. I chose  to visualize the residuals outside of the nested data 
+# frame for easier handling. One of the original models only included site as a 
+# random effect, but the experimental design necessitated using both site and 
+# year as random effects. Thus, the final analysis presented here includes two 
+# random effects in the models.
 
+# ⟞ a. model fitting ------------------------------------------------------
 
-##########################################################################-
-# 3. algae linear model ---------------------------------------------------
-##########################################################################-
+models <- bind_rows(algae_continual_long, epi_continual_long) %>% 
+  # create a nested data frame
+  nest(data = everything(), .by = group) %>% 
+  
+  # fit model for "during" experimental removal
+  mutate(fit_model_during = map(
+    data,
+    ~ glmmTMB(biomass ~ time_since_end*treatment + (1|site) + (1|year),
+              data = .x %>% filter(exp_dates == "during"),
+              na.action = na.pass,
+              family = ziGamma(link = "log"),
+              ziformula = ~1)
+  )) %>% 
+  # fit model for "after" experimental removal
+  mutate(fit_model_after = map(
+    data,
+    ~ glmmTMB(biomass ~ time_since_end*treatment + (1|site) + (1|year),
+              data = .x %>% filter(exp_dates == "after"),
+              na.action = na.pass,
+              family = ziGamma(link = "log"),
+              ziformula = ~1)
+  )) %>% 
+  
+  # simulate residuals for during and after models using DHARMa
+  mutate(during_residuals = map(
+    fit_model_during,
+    ~ simulateResiduals(.x)
+  )) %>% 
+  mutate(after_residuals = map(
+    fit_model_after,
+    ~ simulateResiduals(.x)
+  )) %>%  
+  
+  # calculate R2 for during and after models using MuMIn
+  mutate(r2_during = map(
+    fit_model_during,
+    ~ r.squaredGLMM(.x)
+  )) %>% 
+  mutate(r2_after = map(
+    fit_model_after,
+    ~ r.squaredGLMM(.x)
+  )) %>% 
+  
+  # generate predictions from models
+  mutate(during_predictions = map(
+    fit_model_during,
+    ~ ggpredict(.x,
+                terms = c("time_since_end[-7.5:0 by = 0.25]", "treatment"),
+                type = "fixed")
+  )) %>% 
+  mutate(after_predictions = map(
+    fit_model_after,
+    ~ ggpredict(.x,
+                terms = c("time_since_end[0:6.75 by = 0.25]", "treatment"),
+                type = "fixed")
+  ))
+
+# This throws the following warning twice: 
+# the effects of zero-inflation and dispersion model are ignored
+
+# ⟞ b. model diagnostics --------------------------------------------------
+
+# understory algae during
+plot(models[[5]][[1]])
+
+# sessile invertebrates during
+plot(models[[5]][[2]])
+
+# understory algae after
+plot(models[[6]][[1]])
+
+# sessile invertebrates after
+plot(models[[6]][[2]])
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ----------------------- 4. model visualizations -------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------ 5. tables --------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# -------------------------- OLD CODE BELOW HERE --------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # ⟞ a. during removal -----------------------------------------------------
 
@@ -367,7 +326,7 @@ delta_continual_sites_epi_raw
 #   ziformula = ~1)
 
 lm_raw_algae_during_zigamma_02 <- glmmTMB(
-  algae_biomass ~ time_since_end*treatment + (1|site) + (1|year), 
+  biomass ~ time_since_end*treatment + (1|site) + (1|year), 
   data = algae_continual_long %>% filter(exp_dates == "during"), 
   na.action = na.pass,
   family = ziGamma(link = "log"),
@@ -413,13 +372,14 @@ lm_raw_algae_during_zigamma_summary <- lm_raw_algae_during_zigamma_02 %>%
 
 # filter out zero-inflated component
 lm_raw_algae_during_zigamma_summary$table_body <- lm_raw_algae_during_zigamma_summary$table_body %>% 
-  filter(component != "zi")
+  filter(component != "zi") %>% 
+  drop_na(term)
 # change labels
 lm_raw_algae_during_zigamma_summary$table_body$label <- c(
   `(Intercept)` = "(Intercept)",
   time_since_end = "Time since end",
   treatmentremoval = "Treatment (removal)",
-  `time_since_end:treatmentremoval` = "Time since end * treatment (removal)" 
+  `time_since_end:treatmentremoval` = "Time since end × treatment (removal)" 
 )
 
 # final table 
