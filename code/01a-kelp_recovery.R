@@ -232,7 +232,7 @@ continual_sites_raw <- delta_continual %>%
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
   scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
-  raw_biomass_plot_theme() +
+  raw_biomass_plot_theme +
   labs(x = "Time since end of experiment (years)", 
        y = "Giant kelp biomass (dry g/m\U00B2)") +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
@@ -287,7 +287,7 @@ density_timeseries <- density %>%
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
   scale_x_continuous(breaks = seq(-8, 8, by = 1), minor_breaks = NULL) +
-  raw_biomass_plot_theme() +
+  raw_biomass_plot_theme +
   theme(plot.title = element_text(size = 10)) +
   labs(x = "Time since end of experiment (years)", 
        y = "Giant kelp density",
@@ -319,7 +319,7 @@ fronds_timeseries <- fronds_clean %>%
   scale_color_manual(values = color_palette_site) +
   scale_fill_manual(values = color_palette_site) +
   scale_x_continuous(breaks = seq(-8, 8, by = 1), minor_breaks = NULL) +
-  raw_biomass_plot_theme() +
+  raw_biomass_plot_theme +
   theme(plot.title = element_text(size = 10)) +
   labs(x = "Time since end of experiment (years)", 
        y = "Giant kelp fronds (number/m\U00B2)",
@@ -1240,7 +1240,7 @@ delta_predictions_after <- predicted_kelp_after_raw %>%
   mutate(delta = removal - reference) %>% 
   mutate(exp_dates = "after")
 
-overall_predictions <- ggplot() +
+delta_kelp_predictions <- ggplot() +
   geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
@@ -1273,10 +1273,10 @@ overall_predictions <- ggplot() +
        shape = "Site",
        title = "(b) Removal \U2212 reference")
 
-overall_predictions
+delta_kelp_predictions
 
-fig1_new <- overall_kelp / overall_predictions
-# fig1_new_v2 <- overall_kelp_removal / overall_kelp_reference / overall_predictions
+fig1_new <- overall_kelp / delta_kelp_predictions
+# fig1_new_v2 <- overall_kelp_removal / overall_kelp_reference / delta_kelp_predictions
 
 
 # ⟞ ⟞ iv. effect plots ----------------------------------------------------
@@ -1340,7 +1340,7 @@ effplot <- ggplot(data = recovery_slopes, aes(x = treatment, y = Coefficient)) +
   labs(x = "Treatment", 
        y = "Effect of time since end (years)") +
   theme_bw() +
-  raw_biomass_plot_theme() +
+  raw_biomass_plot_theme +
   facet_wrap(~exp_dates)
 effplot
 
