@@ -1,0 +1,36 @@
+---
+title: "SBC LTE model residuals"
+format: pdf
+---
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, error = FALSE, include = FALSE}
+source(here::here("code", "01a-kelp_recovery.R"))
+```
+
+Model structure:
+$$
+delta continual \sim time since end + (1|site)
+$$
+
+```{r fig.width = 8, fig.height = 6}
+DHARMa::simulateResiduals(lm_kelp_during_lmer, plot = T)
+```
+
+Model code:
+```{r eval = FALSE}
+lm_kelp_during_lme_ar4_season <- nlme::lme(
+  delta_continual ~ time_since_end + quarter + time_since_end*quarter, random = ~1|site,
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  na.action = na.pass,
+  correlation = corARMA(p = 4, q = 0)) 
+```
+
+Diagnostic plots (from `performance`, because `DHARMa` doesn't allow correlation structures)
+```{r fig.width = 8, fig.height = 6}
+check_model(lm_kelp_during_lme_ar4_season)
+```
+
+
+
+
+

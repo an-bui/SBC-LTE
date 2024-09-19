@@ -1,0 +1,62 @@
+---
+title: "model residuals"
+format: pdf
+---
+
+```{r echo = FALSE, message = FALSE, warning = FALSE, error = TRUE, include = FALSE}
+source(here::here("code", "01a-kelp_recovery.R"))
+```
+
+
+## Linear transformation (to use Gamma model):
+
+```{r error = TRUE, fig.width = 8, fig.height = 6}
+# linear transformation: multiply by -1, add 8
+transform <- delta_continual %>% 
+  mutate(delta_continual_tf = delta_continual*-1 + 8) %>% 
+  filter(exp_dates == "during")
+
+ggplot(transform, aes(x = delta_continual_tf)) +
+  geom_histogram(bins = 10)
+
+lm_kelp_during_tf <- glmmTMB::glmmTMB(
+  delta_continual_tf ~ time_since_end + (1|site),
+  data = transform, 
+  na.action = na.pass,
+  family = Gamma(link = "log")) 
+
+plot(simulateResiduals(lm_kelp_during_tf))
+```
+
+## Tweedie model
+
+### variable histogram
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+ggplot(delta_continual, aes(x = delta_continual)) +
+  geom_histogram(bins = 10)
+```
+
+
+```{r message = FALSE, fig.width = 8, fig.height = 6}
+lm_kelp_during_tweedie <- glmmTMB(
+  delta_continual ~ time_since_end + (1|site),
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  family = tweedie(),
+  na.action = na.pass)
+
+plot(simulateResiduals(lm_kelp_during_tweedie))
+```
+
+
+## Tweedie model with season as a fixed effect
+```{r message = FALSE, fig.width = 8, fig.height = 6}
+lm_kelp_during_season_tweedie <- glmmTMB(
+  delta_continual ~ time_since_end + quarter + time_since_end*quarter + (1|site),
+  data = delta_continual %>% filter(exp_dates == "during"), 
+  family = tweedie(),
+  na.action = na.pass)
+
+plot(simulateResiduals(lm_kelp_during_season_tweedie))
+```
+
