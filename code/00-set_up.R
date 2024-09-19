@@ -37,7 +37,7 @@ library(performance)
 library(ggeffects)
 library(emmeans)
 library(modelbased)
-library(broom)
+library(broom.mixed)
 
 # ⟞ e. community analysis -------------------------------------------------
 
@@ -367,45 +367,45 @@ comparison_column_annual <- function(df) {
     mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Isla Vista", "Mohawk", "Carpinteria"))
 }
 
-comparison_column_continual <- function(df) {
-  df %>% 
-    # create a column for the points to compare for "1 year interval"
-    mutate(comp_1yr = case_when(
-      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011") ~ "start",
-      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016") ~ "during", 
-      site == "ivee" & kelp_year %in% c("kelp_2011-2012") ~ "start",
-      site == "ivee" & kelp_year %in% c("kelp_2015-2016") ~ "during",
-      kelp_year %in% c("kelp_2022-2023") ~ "after"
-    )) %>% 
-    mutate(comp_1yr = fct_relevel(comp_1yr, "start", "during", "after")) %>% 
-    # create a column for the points to compare for "2 year interval"
-    mutate(comp_2yrs = case_when(
-      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
-      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-      site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
-      site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
-      kelp_year %in% c("kelp_2021-2022", "kelp_2022-2023") ~ "after"
-    )) %>% 
-    mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
-    # create a column for the points to compare for "3 year interval"
-    mutate(comp_3yrs = case_when(
-      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
-      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-      site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
-      site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
-      kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022", "kelp_2022-2023") ~ "after"
-    )) %>% 
-    mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
-    # create a new sample ID that is site, date, quarter
-    unite("sample_ID", site, date, quarter, remove = FALSE)
-}
+# comparison_column_continual <- function(df) {
+#   df %>%
+#     # create a column for the points to compare for "1 year interval"
+#     mutate(comp_1yr = case_when(
+#       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011") ~ "start",
+#       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016") ~ "during",
+#       site == "ivee" & kelp_year %in% c("kelp_2011-2012") ~ "start",
+#       site == "ivee" & kelp_year %in% c("kelp_2015-2016") ~ "during",
+#       kelp_year %in% c("kelp_2022-2023") ~ "after"
+#     )) %>%
+#     mutate(comp_1yr = fct_relevel(comp_1yr, "start", "during", "after")) %>%
+#     # create a column for the points to compare for "2 year interval"
+#     mutate(comp_2yrs = case_when(
+#       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012") ~ "start",
+#       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+#       site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+#       site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+#       kelp_year %in% c("kelp_2021-2022", "kelp_2022-2023") ~ "after"
+#     )) %>%
+#     mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>%
+#     # create a column for the points to compare for "3 year interval"
+#     mutate(comp_3yrs = case_when(
+#       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2010-2011", "kelp_2011-2012", "kelp_2012-2013") ~ "start",
+#       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+#       site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+#       site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+#       kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022", "kelp_2022-2023") ~ "after"
+#     )) %>%
+#     mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>%
+#     # create a new sample ID that is site, date, quarter
+#     unite("sample_ID", site, date, quarter, remove = FALSE)
+# }
 
 comparison_column_continual_new <- function(df) {
   df %>% 
     mutate(comp_1yrs = case_when(
-      site %in% c("aque", "carp") & between(time_since_end, -7.25, -6.25) ~ "start",
+      site %in% c("aque", "mohk", "carp") & between(time_since_end, -7.25, -6.25) ~ "start",
       site == "napl" & between(time_since_end, -6.25, -5.25) ~ "start",
-      site == "mohk" & between(time_since_end, -7, -6) ~ "start",
+      # site == "mohk" & between(time_since_end, -7, -6) ~ "start",
       
       site %in% c("aque", "napl", "mohk", "carp") & between(time_since_end, -1.25, -0.25) ~ "during",
       
@@ -415,9 +415,9 @@ comparison_column_continual_new <- function(df) {
     )) %>% 
     mutate(comp_1yrs = fct_relevel(comp_1yrs, "start", "during", "after")) %>% 
     mutate(comp_2yrs = case_when(
-      site %in% c("aque", "carp") & between(time_since_end, -7.25, -5.25) ~ "start",
+      site %in% c("aque", "mohk", "carp") & between(time_since_end, -7.25, -5.25) ~ "start",
       site == "napl" & between(time_since_end, -6.25, -4.25) ~ "start",
-      site == "mohk" & between(time_since_end, -7, -5) ~ "start",
+      # site == "mohk" & between(time_since_end, -7, -5) ~ "start",
       
       site %in% c("aque", "napl", "mohk", "carp") & between(time_since_end, -2.25, -0.25) ~ "during",
       
@@ -426,9 +426,9 @@ comparison_column_continual_new <- function(df) {
     )) %>% 
     mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
     mutate(comp_3yrs = case_when(
-      site %in% c("aque", "carp") & between(time_since_end, -7.25, -4.25) ~ "start",
+      site %in% c("aque", "mohk", "carp") & between(time_since_end, -7.25, -4.25) ~ "start",
       site == "napl" & between(time_since_end, -6.25, -3.25) ~ "start",
-      site == "mohk" & between(time_since_end, -7, -4) ~ "start",
+      # site == "mohk" & between(time_since_end, -7, -4) ~ "start",
       
       site %in% c("aque", "napl", "mohk", "carp") & between(time_since_end, -3.25, -0.25) ~ "during",
       
@@ -462,25 +462,25 @@ anova_summary_fxn <- function(adonis2.obj) {
 
 
 
-anova_summary_fxn <- function(adonis2.obj) {
-  # turn object name into string
-  name <- deparse(substitute(adonis2.obj))
-  
-  adonis2.obj %>% 
-    # turn adonis2 result into data frame
-    as.data.frame() %>% 
-    # make rownames "variables"
-    rownames_to_column("variables") %>% 
-    # rename Pr(>F) column into something intelligible
-    rename(p = `Pr(>F)`) %>% 
-    # round values to 2 decimal points
-    mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
-    # replace comp_.yrs with time period
-    mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
-    mutate(variables = str_replace(variables, "comp_.yr", "time period")) %>% 
-    # make object name column
-    mutate(model = name) 
-}
+# anova_summary_fxn <- function(adonis2.obj) {
+#   # turn object name into string
+#   name <- deparse(substitute(adonis2.obj))
+#   
+#   adonis2.obj %>% 
+#     # turn adonis2 result into data frame
+#     as.data.frame() %>% 
+#     # make rownames "variables"
+#     rownames_to_column("variables") %>% 
+#     # rename Pr(>F) column into something intelligible
+#     rename(p = `Pr(>F)`) %>% 
+#     # round values to 2 decimal points
+#     mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
+#     # replace comp_.yrs with time period
+#     mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
+#     mutate(variables = str_replace(variables, "comp_.yr", "time period")) %>% 
+#     # make object name column
+#     mutate(model = name) 
+# }
 
 difflsmeans_summary_fxn <- function(anova.obj) {
   anova.obj %>% 
@@ -492,6 +492,39 @@ difflsmeans_summary_fxn <- function(anova.obj) {
     mutate(across(c(estimate, std_error, t_value, pr_t), ~round(., digits = 3))) %>% 
     mutate(levels = fct_relevel(levels, c("start - during", "during - after", "start - after"))) %>% 
     arrange(levels)
+}
+
+# function to extract model summaries
+model_summary_fxn <- function(model) {
+  model %>% 
+    # use tidy to get model summary and calculate 95% CI
+    tidy(conf.int = TRUE) %>% 
+    # only include fixed conditional effects
+    filter(effect == "fixed" & component == "cond") %>%
+    select(term, estimate, p.value, conf.low, conf.high) %>% 
+    # create a new column that indicates whether an effect is significant
+    mutate(signif = case_when(
+      p.value <= 0.05 ~ "yes",
+      TRUE ~ "no"
+    )) %>% 
+    # create a p-value column that converts very small values to < 0.001
+    # and rounds all other values to relevant digits
+    mutate(p.value = case_when(
+      between(p.value, 0, 0.001) ~ "<0.001",
+      between(p.value, 0.001, 0.01) ~ as.character(round(p.value, digits = 3)),
+      between(p.value, 0.01, 1) ~ as.character(round(p.value, digits = 2))
+    )) %>%
+    # round other numeric values to two digits
+    mutate(across(where(is.numeric), ~ round(., digits = 2))) %>%
+    # create a confidence interval column
+    unite(ci_interval, conf.low, conf.high, sep = ", ") %>%
+    # rename the terms to be neater
+    mutate(term = case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "time_since_end" ~ "Time since end",
+      term == "treatmentremoval" ~ "Treatment (removal)",
+      term == "time_since_end:treatmentremoval" ~ "Time since end × treatment (removal)"
+    ))
 }
 
 ##########################################################################-
@@ -557,36 +590,36 @@ biomass <- read_rds(here("data", "all-species-biomass", "biomass.RDS"))
 
 # ⟞ c. LTE kelp fronds ----------------------------------------------------
 
-fronds <- read_csv(here("data", "kelp-fronds", "LTE_Kelp_All_Years_20230530.csv")) %>% 
-  clean_names() %>% 
-  # replace all -99999 values with NA
-  mutate(fronds = replace(fronds, fronds < 0, NA)) %>%
-  # create a sample_ID for each sampling date at each treatment at each site
-  unite("sample_ID", site, treatment, date, remove = FALSE) %>%
-  # change to lower case
-  mutate_at(c("treatment", "site"), str_to_lower) %>% 
-  # make a new column for during and after and set factor levels
-  exp_dates_column() %>%
-  # create a new column for season and set factor levels
-  season_column() %>% 
-  # take out all the first dates
-  filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates))) %>% 
-  # dangling controls (from annual plot surveys) makes things harder
-  filter(!(sample_ID %in% c("NAPL_CONTROL_2010-04-27", "CARP_CONTROL_2010-04-23",
-                            "AQUE_CONTROL_2010-04-26", "MOHK_CONTROL_2010-05-05"))) %>%
-  time_since_columns_continual() %>%
-  # calculating total fronds per transect
-  group_by(sample_ID) %>% 
-  mutate(fronds = sum(fronds)) %>% 
-  ungroup() %>% 
-  # calculating average fronds (across sampling dates for 2010-2012, when sampling was done 8x per year)
-  group_by(site, year, treatment, quarter, sp_code) %>%
-  mutate(fronds = mean(fronds)) %>%
-  # take out the "duplicates": only one sampling date per quarter in the dataframe, with values averaged across the two sampling dates
-  slice(1L) %>%
-  ungroup() %>%
-  # take out extraneous columns from time_since_columns_continual()
-  select(!quarter:test_min_time_yrs)
+# fronds <- read_csv(here("data", "kelp-fronds", "LTE_Kelp_All_Years_20230530.csv")) %>% 
+#   clean_names() %>% 
+#   # replace all -99999 values with NA
+#   mutate(fronds = replace(fronds, fronds < 0, NA)) %>%
+#   # create a sample_ID for each sampling date at each treatment at each site
+#   unite("sample_ID", site, treatment, date, remove = FALSE) %>%
+#   # change to lower case
+#   mutate_at(c("treatment", "site"), str_to_lower) %>% 
+#   # make a new column for during and after and set factor levels
+#   exp_dates_column() %>%
+#   # create a new column for season and set factor levels
+#   season_column() %>% 
+#   # take out all the first dates
+#   filter(!(sample_ID %in% c(aque_start_dates, napl_start_dates, ivee_start_dates, mohk_start_dates, carp_start_dates))) %>% 
+#   # dangling controls (from annual plot surveys) makes things harder
+#   filter(!(sample_ID %in% c("NAPL_CONTROL_2010-04-27", "CARP_CONTROL_2010-04-23",
+#                             "AQUE_CONTROL_2010-04-26", "MOHK_CONTROL_2010-05-05"))) %>%
+#   time_since_columns_continual() %>%
+#   # calculating total fronds per transect
+#   group_by(sample_ID) %>% 
+#   mutate(fronds = sum(fronds)) %>% 
+#   ungroup() %>% 
+#   # calculating average fronds (across sampling dates for 2010-2012, when sampling was done 8x per year)
+#   group_by(site, year, treatment, quarter, sp_code) %>%
+#   mutate(fronds = mean(fronds)) %>%
+#   # take out the "duplicates": only one sampling date per quarter in the dataframe, with values averaged across the two sampling dates
+#   slice(1L) %>%
+#   ungroup() %>%
+#   # take out extraneous columns from time_since_columns_continual()
+#   select(!quarter:test_min_time_yrs)
 
 
 ##########################################################################-
@@ -765,26 +798,26 @@ model_predictions_theme <- theme_bw() +
 model_predictions_aesthetics <- list(
   scale_color_manual(values = c(reference = reference_col, removal = removal_col),
                      labels = c("Reference", "Removal")),
-    scale_linetype_manual(values = c(reference = 2, removal = 1),
-                          labels = c("Reference", "Removal")),
+  scale_linetype_manual(values = c(reference = "22", removal = "solid"),
+                        labels = c("Reference", "Removal")),
   scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL),
   guides(color = guide_legend(keyheight = 0.6),
          shape = guide_legend(keyheight = 0.6),
          lty = guide_legend(keyheight = 0.6),
          keyheight = 1),
-    labs(x = "Time since end of removal (years)", 
-         y = "Biomass (dry g/m\U00B2)", 
-         linetype = "Treatment",
-         color = "Treatment",
-         shape = "Treatment",
-         size = "Treatment",
-         group = "Treatment")
+  labs(x = "Time since end of removal (years)", 
+       y = "Biomass (dry g/m\U00B2)", 
+       linetype = "Treatment",
+       color = "Treatment",
+       shape = "Treatment",
+       size = "Treatment",
+       group = "Treatment")
 )
 
 delta_aesthetics <- list(
   scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL),
   labs(x = "Time since end of removal (years)", 
-       y = "\U0394 biomass \n (removal \U2212 reference, dry g/m\U00B2)")
+       y = "\U0394 biomass (removal \U2212 reference, dry g/m\U00B2)")
 )
 
 model_predictions_background <- list(
@@ -815,21 +848,21 @@ shape_palette <- c("annual" = annual_shape,
 
 # ⟞ d. start-during-after -------------------------------------------------
 
-start_col <- "#BE5A47"
-during_col <- "#604A76"
-after_col <- "#84A6A2"
-  
-sda_biomass_theme <- function() {
-    theme_bw() +
-    theme(axis.title = element_text(size = 8),
-          axis.text = element_text(size = 7),
-          legend.text = element_text(size = 6), 
-          legend.title = element_text(size = 8),
-          plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(size = 10),
-          plot.title.position = "plot") 
-}
+# start_col <- "#BE5A47"
+# during_col <- "#604A76"
+# after_col <- "#84A6A2"
+#   
+# sda_biomass_theme <- function() {
+#     theme_bw() +
+#     theme(axis.title = element_text(size = 8),
+#           axis.text = element_text(size = 7),
+#           legend.text = element_text(size = 6), 
+#           legend.title = element_text(size = 8),
+#           plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
+#           panel.grid.minor = element_blank(),
+#           plot.title = element_text(size = 10),
+#           plot.title.position = "plot") 
+# }
 
 # ⟞ e. site full names ----------------------------------------------------
 
@@ -867,141 +900,141 @@ sites_continual_full <- setNames(c("Arroyo Quemado",
 
 # ⟞ f. delta timeseries ---------------------------------------------------
 
-delta_timeseries_theme <- function(group) {
-  if(group == "algae") {
-    legend.coords <- c(0.83, 0.78)
-  } else if (group %in% c("epi", "endo")) {
-    legend.coords <- "none"
-  } else {
-    warning("Check your group! It should be 'algae', 'epi', or 'endo'.")
-    return(NA)
-  }
-  
-  theme_bw() + 
-    theme(axis.title = element_text(size = 8),
-          axis.text = element_text(size = 7),
-          legend.text = element_text(size = 5), 
-          legend.title = element_text(size = 5),
-          legend.key.size = unit(0.25, units = "cm"), 
-          legend.position = legend.coords, 
-          plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
-          plot.title = element_text(size = 10),
-          plot.subtitle = element_text(size = 10),
-          plot.title.position = "plot") 
-}
+# delta_timeseries_theme <- function(group) {
+#   if(group == "algae") {
+#     legend.coords <- c(0.83, 0.78)
+#   } else if (group %in% c("epi", "endo")) {
+#     legend.coords <- "none"
+#   } else {
+#     warning("Check your group! It should be 'algae', 'epi', or 'endo'.")
+#     return(NA)
+#   }
+#   
+#   theme_bw() + 
+#     theme(axis.title = element_text(size = 8),
+#           axis.text = element_text(size = 7),
+#           legend.text = element_text(size = 5), 
+#           legend.title = element_text(size = 5),
+#           legend.key.size = unit(0.25, units = "cm"), 
+#           legend.position = legend.coords, 
+#           plot.margin = margin(0.2, 0.2, 0.2, 0.2, unit = "cm"),
+#           plot.title = element_text(size = 10),
+#           plot.subtitle = element_text(size = 10),
+#           plot.title.position = "plot") 
+# }
 
 # ⟞ g. ordinations --------------------------------------------------------
 
-nmds_plot_fxn <- function(plotdf, treatment, simper_spp) {
-  
-  if(treatment == "continual"){
-    df <- plotdf %>% 
-      filter(treatment == "continual")
-  } else if(treatment == "control") {
-    df <- plotdf %>% 
-      filter(treatment == "control")
-  } else if(treatment == c("both")) {
-    df <- plotdf
-  } else {
-    warning("Check your arguments! You may have specified the wrong treatment.")
-    return(NA)
-  }
-  
-  if(treatment == "continual"){
-    treatment_linetype <- 1
-  } else if(treatment == "control") {
-    treatment_linetype <- 2
-  }
-  
-  if(treatment == "continual"){
-    point_aesthetics <- function() {
-      df %>% 
-        mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
-        ggplot(aes(x = NMDS1, y = NMDS2)) +
-        coord_fixed() +
-        geom_vline(xintercept = 0, color = "grey", lty = 2) +
-        geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = comp_3yrs, fill = comp_3yrs), size = 1, alpha = 0.9) +
-        # ellipse
-        stat_ellipse(aes(color = comp_3yrs), linewidth = 0.5, linetype = treatment_linetype) 
-        # # arrows for species from SIMPER
-        # geom_text_repel(data = simper_spp, 
-        #                 aes(x = NMDS1, y = NMDS2, 
-        #                     label = stringr::str_wrap(scientific_name, 4, width = 40)),
-        #                 color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 2) +
-        # geom_segment(data = simper_spp,
-        #              aes(x = 0, y = 0,
-        #                  xend = NMDS1, yend = NMDS2),
-        #              arrow = arrow(length = unit(0.1, "cm")), 
-        #              color = "#C70000", linewidth = 0.5) 
-    }
-  } else if(treatment == "control") {
-    point_aesthetics <- function() {
-      df %>% 
-        mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
-        ggplot(aes(x = NMDS1, y = NMDS2)) +
-        coord_fixed(ratio = 1) +
-        geom_vline(xintercept = 0, color = "grey", lty = 2) +
-        geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = comp_3yrs, fill = comp_3yrs), size = 1, alpha = 0.9) +
-        # ellipse
-        stat_ellipse(aes(color = comp_3yrs), linewidth = 0.5, linetype = treatment_linetype) 
-    }
-  } else if(treatment == "both") {
-    point_aesthetics <- function() {
-      df %>% 
-        mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>% 
-        ggplot(aes(x = NMDS1, y = NMDS2)) +
-        coord_fixed() +
-        geom_vline(xintercept = 0, color = "grey", lty = 2) +
-        geom_hline(yintercept = 0, color = "grey", lty = 2) +
-        geom_point(aes(shape = comp_3yrs, fill = comp_3yrs, alpha = treatment), size = 1) +
-        # ellipse
-        stat_ellipse(aes(color = comp_3yrs, linetype = treatment), linewidth = 0.5) +
-        scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5),
-                           labels = c("continual" = "Removal", "control" = "Reference")) +
-        scale_linetype_manual(values = c("continual" = 1, "control" = 2),
-                              labels = c("continual" = "Removal", "control" = "Reference"))
-    }
-  } else {
-    warning("Check your arguments! You may have specified the wrong treatment.")
-    return(NA)
-  }
-  
-  # site points
-  point_aesthetics() +
-    # colors and linetypes
-    scale_color_manual(values = c(start_col, during_col, after_col)) +
-    scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
-    scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
-    theme_bw() +
-    theme(axis.title = element_text(size = 8),
-          axis.text = element_text(size = 7),
-          legend.text = element_text(size = 7), 
-          legend.spacing.y = unit(0.01, units = "cm"),
-          legend.title = element_text(size = 8),
-          plot.title = element_text(size = 8),
-          plot.title.position = "plot",
-          legend.key.size = unit(0.5, units = "cm"),
-          aspect.ratio = 1) +
-    guides(fill = guide_legend(byrow = TRUE),
-           shape = guide_legend(byrow = TRUE),
-           color = guide_legend(byrow = TRUE)) +
-    labs(shape = "Site",
-         color = "Time period",
-         fill = "Time period")
-}
+# nmds_plot_fxn <- function(plotdf, treatment) {
+# 
+#   if(treatment == "continual"){
+#     df <- plotdf %>%
+#       filter(treatment == "continual")
+#   } else if(treatment == "control") {
+#     df <- plotdf %>%
+#       filter(treatment == "control")
+#   } else if(treatment == c("both")) {
+#     df <- plotdf
+#   } else {
+#     warning("Check your arguments! You may have specified the wrong treatment.")
+#     return(NA)
+#   }
+# 
+#   if(treatment == "continual"){
+#     treatment_linetype <- 1
+#   } else if(treatment == "control") {
+#     treatment_linetype <- 2
+#   }
+# 
+#   if(treatment == "continual"){
+#     point_aesthetics <- function() {
+#       df %>%
+#         mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>%
+#         ggplot(aes(x = NMDS1, y = NMDS2)) +
+#         coord_fixed() +
+#         geom_vline(xintercept = 0, color = "grey", lty = 2) +
+#         geom_hline(yintercept = 0, color = "grey", lty = 2) +
+#         geom_point(aes(shape = comp_3yrs, fill = comp_3yrs), size = 1, alpha = 0.9) +
+#         # ellipse
+#         stat_ellipse(aes(color = comp_3yrs), linewidth = 0.5, linetype = treatment_linetype)
+#         # # arrows for species from SIMPER
+#         # geom_text_repel(data = simper_spp,
+#         #                 aes(x = NMDS1, y = NMDS2,
+#         #                     label = stringr::str_wrap(scientific_name, 4, width = 40)),
+#         #                 color = "#C70000", lineheight = 0.8, max.overlaps = 100, size = 2) +
+#         # geom_segment(data = simper_spp,
+#         #              aes(x = 0, y = 0,
+#         #                  xend = NMDS1, yend = NMDS2),
+#         #              arrow = arrow(length = unit(0.1, "cm")),
+#         #              color = "#C70000", linewidth = 0.5)
+#     }
+#   } else if(treatment == "control") {
+#     point_aesthetics <- function() {
+#       df %>%
+#         mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>%
+#         ggplot(aes(x = NMDS1, y = NMDS2)) +
+#         coord_fixed(ratio = 1) +
+#         geom_vline(xintercept = 0, color = "grey", lty = 2) +
+#         geom_hline(yintercept = 0, color = "grey", lty = 2) +
+#         geom_point(aes(shape = comp_3yrs, fill = comp_3yrs), size = 1, alpha = 0.9) +
+#         # ellipse
+#         stat_ellipse(aes(color = comp_3yrs), linewidth = 0.5, linetype = treatment_linetype)
+#     }
+#   } else if(treatment == "both") {
+#     point_aesthetics <- function() {
+#       df %>%
+#         mutate(comp_3yrs = recode(comp_3yrs, start = "Start of removal", during = "End of removal", after = "Recovery period")) %>%
+#         ggplot(aes(x = NMDS1, y = NMDS2)) +
+#         coord_fixed() +
+#         geom_vline(xintercept = 0, color = "grey", lty = 2) +
+#         geom_hline(yintercept = 0, color = "grey", lty = 2) +
+#         geom_point(aes(shape = comp_3yrs, fill = comp_3yrs, alpha = treatment), size = 1) +
+#         # ellipse
+#         stat_ellipse(aes(color = comp_3yrs, linetype = treatment), linewidth = 0.5) +
+#         scale_alpha_manual(values = c("continual" = 0.9, "control" = 0.5),
+#                            labels = c("continual" = "Removal", "control" = "Reference")) +
+#         scale_linetype_manual(values = c("continual" = 1, "control" = 2),
+#                               labels = c("continual" = "Removal", "control" = "Reference"))
+#     }
+#   } else {
+#     warning("Check your arguments! You may have specified the wrong treatment.")
+#     return(NA)
+#   }
+# 
+#   # site points
+#   point_aesthetics() +
+#     # colors and linetypes
+#     scale_color_manual(values = c(start_col, during_col, after_col)) +
+#     scale_fill_manual(values = c(start_col, during_col, after_col), guide = "none") +
+#     scale_shape_manual(values = c(aque_shape, napl_shape, mohk_shape, carp_shape)) +
+#     theme_bw() +
+#     theme(axis.title = element_text(size = 8),
+#           axis.text = element_text(size = 7),
+#           legend.text = element_text(size = 7),
+#           legend.spacing.y = unit(0.01, units = "cm"),
+#           legend.title = element_text(size = 8),
+#           plot.title = element_text(size = 8),
+#           plot.title.position = "plot",
+#           legend.key.size = unit(0.5, units = "cm"),
+#           aspect.ratio = 1) +
+#     guides(fill = guide_legend(byrow = TRUE),
+#            shape = guide_legend(byrow = TRUE),
+#            color = guide_legend(byrow = TRUE)) +
+#     labs(shape = "Site",
+#          color = "Time period",
+#          fill = "Time period")
+# }
 
 # ⟞ h. model residuals in ggplot ------------------------------------------
 
 # function
 
-resid_plot_fxn <- function(lm) {
-  ggplot() +
-    geom_point(aes(x = fitted(lm), y = resid(lm))) +
-    geom_hline(yintercept = 0) +
-    geom_smooth(aes(x = fitted(lm), y = resid(lm)))
-}
+# resid_plot_fxn <- function(lm) {
+#   ggplot() +
+#     geom_point(aes(x = fitted(lm), y = resid(lm))) +
+#     geom_hline(yintercept = 0) +
+#     geom_smooth(aes(x = fitted(lm), y = resid(lm)))
+# }
 
 # ⟞ i. raw biomass plots --------------------------------------------------
 
@@ -1016,44 +1049,45 @@ raw_biomass_plot_theme <-
           legend.position = "none",
           panel.grid = element_blank()) 
 
+
 # ⟞ j. arrow plots --------------------------------------------------------
 
-arrow_plot_fxn <- function(site) {
-  
-  if(site == "aque") {
-    col <- aque_col
-  } else if(site == "napl") {
-    col <- napl_col
-  } else if(site == "mohk") {
-    col <- mohk_col
-  } else if(site == "carp") {
-    col <- carp_col
-  } else {
-    warning("Check your arguments! You may have specified the wrong site.")
-    return(NA)
-  }
-  
-  delta_continual %>% 
-    filter(site == {{ site }} & exp_dates == "after") %>% 
-    ggplot() +
-    geom_abline(slope = 1, lty = 2) +
-    geom_segment(
-      aes(x = control, y = continual,
-          xend = c(tail(control, n = -1), NA),
-          yend = c(tail(continual, n = -1), NA)),
-      color = col,
-      arrow = arrow(length = unit(0.1, "cm"))
-    ) +
-    scale_x_continuous(limits = c(0, 1600)) +
-    scale_y_continuous(limits = c(0, 2000)) +
-    theme_bw() +
-    theme(axis.title = element_blank(),
-          plot.title = element_text(size = 8),
-          plot.title.position = "plot",
-          axis.text = element_text(size = 7),
-          panel.grid.minor = element_line(color = "#FFFFFF")) 
-
-}
+# arrow_plot_fxn <- function(site) {
+#   
+#   if(site == "aque") {
+#     col <- aque_col
+#   } else if(site == "napl") {
+#     col <- napl_col
+#   } else if(site == "mohk") {
+#     col <- mohk_col
+#   } else if(site == "carp") {
+#     col <- carp_col
+#   } else {
+#     warning("Check your arguments! You may have specified the wrong site.")
+#     return(NA)
+#   }
+#   
+#   delta_continual %>% 
+#     filter(site == {{ site }} & exp_dates == "after") %>% 
+#     ggplot() +
+#     geom_abline(slope = 1, lty = 2) +
+#     geom_segment(
+#       aes(x = control, y = continual,
+#           xend = c(tail(control, n = -1), NA),
+#           yend = c(tail(continual, n = -1), NA)),
+#       color = col,
+#       arrow = arrow(length = unit(0.1, "cm"))
+#     ) +
+#     scale_x_continuous(limits = c(0, 1600)) +
+#     scale_y_continuous(limits = c(0, 2000)) +
+#     theme_bw() +
+#     theme(axis.title = element_blank(),
+#           plot.title = element_text(size = 8),
+#           plot.title.position = "plot",
+#           axis.text = element_text(size = 7),
+#           panel.grid.minor = element_line(color = "#FFFFFF")) 
+# 
+# }
 
 
 # ⟞ k. column titles ------------------------------------------------------
