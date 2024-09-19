@@ -601,45 +601,16 @@ model_summary_fxn <- function(model) {
     )) %>% 
     mutate(p.value = case_when(
       p.value <= 0.001 ~ "<0.001",
-      TRUE ~ as.character(round(p.value, digits = 3))
+      TRUE ~ as.character(signif(p.value, digits = 2))
     )) %>%
-    mutate(across(where(is.numeric), ~ round(., digits = 3))) %>%
-    unite(`95% CI`, conf.low, conf.high, sep = ", ") %>%
+    mutate(across(where(is.numeric), ~ round(., digits = 2))) %>%
+    unite(ci_interval, conf.low, conf.high, sep = ", ") %>%
     mutate(term = case_when(
       term == "(Intercept)" ~ "Intercept",
       term == "time_since_end" ~ "Time since end",
       term == "treatmentremoval" ~ "Treatment (removal)",
       term == "time_since_end:treatmentremoval" ~ "Time since end × treatment (removal)"
-    )) %>%
-    rename(Term = term, Estimate = estimate, `p-value` = p.value)
-}
-
-table_formatting_fxn <- function(df) {
-  df %>% 
-  gt() %>%
-    tab_style(
-      style = list(
-        cell_text(weight = "bold")
-      ),
-      locations = cells_body(
-        columns = `p-value.x`,
-        rows = `signif.x` == "yes"
-      )
-    ) %>%
-    tab_style(
-      style = list(
-        cell_text(weight = "bold")
-      ),
-      locations = cells_body(
-        columns = `p-value.y`,
-        rows = `signif.y` == "yes"
-      )
-    ) %>% 
-    cols_hide(c(signif.x, signif.y)) %>% 
-    tab_spanner(label = "Kelp removal", 
-                columns = c(contains(".x"))) %>% 
-    tab_spanner(label = "Recovery", 
-                columns = c(contains(".y")))
+    ))
 }
 
 model_summaries <- models %>% 
@@ -652,41 +623,63 @@ model_summaries <- models %>%
     fit_model_after,
     ~ model_summary_fxn(.x) 
   )) %>% 
-  mutate(merged_tables = map2(
-    during_summary, after_summary,
-    ~ left_join(.x, .y, by = "Term") %>% 
-      table_formatting_fxn()
+  mutate(merged_tables = pmap(
+    list(group, during_summary, after_summary),
+    bind_cols
   ))
 
+model_summary_table <- bind_rows(model_summaries[[6]][[1]], 
+                                 model_summaries[[6]][[2]]) %>% 
+  as_grouped_data(groups = c("...1")) %>% 
+  flextable(col_keys = c("...1", 
+                         "term...2",
+                         "estimate...3",
+                         "p.value...4",
+                         "ci_interval...5",
+                         "term...7",
+                         "estimate...8",
+                         "p.value...9",
+                         "ci_interval...10")) %>%
+  add_header_row(top = TRUE, 
+                 values = c("", "Kelp removal", "Recovery"), 
+                 colwidths = c(1, 4, 4)) %>% 
+  style(i = ~ signif...6 == "yes",
+        j = "p.value...4",
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  style(i = ~ signif...11 == "yes",
+        j = "p.value...9",
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  align(i = 1, 
+        j = NULL, 
+        align = "center", 
+        part = "header") %>% 
+  set_header_labels(...1 = "",
+                    term...2 = "Term",
+                    term...7 = "Term",
+                    estimate...3 = "Estimate",
+                    estimate...8 = "Estimate",
+                    p.value...4 = "p-value",
+                    p.value...9 = "p-value",
+                    ci_interval...5 = "95% CI",
+                    ci_interval...10 = "95% CI") %>% 
+  footnote(
+    i = 2, 
+    j = c(5, 9),
+    ref_symbols = "1",
+    value = as_paragraph("Confidence interval"),
+    part = "header"
+  ) %>% 
+  autofit %>% 
+  fit_to_width(10) %>% 
+  font(fontname = "Times New Roman",
+       part = "all")
 
-model_summaries[[6]][[1]] %>%
+model_summary_table
   save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
+  
 
-model_summaries[[4]][[1]]
-model_summaries[[4]][[2]]
-
-model_summaries[[5]][[1]]
-model_summaries[[5]][[2]]
-
-model_summaries[[6]][[1]]
-
-# individual group tables
-lm_algae_zigamma_tables <- tbl_merge(tbls = list(lm_raw_algae_during_zigamma_summary, lm_raw_algae_recovery_zigamma_summary),
-                                     tab_spanner = c("**Kelp removal**", "**Recovery**")) 
-
-lm_ep_zigamma_tables <- tbl_merge(tbls = list(lm_raw_epi_during_zigamma_summary, lm_raw_epi_recovery_zigamma_summary),
-                                  tab_spanner = c("**Kelp removal**", "**Recovery**")) 
-
-# stack tables
-lm_zigamma_summary_tables <- tbl_stack(
-  tbls = list(lm_kelp_zigamma_tables, lm_algae_zigamma_tables, lm_ep_zigamma_tables),
-  group_header = c("Giant kelp", "Understory macroalgae", "Sessile invertebrates"),
-  quiet = TRUE) %>% 
-  as_flex_table() %>% 
-  font(fontname = "Times New Roman", part = "all")
-
-lm_zigamma_summary_tables %>%
-  save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # -------------------------- OLD CODE BELOW HERE --------------------------
