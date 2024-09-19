@@ -14,7 +14,7 @@ library(rlang)
 
 # ⟞ b. visualization ------------------------------------------------------
 
-library(patchwork)
+# library(patchwork)
 library(cowplot)
 library(ggrepel)
 library(scales)
