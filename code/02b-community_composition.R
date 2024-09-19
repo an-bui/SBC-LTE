@@ -610,12 +610,17 @@ epi_scores <- pluck(comm_visualizations, 4, 1)
 
 # plotting start of experiment reference and removal plots
 
+# making axis limits consistent for easy comparison between panels
+algae_axis_limits <- list(
+  scale_x_continuous(limits = c(-0.55, 0.55), 
+                     breaks = c(-0.5, 0, 0.5)),
+  scale_y_continuous(limits = c(-0.55, 0.55), 
+                     breaks = c(-0.5, 0, 0.5))
+)
+
 algae_start_plot <- nmds_plot_fxn(algae_scores,
                                      "start") +
-  scale_x_continuous(limits = c(-0.55, 0.55), 
-                     breaks = c(-0.5, 0, 0.5)) +
-  scale_y_continuous(limits = c(-0.55, 0.55), 
-                     breaks = c(-0.5, 0, 0.5)) +
+  algae_axis_limits +
   annotate("text", 
            x = -0.35, y = 0.5, 
            label = "Reference", 
@@ -630,28 +635,26 @@ algae_start_plot <- nmds_plot_fxn(algae_scores,
 
 algae_during_plot <- nmds_plot_fxn(algae_scores,
                                      "during") +
-  scale_x_continuous(limits = c(-0.55, 0.55), 
-                     breaks = c(-0.5, 0, 0.5)) +
-  scale_y_continuous(limits = c(-0.55, 0.55), 
-                     breaks = c(-0.5, 0, 0.5)) +
+  algae_axis_limits +
   labs(title = "(b) End of removal") 
 
 algae_after_plot <- nmds_plot_fxn(algae_scores,
                                       "after") +
-  scale_x_continuous(limits = c(-0.55, 0.55), 
-                     breaks = c(-0.5, 0, 0.5)) +
-  scale_y_continuous(limits = c(-0.55, 0.55), 
-                     breaks = c(-0.5, 0, 0.5)) +
+  algae_axis_limits +
   labs(title = "(c) Recovery period") 
 
 algae_start_plot
 algae_during_plot
 algae_after_plot
 
+epi_axis_limits <- list(
+  scale_x_continuous(limits = c(-0.35, 0.25)),
+  scale_y_continuous(limits = c(-0.3, 0.3))
+)
+
 epi_start_plot <- nmds_plot_fxn(epi_scores,
                                      "start") +
-  scale_x_continuous(limits = c(-0.35, 0.25)) +
-  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  epi_axis_limits +
   annotate("text", 
            x = 0.15, y = 0.25, 
            label = "Reference", 
@@ -666,14 +669,12 @@ epi_start_plot <- nmds_plot_fxn(epi_scores,
 
 epi_during_plot <- nmds_plot_fxn(epi_scores,
                                       "during") +
-  scale_x_continuous(limits = c(-0.35, 0.25)) +
-  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  epi_axis_limits +
   labs(title = "(e) End of removal") 
 
 epi_after_plot <- nmds_plot_fxn(epi_scores,
                                      "after") +
-  scale_x_continuous(limits = c(-0.35, 0.25)) +
-  scale_y_continuous(limits = c(-0.3, 0.3)) +
+  epi_axis_limits +
   labs(title = "(f) Recovery period") 
 
 epi_start_plot
