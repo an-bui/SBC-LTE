@@ -398,7 +398,7 @@ TukeyHSD(epi_betadisper_combo)
 
 set.seed(1)
 
-control_pairwise <- comm_analyses %>% 
+control_pairwise <- comm_permanova %>% 
   select(new_group, comp_3yrs_meta, comp_3yrs_mat) %>% 
   # create subsetted metadata data frames 
   # to only include time periods being compared
