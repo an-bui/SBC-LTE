@@ -38,7 +38,7 @@ group_biomass_wrangle <- function(df) {
     exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
     time_since_columns_continual() %>% 
     kelp_year_column() %>% 
-    comparison_column_continual() %>% 
+    comparison_column_continual_new() %>% 
     # make it longer
     pivot_longer(cols = c(control, continual)) %>% 
     # rename columns
@@ -199,22 +199,21 @@ models <- bind_rows(algae_continual_long, epi_continual_long) %>%
       mutate(exp_dates = "after")
   ))
 
-# This throws the following warning twice: 
-# the effects of zero-inflation and dispersion model are ignored
+# This throws warnings from r.squaredGLMM().
 
 # ⟞ b. model diagnostics --------------------------------------------------
 
 # understory algae during
-plot(models[[5]][[1]])
+plot(pluck(models, 5, 1))
 
 # sessile invertebrates during
-plot(models[[5]][[2]])
+plot(pluck(models, 5, 2))
 
 # understory algae after
-plot(models[[6]][[1]])
+plot(pluck(models, 6, 1))
 
 # sessile invertebrates after
-plot(models[[6]][[2]])
+plot(pluck(models, 6, 2))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ----------------------- 3. model visualizations -------------------------
@@ -406,14 +405,7 @@ obj <- ggplot() +
   model_predictions_background +
   
   # model predictions
-  geom_line(data = models[[9]][[1]], 
-            aes(x = x, 
-                y = predicted, 
-                color = group, 
-                linetype = group), 
-            linewidth = 1) +
-
-  geom_line(data = models[[10]][[1]], 
+  geom_line(data = pluck(models, 9, 1), 
             aes(x = x, 
                 y = predicted, 
                 color = group, 
@@ -423,14 +415,16 @@ obj <- ggplot() +
   # theming
   model_predictions_theme + 
   model_predictions_aesthetics + 
-  theme(legend.position = "right")
+  theme(legend.position = "right",
+        legend.text = element_text(size = 9),
+        legend.title = element_text(size = 9))
 
 legend <-  get_plot_component(obj, "guide-box-right", return_all = TRUE)
 
 # ⟞ ⟞ ii. plot arrangement ------------------------------------------------
 
 kelp_column <- plot_grid(kelp_title, 
-                         overall_kelp, 
+                         overall_kelp_predictions, 
                          delta_kelp_predictions, 
                          nrow = 3, 
                          rel_heights = c(1, 13, 13)) 
@@ -454,12 +448,12 @@ all_columns_with_legend <- plot_grid(kelp_column,
                                      epi_column, 
                                      legend_column,
                                      nrow = 1,
-                                     rel_widths = c(4, 4, 4, 1))
+                                     rel_widths = c(4, 4, 4, 1.5))
 
 # ⟞ ⟞ iii. saving ---------------------------------------------------------
 
 # ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-2_new-model_v1_", today(), ".jpg", sep = "")),
+#                   paste0("fig-2_new-model_v1_", today(), ".jpg")),
 #        plot = all_columns_with_legend,
 #        height = 16, width = 24, units = "cm",
 #        dpi = 400)
@@ -590,21 +584,32 @@ delta_continual_sites_epi_raw
 
 # This section includes code to extract the model summaries for each model.
 
+# ⟞ a. wrangling ----------------------------------------------------------
+
+# function to extract model summaries
 model_summary_fxn <- function(model) {
   model %>% 
+    # use tidy to get model summary and calculate 95% CI
     tidy(conf.int = TRUE) %>% 
+    # only include fixed conditional effects
     filter(effect == "fixed" & component == "cond") %>%
     select(term, estimate, p.value, conf.low, conf.high) %>% 
+    # create a new column that indicates whether an effect is significant
     mutate(signif = case_when(
       p.value <= 0.05 ~ "yes",
       TRUE ~ "no"
     )) %>% 
+    # create a p-value column that converts very small values to < 0.001
+    # and rounds all other values to two significant figures
     mutate(p.value = case_when(
       p.value <= 0.001 ~ "<0.001",
       TRUE ~ as.character(signif(p.value, digits = 2))
     )) %>%
+    # round other numeric values to two digits
     mutate(across(where(is.numeric), ~ round(., digits = 2))) %>%
+    # create a confidence interval column
     unite(ci_interval, conf.low, conf.high, sep = ", ") %>%
+    # rename the terms to be neater
     mutate(term = case_when(
       term == "(Intercept)" ~ "Intercept",
       term == "time_since_end" ~ "Time since end",
@@ -623,10 +628,13 @@ model_summaries <- models %>%
     fit_model_after,
     ~ model_summary_fxn(.x) 
   )) %>% 
+  # put all columns together
   mutate(merged_tables = pmap(
     list(group, during_summary, after_summary),
     bind_cols
   ))
+
+# ⟞ b. table creation -----------------------------------------------------
 
 model_summary_table <- bind_rows(model_summaries[[6]][[1]], 
                                  model_summaries[[6]][[2]]) %>% 
@@ -676,11 +684,15 @@ model_summary_table <- bind_rows(model_summaries[[6]][[1]],
   font(fontname = "Times New Roman",
        part = "all")
 
-model_summary_table
-  save_as_docx(path = here::here("tables", "ms-tables", paste("tbl-S1_", today(), ".docx", sep = "")))
+# ⟞ c. saving output ------------------------------------------------------
+
+# model_summary_table %>% 
+#   save_as_docx(path = here::here(
+#     "tables", 
+#     "ms-tables", 
+#     paste("tbl-S1_", today(), ".docx", sep = "")
+#     ))
   
-
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # -------------------------- OLD CODE BELOW HERE --------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
