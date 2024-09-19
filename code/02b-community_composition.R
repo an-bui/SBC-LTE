@@ -609,7 +609,6 @@ algae_scores <- pluck(comm_visualizations, 4, 2)
 epi_scores <- pluck(comm_visualizations, 4, 1)
 
 # plotting start of experiment reference and removal plots
-# `nmds_plot_fxn_v2` is a function generated in the 00-set_up.R script
 
 algae_start_plot <- nmds_plot_fxn(algae_scores,
                                      "start") +
@@ -651,7 +650,7 @@ algae_after_plot
 
 epi_start_plot <- nmds_plot_fxn(epi_scores,
                                      "start") +
-  scale_x_continuous(limits = c(-0.35, 0.22)) +
+  scale_x_continuous(limits = c(-0.35, 0.25)) +
   scale_y_continuous(limits = c(-0.3, 0.3)) +
   annotate("text", 
            x = 0.15, y = 0.25, 
