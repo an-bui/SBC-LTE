@@ -318,6 +318,10 @@ comm_permanova <- comm_nmds %>%
               strata = .y$site,
               method = "altGower")))
 
+algae_permanova_results <- pluck(comm_permanova, 24, 2)
+
+epi_permanova_results <- pluck(comm_permanova, 24, 1)
+
 # PERMANOVA results indicated that there was no interaction between treatment 
 # and time period for understory algae though there was a significant 
 # interaction between these two terms for sessile inverts.
@@ -1024,13 +1028,13 @@ all_pairwise <- bind_rows(algae_pairwise, epi_pairwise) %>%
 # gtsave(permanova_12_table,
 #        here::here("tables",
 #                   "ms-tables",
-#                   paste("tbl-S4_altgower_12comp_", today(), ".docx")),
+#                   paste0("tbl-S4_altgower_12comp_", today(), ".docx")),
 #        vwidth = 1500, vheight = 1000)
 # 
 # gtsave(permanova_3_table,
 #        here::here("tables",
 #                   "ms-tables",
-#                   paste("tbl-S4_altgower_3comp_", today(), ".docx")),
+#                   paste0("tbl-S4_altgower_3comp_", today(), ".docx")),
 #        vwidth = 1500, vheight = 1000)
 
 # ⟞ ⟞ ii. control pairwise PERMANOVA table --------------------------------
