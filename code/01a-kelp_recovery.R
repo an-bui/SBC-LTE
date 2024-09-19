@@ -1,52 +1,41 @@
-##########################################################################-
-# 0. set up ---------------------------------------------------------------
-##########################################################################-
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------- 0. set up -------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # only have to run this once per session
 source(here::here("code", "00-set_up.R"))
 
-##########################################################################-
-# 1. data frames ----------------------------------------------------------
-##########################################################################-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ----------------------- 1. data frame preparation -----------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# ⟞ a. annual removal deltas ----------------------------------------------
+# This section includes code to create data frames that are used in downstream
+# analysis in this script and joined with other data frames in other scripts. 
+# Thus, this script is the "source" for downstream scripts.
 
-# delta_annual <- biomass %>% 
-#   filter(sp_code == "MAPY" & treatment %in% c("control", "annual")) %>% 
-#   dplyr::select(-sp_code) %>% 
-#   dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
-#   pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
-#   # fill in values for sampling dates where control and annual were surveyed on different days
-#   mutate(control = case_when(
-#     site == "aque" & date == "2008-03-07" ~ 106.82000,
-#     site == "napl" & date == "2012-09-26" ~ 143.22088,
-#     TRUE ~ control
-#   )) %>% 
-#   mutate(delta_annual = annual - control) %>%  
-#   # missing dates are from AQUE 2008-03-05, NAPL 2012-09-25, NAPL 2008-10-10
-#   drop_na(delta_annual) %>% 
-#   mutate(exp_dates = case_when(
-#     # after removal ended:
-#     site == "aque" & date >= aque_after_date_annual ~ "after",
-#     site == "napl" & date >= napl_after_date_annual ~ "after",
-#     site == "ivee" & date >= ivee_after_date_annual ~ "after", 
-#     site == "mohk" & date >= mohk_after_date_annual ~ "after",
-#     site == "carp" & date >= carp_after_date_annual ~ "after",
-#     # everything else is "during" removal
-#     TRUE ~ "during"
-#   ),
-#   exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-#   time_since_columns_annual() %>% 
-#   kelp_year_column() %>% 
-#   comparison_column_annual() 
+# ⟞ a. delta kelp biomass -------------------------------------------------
 
-# ⟞ b. continual removal deltas -------------------------------------------
+# This data frame includes the calculation of "delta" biomass: the difference
+# in kelp biomass between removal (continual) and reference (control) plots,
+# along with the metadata for each sampling event.
+
+# The biomass dataset includes data from an experimental removal where kelp was
+# removed once a year (as opposed to quarterly). The annual removal experiment
+# started before the continual removal experiment, so the dataset includes 
+# observations from before the focal dataset for this project. Thus, there is a
+# step in the wrangling process in which observations before the continual
+# removal experiment started are dropped.
+
+# This code also relies on wrangling functions that are created in the 
+# `00-set_up.R` script.
 
 delta_continual <- biomass %>% 
   filter(sp_code == "MAPY" & treatment %in% c("control", "continual")) %>% 
   dplyr::select(-sp_code) %>% 
   dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
   pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
+  # calculate delta
   mutate(delta_continual = continual - control) %>%  
   # take out years where continual removal hadn't happened yet
   drop_na(delta_continual) %>% 
@@ -66,123 +55,198 @@ delta_continual <- biomass %>%
   left_join(., site_quality, by = "site") %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
-  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
+  mutate(site_full = fct_relevel(
+    site_full, 
+    "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  mutate(site = fct_relevel(
+    site, 
+    "aque", "napl", "mohk", "carp"))
+
+# ⟞ b. kelp biomass in long format ----------------------------------------
 
 # kelp biomass in long format
 continual_long <- delta_continual %>% 
   select(!delta_continual) %>% 
   pivot_longer(cols = c(control, continual)) %>% 
   rename(kelp_biomass = value, treatment = name) %>% 
-  mutate(treatment = case_match(treatment, "control" ~ "reference", "continual" ~ "removal")) %>% 
+  mutate(treatment = case_match(
+    treatment, 
+    "control" ~ "reference", 
+    "continual" ~ "removal")) %>% 
   unite("sample_ID", site, date, quarter, treatment, remove = FALSE) %>% 
   # calculate variation by observation
   group_by(exp_dates, treatment) %>% 
   mutate(mean = mean(kelp_biomass),
-         variation = ((kelp_biomass - mean(kelp_biomass))/mean(kelp_biomass))^2) %>% 
+         variation = 
+           ((kelp_biomass - mean(kelp_biomass))/mean(kelp_biomass))^2) %>% 
   ungroup()
 
-# ⟞ c. density ------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# --------------------------- 2. linear models ----------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-density <- biomass %>% 
-  filter(sp_code == "MAPY" & treatment %in% c("control", "continual")) %>% 
-  dplyr::select(-sp_code) %>% 
-  dplyr::select(site, year, month, treatment, date, density) %>% 
-  pivot_wider(names_from = treatment, values_from = density) %>% 
-  mutate(delta_continual_density = continual - control) %>%  
-  # take out years where continual removal hadn't happened yet
-  drop_na(delta_continual_density) %>% 
-  mutate(exp_dates = case_when(
-    # after removal ended
-    site == "aque" & date >= aque_after_date_continual ~ "after",
-    site == "napl" & date >= napl_after_date_continual ~ "after",
-    site == "mohk" & date >= mohk_after_date_continual ~ "after",
-    site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" removal
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_continual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_continual() %>% 
-  left_join(., site_quality, by = "site") %>% 
-  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-  rename("site_full" = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
-  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
+# This section includes code to model the effect of time since the end of the
+# experiment and treatment (reference or removal) on kelp biomass with random
+# effects of site and year using a zero-inflated Gammer distribution with a 
+# log link. 
 
-# ⟞ d. fronds -------------------------------------------------------------
+kelp_models <- continual_long %>% 
+  nest(data = everything(), .by = exp_dates) %>% 
+  mutate(kelp_model = map(
+    data,
+    ~ glmmTMB(
+        kelp_biomass ~ time_since_end*treatment + (1|site) + (1|year),
+        data = .x,
+        family = ziGamma(link = "log"),
+        ziformula = ~1
+    )
+  )) %>% 
+  mutate(residuals = map(
+    kelp_model,
+    ~ simulateResiduals(.x)
+  )) %>% 
+  mutate(r2 = map(
+    kelp_model,
+    ~ r.squaredGLMM(.x)
+  )) %>% 
+  mutate(predictions = case_when(
+    exp_dates == "during" ~ map(
+      kelp_model,
+      ~ ggpredict(.x,
+                  terms = c("time_since_end[-7.25:0 by = 0.25]", "treatment"),
+                  type = "fixed")
+    ),
+    exp_dates == "after" ~ map(
+      kelp_model,
+      ~ ggpredict(.x,
+                  terms = c("time_since_end[0:6.75 by = 0.25]", "treatment"),
+                  type = "fixed")
+    )
+  )) %>% 
+  mutate(delta_predictions = map2(
+    predictions, exp_dates,
+    ~ as.data.frame(.x) %>% 
+      select(x, group, predicted) %>% 
+      pivot_wider(names_from = group, values_from = predicted) %>% 
+      mutate(delta = removal - reference) %>% 
+      mutate(exp_dates = .y)
+  ))
 
-fronds_clean <- fronds %>% 
-  filter(treatment %in% c("control", "continual")) %>% 
-  dplyr::select(-sp_code) %>% 
-  dplyr::select(site, year, month, treatment, date, fronds) %>% 
-  pivot_wider(names_from = treatment, values_from = fronds) %>% 
-  mutate(delta_continual_fronds = continual - control) %>%  
-  # take out years where continual removal hadn't happened yet
-  drop_na(delta_continual_fronds) %>% 
-  mutate(exp_dates = case_when(
-    # after removal ended
-    site == "aque" & date >= aque_after_date_continual ~ "after",
-    site == "napl" & date >= napl_after_date_continual ~ "after",
-    site == "mohk" & date >= mohk_after_date_continual ~ "after",
-    site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" removal
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_continual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_continual() %>% 
-  left_join(., site_quality, by = "site") %>% 
-  left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-  rename("site_full" = value) %>% 
-  mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
-  mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
+# this throws a warning from `r.squaredGLMM`
 
-##########################################################################-
-# 2. timeseries plots -----------------------------------------------------
-##########################################################################-
+# residuals for model during experimental removal
+plot(pluck(kelp_models, 4, 1))
 
-# ⟞ a. delta annual plot --------------------------------------------------
+# residuals for model after experimental removal (during recovery period)
+plot(pluck(kelp_models, 4, 2))
 
-# delta_annual_plot <- ggplot(delta_annual, aes(x = time_since_end, y = delta_annual)) +
-#   geom_hline(yintercept = 0, lty = 2) +
-#   geom_point(aes(col = exp_dates)) +
-#   geom_smooth(method = "lm", aes(col = exp_dates)) +
-#   theme_bw() + 
-#   theme(legend.position = "none",
-#         axis.title = element_text(size = 14),
-#         plot.title = element_text(size = 18),
-#         axis.text = element_text(size = 10),
-#         strip.text = element_text(size = 10)) +
-#   labs(x = "Time since end of experiment", y = "\U0394 biomass (removal - reference)",
-#        title = "\U0394 annual") +
-#   facet_wrap(~site_full, ncol = 1, scales = "free_y")
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ----------------------- 3. model visualizations -------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# delta_annual_plot
+# ⟞ a. model predictions --------------------------------------------------
 
-# ⟞ b. delta continual plot -----------------------------------------------
+# This section includes code to create panels a and b from Figure 2. These 
+# figures depict modeled predictions for giant kelp biomass as a function of 
+# time since the end of the removal and treatment (reference or removal). The 
+# data underlying these predictions (i.e. the observed biomass at each sampling 
+# point) is plotted underneath the predictions.
 
-# delta_continual_plot <- ggplot(delta_continual, aes(x = time_since_end, y = delta_continual)) +
-#   geom_hline(yintercept = 0, lty = 2) +
-#   geom_point(aes(col = exp_dates)) +
-#   geom_smooth(method = "lm", aes(col = exp_dates)) +
-#   theme_bw() + 
-#   theme(legend.position = "none",
-#         axis.title = element_text(size = 14),
-#         plot.title = element_text(size = 18),
-#         axis.text = element_text(size = 10),
-#         strip.text = element_text(size = 10)) +
-#   labs(x = "Time since end of experiment", y = "\U0394 biomass (removal - reference)",
-#        title = "\U0394 continual") +
-#   facet_wrap(~site_full, ncol = 1, scales = "free_y")
-# 
-# delta_continual_plot
+# The  figures in this section and the following section rely on aesthetics 
+# that are saved in objects in the `00-set_up.R` script. These plots are then
+# combined with plots created in the `02a-community_recovery.R` script to 
+# create the final figure.
 
-# ⟞ c. raw biomass through time plot --------------------------------------
+overall_kelp_predictions <- ggplot() +
+  model_predictions_background +
+  # removal/recovery labels
+  # annotate(geom = "text", x = -6.75, y = 1925, label = "Removal", size = 3) +
+  # annotate(geom = "text", x = 5.5, y = 1925, label = "Recovery", size = 3) +
+  
+  # raw data 
+  geom_point(data = continual_long, 
+             aes(x = time_since_end, 
+                 y = kelp_biomass, 
+                 color = treatment), 
+             shape = 21,
+             alpha = 0.15,
+             size = 0.75) +
+  
+  # model predictions
+  geom_line(data = pluck(kelp_models, 6, 1), 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+  geom_ribbon(data = pluck(kelp_models, 6, 1), 
+              aes(x = x, 
+                  ymax = conf.high, 
+                  ymin = conf.low, 
+                  group = group), 
+              alpha = 0.05) +
+  geom_line(data = pluck(kelp_models, 6, 2), 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+  geom_ribbon(data = pluck(kelp_models, 6, 2), 
+              aes(x = x, 
+                  ymax = conf.high, 
+                  ymin = conf.low, 
+                  group = group), 
+              alpha = 0.05) +
+  # theming
+  model_predictions_theme + 
+  model_predictions_aesthetics + 
+  coord_cartesian(ylim = c(-10, 2000)) +
+  labs(title = "(a)") 
 
-continual_sites_raw <- delta_continual %>% 
+overall_kelp_predictions
+
+# ⟞ b. delta biomass  -----------------------------------------------------
+
+# This section includes code to create panel b from Figure 2. This figure 
+# depicts the "deltas", or difference in predicted biomass between reference 
+# and removal plots throughout the experimental removal and recovery period. 
+# The data for the lines is taken from the `kelp_models` object created in
+# section 2.
+
+delta_kelp_predictions <- ggplot() +
+  model_predictions_background +
+  geom_point(data = delta_continual,
+             aes(x = time_since_end, 
+                 y = delta_continual), 
+             shape = 2, 
+             alpha = 0.15,
+             size = 0.75) +
+  
+  # delta biomass
+  geom_line(data = pluck(kelp_models, 7, 1), 
+            aes(x = x, 
+                y = delta), 
+            linewidth = 1) +
+  geom_line(data = pluck(kelp_models, 7, 2), 
+            aes(x = x, 
+                y = delta), 
+            linewidth = 1) +
+  
+  delta_aesthetics +
+  model_predictions_theme +
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1800, 1000)) +
+  labs(title = "(a)")
+
+delta_kelp_predictions
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# -------------------------- 4. timeseries plot ---------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# This section contains code to create timeseries of kelp biomass for each
+# site.
+
+kelp_biomass_timeseries <- continual_long %>% 
   mutate(strip = case_when(
     site == "aque" ~ paste("(a) ", site_full, sep = ""),
     site == "napl" ~ paste("(b) ", site_full, sep = ""),
@@ -190,143 +254,182 @@ continual_sites_raw <- delta_continual %>%
     site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
   mutate(removal_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ "Removal"
-    # sample_ID == "napl_2010-06-11_Q2" ~ "Removal",
-    # sample_ID == "mohk_2010-07-23_Q3" ~ "Removal",
-    # sample_ID == "carp_2010-06-09_Q2" ~ "Removal"
+    sample_ID_short == "aque_2010-06-15" ~ "Removal"
   ),
   recovery_annotation = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ "Recovery"
-    # sample_ID == "napl_2010-06-11_Q2" ~ "Recovery",
-    # sample_ID == "mohk_2010-07-23_Q3" ~ "Recovery",
-    # sample_ID == "carp_2010-06-09_Q2" ~ "Recovery"
+    sample_ID_short == "aque_2010-06-15" ~ "Recovery"
   ),
   annotation_y = case_when(
-    sample_ID == "aque_2010-06-15_Q2" ~ 840
-    # sample_ID == "napl_2010-06-11_Q2" ~ 1010,
-    # sample_ID == "mohk_2010-07-23_Q3" ~ 1700,
-    # sample_ID == "carp_2010-06-09_Q2" ~ 650
+    sample_ID_short == "aque_2010-06-15" ~ 840
   )) %>% 
-  ggplot() +
-  geom_vline(xintercept = 0, linewidth = 0.5, color = "grey") +
-  geom_hline(yintercept = 0, linewidth = 0.5, color = "grey") +
-  annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
-            fill = "grey", alpha = 0.3) +
-  geom_text(aes(x = -6.75, y = annotation_y, label = removal_annotation), size = 2) +
-  geom_text(aes(x = 5.5, y = annotation_y, label = recovery_annotation), size = 2) +
-  # control
-  geom_line(aes(x = time_since_end, y = control), 
-            alpha = 0.9, 
-            linewidth = 0.5,
-            linetype = "B3",
-            color = reference_col) +
-  # geom_point(aes(x = time_since_end, y = control), shape = 21, color = "#FFFFFF", stroke = 0.5, fill = reference_col, size = 0.75) +
-  # continual
-  geom_line(aes(x = time_since_end, y = continual), 
-            alpha = 0.9, 
-            linewidth = 0.5,
-            linetype = 1,
-            color = removal_col) +
-  # geom_point(aes(x = time_since_end, y = continual), shape = 21, color = "#FFFFFF", stroke = 0.5, fill = removal_col, size = 0.75) +
-  scale_shape_manual(values = shape_palette_site) +
-  scale_color_manual(values = color_palette_site) +
-  scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL) +
+  ggplot(aes(x = time_since_end,
+             y = kelp_biomass,
+             color = treatment,
+             group = treatment,
+             linetype = treatment)) +
+  model_predictions_background +
+  geom_line(alpha = 0.9,
+            linewidth = 0.5) +
+
+  # geom_text(aes(x = -6.75, 
+  #               y = annotation_y, 
+  #               label = removal_annotation), 
+  #           size = 2, color = "black") +
+  # geom_text(aes(x = 5.5, 
+  #               y = annotation_y, 
+  #               label = recovery_annotation), 
+  #           size = 2, color = "black") +
+  model_predictions_aesthetics +
   raw_biomass_plot_theme +
-  labs(x = "Time since end of experiment (years)", 
-       y = "Giant kelp biomass (dry g/m\U00B2)") +
+  labs(y = "Giant kelp biomass (dry g/m\U00B2)") +
+  theme(legend.position = "inside",
+        legend.position.inside = c(0.9, 0.95),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 5),
+        legend.background = element_blank(),
+        legend.key.size = unit(0.4, "cm")) +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
 
-continual_sites_raw
+kelp_biomass_timeseries
 
+# ggsave(here::here("figures", "ms-figures",
+#                   paste("fig-S1_", today(), ".jpg", sep = "")),
+#        plot = kelp_biomass_timeseries,
+#        height = 12, width = 10, units = "cm",
+#        dpi = 300)
 
-# ⟞ d. summer biomass -----------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# --------------------------- 5. variation plots --------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-summer_biomass <- continual_long %>% 
-  filter(quarter == "Q3") %>% 
-  ggplot(aes(x = time_since_end, y = kelp_biomass)) +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
-  geom_line(aes(color = site, alpha = treatment), linewidth = 2) +
-  scale_color_manual(values = color_palette_site) +
-  geom_point(color = "#FFFFFF", size = 1) +
-  scale_alpha_manual(values = c(reference = 0.4, removal = 1)) +
-  scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
+variation_site <- continual_long %>% 
+  select(exp_dates, treatment, site, kelp_biomass) %>% 
+  group_by(exp_dates, treatment, site) %>% 
+  summarize(mean = mean(kelp_biomass),
+            variation = sd(kelp_biomass)/mean(kelp_biomass)) %>% 
+  ungroup()
+
+variation_plot <- ggplot(variation_site, 
+                         aes(x = treatment, 
+                             y = variation, 
+                             color = treatment)) +
+  geom_point(position = position_jitter(width = 0.1, seed = 666),
+             alpha = 0.8, shape = 21) +
+  stat_summary(fun.data = mean_se, 
+               geom = "pointrange") +
+  scale_color_manual(values = c(reference = reference_col, 
+                                removal = removal_col)) +
+  scale_x_discrete(labels = c(reference = "Reference", 
+                              removal = "Removal")) +
+  facet_wrap(~ exp_dates, 
+             labeller = labeller(
+               exp_dates = c("during" = "(a) Experimental removal", 
+                             "after" = "(b) Recovery period")
+               )
+             ) +
+  labs(x = "Treatment",
+       y = "Coefficient of variation") +
   theme_bw() +
-  theme(panel.grid = element_blank(),
-        legend.position = "none",
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        strip.text = element_text(hjust = 0, size = 10),
         strip.background = element_blank(),
-        strip.text = element_text(hjust = 0)) +
-  facet_wrap(~site_full) +
-  labs(x = "Time since end (years)",
-       y = "Giant kelp biomass (dry g/m\U00B2)",
-       title = "Summer kelp biomass")
- 
-summer_biomass
+        panel.grid = element_blank(),
+        legend.position = "none") 
 
+variation_plot
 
-# ⟞ e. density through time -----------------------------------------------
-  
-density_timeseries <- density %>% 
-  mutate(strip = case_when(
-    site == "aque" ~ paste("(a) ", site_full, sep = ""),
-    site == "napl" ~ paste("(b) ", site_full, sep = ""),
-    site == "mohk" ~ paste("(c) ", site_full, sep = ""),
-    site == "carp" ~ paste("(d) ", site_full, sep = "")
-  )) %>% 
-  ggplot() +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
-  # control
-  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.3, linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.3, fill = "#FFFFFF") +
-  # continual
-  geom_line(aes(x = time_since_end, y = continual, col = site), linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1, fill = "#FFFFFF") +
-  scale_shape_manual(values = shape_palette_site) +
-  scale_color_manual(values = color_palette_site) +
-  scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(breaks = seq(-8, 8, by = 1), minor_breaks = NULL) +
-  raw_biomass_plot_theme +
-  theme(plot.title = element_text(size = 10)) +
-  labs(x = "Time since end of experiment (years)", 
-       y = "Giant kelp density",
-       title = "Density") +
-  facet_wrap(~strip, scales = "free_y")
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ----------------------------- 6. means plots ----------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-density_timeseries
+# This section includes code to create conditional means plots to visualize
+# predicted kelp biomass in reference and removal plots in the recovery period.
+# There are two panels: one panel showing the difference between reference and
+# removal plots when time since end = 0 (i.e. at the beginning of the recovery
+# period), and another panel shwoing time since end = 4 (in the most recent
+# year of the recovery period).
 
+predicted_kelp_after_0 <- pluck(kelp_models, 3, 2) %>% 
+  ggpredict(terms = c("time_since_end [0]", "treatment"), 
+            type = "fixed")
 
-# ⟞ f. fronds through time ------------------------------------------------
+predicted_kelp_after_both <- pluck(kelp_models, 3, 2) %>% 
+  ggpredict(terms = c("time_since_end [4]", "treatment"), 
+            type = "fixed") %>% 
+  rbind(predicted_kelp_after_0_raw) %>% 
+  rename("treatment" = group, 
+         "kelp_biomass" = predicted,
+         "time_since_end" = x)
 
-fronds_timeseries <- fronds_clean %>% 
-  mutate(strip = case_when(
-    site == "aque" ~ paste("(a) ", site_full, sep = ""),
-    site == "napl" ~ paste("(b) ", site_full, sep = ""),
-    site == "mohk" ~ paste("(c) ", site_full, sep = ""),
-    site == "carp" ~ paste("(d) ", site_full, sep = "")
-  )) %>% 
-  ggplot() +
-  geom_vline(xintercept = 0, lty = 2) +
-  geom_hline(yintercept = 0, lty = 2) +
-  # control
-  geom_line(aes(x = time_since_end, y = control, col = site), alpha = 0.3, linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = control, shape = site), size = 1, alpha = 0.3, fill = "#FFFFFF") +
-  # continual
-  geom_line(aes(x = time_since_end, y = continual, col = site), linewidth = 2) +
-  geom_point(aes(x = time_since_end, y = continual, shape = site, col = site), size = 1, fill = "#FFFFFF") +
-  scale_shape_manual(values = shape_palette_site) +
-  scale_color_manual(values = color_palette_site) +
-  scale_fill_manual(values = color_palette_site) +
-  scale_x_continuous(breaks = seq(-8, 8, by = 1), minor_breaks = NULL) +
-  raw_biomass_plot_theme +
-  theme(plot.title = element_text(size = 10)) +
-  labs(x = "Time since end of experiment (years)", 
-       y = "Giant kelp fronds (number/m\U00B2)",
-       title = "Fronds") +
-  facet_wrap(~strip, scales = "free_y")
+means <- continual_long %>% 
+  filter(time_since_end == 0 | time_since_end == 4) %>% 
+  ggplot(aes(x = treatment, 
+             y = kelp_biomass, 
+             color = treatment)) +
+  geom_point(position = position_jitter(width = 0.1, seed = 1),
+             shape = 21, alpha = 0.8, size = 1) +
+  geom_pointrange(data = predicted_kelp_after_both,
+                  aes(ymin = conf.low, 
+                      ymax = conf.high)) +
+  scale_color_manual(values = c(reference = reference_col, 
+                                removal = removal_col)) +
+  scale_x_discrete(labels = c(reference = "Reference", 
+                              removal = "Removal")) +
+  labs(x = "Treatment",
+       y = "Giant kelp biomass (dry g/m\U00B2)") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        strip.text = element_text(hjust = 0, size = 10),
+        strip.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "none") +
+  facet_wrap(~time_since_end, 
+             labeller = labeller(
+               time_since_end = c("0" = "(a) Time since end = 0", 
+                                  "4" = "(b) Time since end = 4")))
 
-fronds_timeseries
+means
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------------------ 7. tables --------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# This section includes code to create summary tables for models from section
+# 2. These tables are then joined with tables created in the 
+# `02a-community_recovery.R` script to create table _____ in the manuscript. It
+# relies on the `model_summary_fxn()` from the `00-set_up.R` script.
+
+kelp_model_summaries <- kelp_models %>% 
+  select(exp_dates, kelp_model) %>% 
+  mutate(model_summary = map(
+    kelp_model,
+    ~ model_summary_fxn(.x) %>% 
+      mutate(group = "kelp") %>% 
+      relocate(group, .before = term)
+  )) 
+
+kelp_model_summaries_combined <- bind_cols(
+  pluck(kelp_model_summaries, 3, 1),
+  pluck(kelp_model_summaries, 3, 2)
+) %>% 
+  select(!group...7) %>% 
+  rename("group" = "group...1",
+         "term_removal" = "term...2",
+         "estimate_removal" = "estimate...3",
+         "p.value_removal" = "p.value...4",
+         "ci_interval_removal" = "ci_interval...5",
+         "signif_removal" = "signif...6",
+         "term_recovery" = "term...8",
+         "estimate_recovery" = "estimate...9",
+         "p.value_recovery" = "p.value...10",
+         "ci_interval_recovery" = "ci_interval...11",
+         "signif_recovery" = "signif...12")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ------------------OLD CODE BELOW HERE---------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##########################################################################-
 # 3. linear models --------------------------------------------------------
@@ -494,18 +597,18 @@ fronds_timeseries
 
 # raw kelp biomass model
 ## site random effect
-lm_kelp_during_zigamma_01 <- glmmTMB(
-  kelp_biomass ~ time_since_end*treatment + (1|site),
-  data = continual_long %>% filter(exp_dates == "during"), 
-  family = ziGamma(link = "log"),
-  ziformula = ~1)
-
-## site and year random effect
-lm_kelp_during_zigamma_02 <- glmmTMB(
-  kelp_biomass ~ time_since_end*treatment + (1|site) + (1|year),
-  data = continual_long %>% filter(exp_dates == "during"), 
-  family = ziGamma(link = "log"),
-  ziformula = ~1)
+# lm_kelp_during_zigamma_01 <- glmmTMB(
+#   kelp_biomass ~ time_since_end*treatment + (1|site),
+#   data = continual_long %>% filter(exp_dates == "during"), 
+#   family = ziGamma(link = "log"),
+#   ziformula = ~1)
+# 
+# ## site and year random effect
+# lm_kelp_during_zigamma_02 <- glmmTMB(
+#   kelp_biomass ~ time_since_end*treatment + (1|site) + (1|year),
+#   data = continual_long %>% filter(exp_dates == "during"), 
+#   family = ziGamma(link = "log"),
+#   ziformula = ~1)
 
 # df <- delta_continual %>% 
 #   filter(exp_dates == "during") %>% 
@@ -605,15 +708,15 @@ lm_kelp_during_zigamma_02 <- glmmTMB(
 # DHARMa::simulateResiduals(lm_kelp_during_zigamma_01, plot = T)
 # performance::check_model(lm_kelp_during_zigamma_01)
 
-DHARMa::simulateResiduals(lm_kelp_during_zigamma_02, plot = T)
-performance::check_model(lm_kelp_during_zigamma_02)
+# DHARMa::simulateResiduals(lm_kelp_during_zigamma_02, plot = T)
+# performance::check_model(lm_kelp_during_zigamma_02)
 
 # Rsquared
 # MuMIn::r.squaredGLMM(lm_kelp_during_lmer)
 # r.squaredGLMM(lm_kelp_during_lme_car1)
 # r.squaredGLMM(lm_kelp_during_lme_ar4)
 # r.squaredGLMM(lm_kelp_during_zigamma_01)
-r.squaredGLMM(lm_kelp_during_zigamma_02)
+# r.squaredGLMM(lm_kelp_during_zigamma_02)
 
 # summaries
 # summary(lm_kelp_during_lmer)

@@ -275,7 +275,8 @@ overall_algae_predictions <- ggplot() +
   model_predictions_theme + 
   model_predictions_aesthetics + 
   coord_cartesian(ylim = c(30, 800)) +
-  labs(title = "(c)") 
+  labs(title = "(c)",
+       y = "") 
 
 overall_algae_predictions
 
@@ -322,7 +323,8 @@ overall_epi_predictions <- ggplot() +
   model_predictions_theme + 
   model_predictions_aesthetics + 
   coord_cartesian(ylim = c(5, 155)) +
-  labs(title = "(e)") 
+  labs(title = "(e)",
+       y = "") 
 
 overall_epi_predictions
 
@@ -357,7 +359,8 @@ delta_algae_predictions <- ggplot() +
   
   delta_aesthetics +
   model_predictions_theme +
-  labs(title = "(d)")
+  labs(title = "(d)",
+       y = "")
 
 delta_algae_predictions
 
@@ -384,7 +387,8 @@ delta_epi_predictions <- ggplot() +
   
   delta_aesthetics +
   model_predictions_theme +
-  labs(title = "(f)")
+  labs(title = "(f)",
+       y = "")
 
 delta_epi_predictions
 
@@ -476,7 +480,7 @@ all_columns_with_legend <- plot_grid(kelp_column,
 
 # ⟞ a. understory macroalgae ----------------------------------------------
 
-delta_continual_sites_algae_raw <- algae_continual_long %>% 
+algae_biomass_timeseries <- algae_continual_long %>% 
   mutate(strip = case_when(
     site == "aque" ~ "(a) Arroyo Quemado",
     site == "napl" ~ "(b) Naples",
@@ -495,12 +499,11 @@ delta_continual_sites_algae_raw <- algae_continual_long %>%
   ggplot(aes(x = time_since_end,
              y = biomass,
              color = treatment,
-             group = treatment)) +
+             group = treatment, 
+             linetype = treatment)) +
+  model_predictions_background +
   geom_line(alpha = 0.9,
             linewidth = 0.5) +
-  scale_color_manual(values = c("reference" = reference_col,
-                                "removal" = removal_col)) +
-  model_predictions_background +
   geom_text(aes(x = -6.75, 
                 y = annotation_y, 
                 label = removal_annotation), 
@@ -509,19 +512,16 @@ delta_continual_sites_algae_raw <- algae_continual_long %>%
                 y = annotation_y, 
                 label = recovery_annotation), 
             size = 2, color = "black") +
-  scale_x_continuous(limits = c(-8, 7), 
-                     breaks = seq(-8, 7, by = 1), 
-                     minor_breaks = NULL) +
+  model_predictions_aesthetics +
   raw_biomass_plot_theme +
-  labs(x = "Time since end of experiment (years)", 
-       y = "Understory macroalgae biomass (dry g/m\U00B2)") +
+  labs(y = "Understory macroalgae biomass (dry g/m\U00B2)") +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
 
-delta_continual_sites_algae_raw 
+algae_biomass_timeseries
 
 # ⟞ b. sessile invertebrates ----------------------------------------------
 
-delta_continual_sites_epi_raw <- epi_continual_long %>% 
+epi_biomass_timeseries <- epi_continual_long %>% 
   mutate(strip = case_when(
     site == "aque" ~ "(a) Arroyo Quemado",
     site == "napl" ~ "(b) Naples",
@@ -540,12 +540,11 @@ delta_continual_sites_epi_raw <- epi_continual_long %>%
   ggplot(aes(x = time_since_end,
              y = biomass,
              color = treatment,
-             group = treatment)) +
+             group = treatment,
+             linetype = treatment)) +
+  model_predictions_background +
   geom_line(alpha = 0.9,
             linewidth = 0.5) +
-  scale_color_manual(values = c("reference" = reference_col,
-                                "removal" = removal_col)) +
-  model_predictions_background +
   geom_text(aes(x = -6.75, 
                 y = annotation_y, 
                 label = removal_annotation), 
@@ -554,15 +553,12 @@ delta_continual_sites_epi_raw <- epi_continual_long %>%
                 y = annotation_y, 
                 label = recovery_annotation), 
             size = 2, color = "black") +
-  scale_x_continuous(limits = c(-8, 7), 
-                     breaks = seq(-8, 7, by = 1), 
-                     minor_breaks = NULL) +
+  model_predictions_aesthetics +
   raw_biomass_plot_theme +
-  labs(x = "Time since end of experiment (years)", 
-       y = "Sessile invertebrate biomass (dry g/m\U00B2)") +
+  labs(y = "Sessile invertebrate biomass (dry g/m\U00B2)") +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
 
-delta_continual_sites_epi_raw
+epi_biomass_timeseries
 
 # ⟞ c. saving outputs -----------------------------------------------------
 
@@ -582,41 +578,10 @@ delta_continual_sites_epi_raw
 # ------------------------------ 5. tables --------------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# This section includes code to extract the model summaries for each model.
+# This section includes code to extract the model summaries for each model. It
+# relies on the `model_summary_fxn()` from the `00-set_up.R` script.
 
 # ⟞ a. wrangling ----------------------------------------------------------
-
-# function to extract model summaries
-model_summary_fxn <- function(model) {
-  model %>% 
-    # use tidy to get model summary and calculate 95% CI
-    tidy(conf.int = TRUE) %>% 
-    # only include fixed conditional effects
-    filter(effect == "fixed" & component == "cond") %>%
-    select(term, estimate, p.value, conf.low, conf.high) %>% 
-    # create a new column that indicates whether an effect is significant
-    mutate(signif = case_when(
-      p.value <= 0.05 ~ "yes",
-      TRUE ~ "no"
-    )) %>% 
-    # create a p-value column that converts very small values to < 0.001
-    # and rounds all other values to two significant figures
-    mutate(p.value = case_when(
-      p.value <= 0.001 ~ "<0.001",
-      TRUE ~ as.character(signif(p.value, digits = 2))
-    )) %>%
-    # round other numeric values to two digits
-    mutate(across(where(is.numeric), ~ round(., digits = 2))) %>%
-    # create a confidence interval column
-    unite(ci_interval, conf.low, conf.high, sep = ", ") %>%
-    # rename the terms to be neater
-    mutate(term = case_when(
-      term == "(Intercept)" ~ "Intercept",
-      term == "time_since_end" ~ "Time since end",
-      term == "treatmentremoval" ~ "Treatment (removal)",
-      term == "time_since_end:treatmentremoval" ~ "Time since end × treatment (removal)"
-    ))
-}
 
 model_summaries <- models %>% 
   select(group, fit_model_during, fit_model_after) %>% 
@@ -632,46 +597,69 @@ model_summaries <- models %>%
   mutate(merged_tables = pmap(
     list(group, during_summary, after_summary),
     bind_cols
+  )) %>% 
+  mutate(merged_tables = map(
+    merged_tables,
+    ~ rename(.x, 
+             "group" = "...1",
+             "term_removal" = "term...2",
+             "estimate_removal" = "estimate...3",
+             "p.value_removal" = "p.value...4",
+             "ci_interval_removal" = "ci_interval...5",
+             "signif_removal" = "signif...6",
+             "term_recovery" = "term...7",
+             "estimate_recovery" = "estimate...8",
+             "p.value_recovery" = "p.value...9",
+             "ci_interval_recovery" = "ci_interval...10",
+             "signif_recovery" = "signif...11")
   ))
 
 # ⟞ b. table creation -----------------------------------------------------
 
-model_summary_table <- bind_rows(model_summaries[[6]][[1]], 
-                                 model_summaries[[6]][[2]]) %>% 
-  as_grouped_data(groups = c("...1")) %>% 
-  flextable(col_keys = c("...1", 
-                         "term...2",
-                         "estimate...3",
-                         "p.value...4",
-                         "ci_interval...5",
-                         "term...7",
-                         "estimate...8",
-                         "p.value...9",
-                         "ci_interval...10")) %>%
+model_summary_table <- bind_rows(
+  kelp_model_summaries_combined,
+  pluck(model_summaries, 6, 1),
+  pluck(model_summaries, 6, 2)
+  ) %>% 
+  mutate(group = case_when(
+    group == "kelp" ~ "Giant kelp",
+    group == "understory algae" ~ "Understory macroalgae",
+    group == "sessile inverts" ~ "Sessile invertebrates"
+  )) %>% 
+  # as_grouped_data(groups = c("group")) %>% 
+  flextable(col_keys = c("group",
+                         "term_removal",
+                         "estimate_removal",
+                         "p.value_removal",
+                         "ci_interval_removal",
+                         "term_recovery",
+                         "estimate_recovery",
+                         "p.value_recovery",
+                         "ci_interval_recovery")) %>%
   add_header_row(top = TRUE, 
                  values = c("", "Kelp removal", "Recovery"), 
                  colwidths = c(1, 4, 4)) %>% 
-  style(i = ~ signif...6 == "yes",
-        j = "p.value...4",
+  style(i = ~ signif_removal == "yes",
+        j = "p.value_removal",
         pr_t = officer::fp_text(bold = TRUE),
         part = "body") %>% 
-  style(i = ~ signif...11 == "yes",
-        j = "p.value...9",
+  style(i = ~ signif_recovery == "yes",
+        j = "p.value_recovery",
         pr_t = officer::fp_text(bold = TRUE),
         part = "body") %>% 
   align(i = 1, 
         j = NULL, 
         align = "center", 
         part = "header") %>% 
-  set_header_labels(...1 = "",
-                    term...2 = "Term",
-                    term...7 = "Term",
-                    estimate...3 = "Estimate",
-                    estimate...8 = "Estimate",
-                    p.value...4 = "p-value",
-                    p.value...9 = "p-value",
-                    ci_interval...5 = "95% CI",
-                    ci_interval...10 = "95% CI") %>% 
+  set_header_labels("group" = " ",
+                    "term_removal" = "Term",
+                    "estimate_removal" = "Estimate",
+                    "p.value_removal" = "p-value",
+                    "ci_interval_removal" = "95% CI",
+                    "term_recovery" = "Term",
+                    "estimate_recovery" = "Estimate",
+                    "p.value_recovery" = "p-value",
+                    "ci_interval_recovery" = "95% CI") %>% 
   footnote(
     i = 2, 
     j = c(5, 9),
@@ -679,6 +667,10 @@ model_summary_table <- bind_rows(model_summaries[[6]][[1]],
     value = as_paragraph("Confidence interval"),
     part = "header"
   ) %>% 
+  merge_v(j = ~ group) %>% 
+  valign(j = ~ group,
+        i = NULL,
+        valign = "top") %>% 
   autofit %>% 
   fit_to_width(10) %>% 
   font(fontname = "Times New Roman",
@@ -686,10 +678,10 @@ model_summary_table <- bind_rows(model_summaries[[6]][[1]],
 
 # ⟞ c. saving output ------------------------------------------------------
 
-# model_summary_table %>% 
+# model_summary_table %>%
 #   save_as_docx(path = here::here(
-#     "tables", 
-#     "ms-tables", 
+#     "tables",
+#     "ms-tables",
 #     paste("tbl-S1_", today(), ".docx", sep = "")
 #     ))
   
