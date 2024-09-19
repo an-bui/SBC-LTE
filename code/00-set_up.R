@@ -37,6 +37,7 @@ library(performance)
 library(ggeffects)
 library(emmeans)
 library(modelbased)
+library(broom)
 
 # ⟞ e. community analysis -------------------------------------------------
 
@@ -745,6 +746,58 @@ site_raw_biomass_theme <- function() {
           panel.grid.minor = element_line(color = "#FFFFFF")) 
 }
 
+model_predictions_theme <- theme_bw() +
+  # coord_cartesian(ylim = c(30, 800)) +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 6), 
+        legend.title = element_text(size = 6),
+        legend.position = "none",
+        # legend.position = c(0.86, 0.88),
+        legend.background = element_blank(),
+        legend.key.size = unit(0.5, units = "cm"),
+        legend.box.margin = margin(0.01, 0.01, 0.01, 0.01),
+        legend.spacing.y = unit(0.01, "cm"),
+        panel.grid = element_blank(),
+        plot.title.position = "plot",
+        plot.title = element_text(size = 10))
+
+model_predictions_aesthetics <- list(
+  scale_color_manual(values = c(reference = reference_col, removal = removal_col),
+                     labels = c("Reference", "Removal")),
+    scale_linetype_manual(values = c(reference = 2, removal = 1),
+                          labels = c("Reference", "Removal")),
+  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL),
+  guides(color = guide_legend(keyheight = 0.6),
+         shape = guide_legend(keyheight = 0.6),
+         lty = guide_legend(keyheight = 0.6),
+         keyheight = 1),
+    labs(x = "Time since end of removal (years)", 
+         y = "Biomass (dry g/m\U00B2)", 
+         linetype = "Treatment",
+         color = "Treatment",
+         shape = "Treatment",
+         size = "Treatment",
+         group = "Treatment")
+)
+
+delta_aesthetics <- list(
+  scale_x_continuous(limits = c(-8, 7), breaks = seq(-8, 7, by = 1), minor_breaks = NULL),
+  labs(x = "Time since end of removal (years)", 
+       y = "\U0394 biomass \n (removal \U2212 reference, dry g/m\U00B2)")
+)
+
+model_predictions_background <- list(
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey"),
+    geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey"),
+    annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+             fill = "grey", alpha = 0.3)
+)
+
+
+
+
+
 # ⟞ b. treatment colors and shapes ----------------------------------------
 
 color_palette <- c("annual" = annual_col, 
@@ -952,7 +1005,7 @@ resid_plot_fxn <- function(lm) {
 
 # ⟞ i. raw biomass plots --------------------------------------------------
 
-raw_biomass_plot_theme <- function() {
+raw_biomass_plot_theme <- 
     theme_bw() +
     theme(axis.title = element_text(size = 8),
           plot.title = element_text(size = 8),
@@ -962,7 +1015,6 @@ raw_biomass_plot_theme <- function() {
           legend.text = element_text(size = 7),
           legend.position = "none",
           panel.grid = element_blank()) 
-}
 
 # ⟞ j. arrow plots --------------------------------------------------------
 
