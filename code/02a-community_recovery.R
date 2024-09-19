@@ -79,7 +79,9 @@ delta_biomass_wrangle <- function(df) {
     left_join(., site_quality, by = "site") %>% 
     left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
     rename("site_full" = value) %>% 
-    mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+    mutate(site_full = fct_relevel(
+      site_full, 
+      "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
     mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
 }
 
