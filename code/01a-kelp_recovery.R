@@ -357,7 +357,7 @@ predicted_kelp_after_0 <- pluck(kelp_models, 3, 2) %>%
 predicted_kelp_after_both <- pluck(kelp_models, 3, 2) %>% 
   ggpredict(terms = c("time_since_end [4]", "treatment"), 
             type = "fixed") %>% 
-  rbind(predicted_kelp_after_0_raw) %>% 
+  bind_rows(predicted_kelp_after_0) %>% 
   rename("treatment" = group, 
          "kelp_biomass" = predicted,
          "time_since_end" = x)

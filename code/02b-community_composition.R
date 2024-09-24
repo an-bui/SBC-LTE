@@ -643,10 +643,6 @@ algae_after_plot <- nmds_plot_fxn(algae_scores,
   algae_axis_limits +
   labs(title = "(c) Recovery period") 
 
-algae_start_plot
-algae_during_plot
-algae_after_plot
-
 epi_axis_limits <- list(
   scale_x_continuous(limits = c(-0.35, 0.25)),
   scale_y_continuous(limits = c(-0.3, 0.3))
@@ -677,10 +673,6 @@ epi_after_plot <- nmds_plot_fxn(epi_scores,
   epi_axis_limits +
   labs(title = "(f) Recovery period") 
 
-epi_start_plot
-epi_during_plot
-epi_after_plot
-
 # ⟞ b. individual species through time ------------------------------------
 
 # This section includes code to create Supplemental Material figures ______.
@@ -694,7 +686,7 @@ spp_biomass_df <- biomass %>%
   exp_dates_column_continual() %>% 
   time_since_columns_continual() %>% 
   kelp_year_column() %>% 
-  comparison_column_continual() %>% 
+  comparison_column_continual_new() %>% 
   # only include species that came out of SIMPER analysis
   filter(sp_code %in% c(algae_simper_spp, epi_simper_spp)) %>% 
   # recode scientific names for clarity
@@ -725,7 +717,7 @@ algae_biomass_time_plot <- spp_biomass_df %>%
                      labels = c("aque" = aque_full, 
                                 "napl" = napl_full, 
                                 "mohk" = mohk_full, 
-                                carp = carp_full)) +
+                                "carp" = carp_full)) +
   facet_wrap(~scientific_name, scales = "free_y") +
   scale_x_continuous(breaks = seq(-8, 6, by = 1), minor_breaks = NULL) +
   theme_bw() + 
@@ -738,8 +730,6 @@ algae_biomass_time_plot <- spp_biomass_df %>%
   labs(x = "Time since end of removal (years)", 
        y = "Biomass (dry g/m\U00B2)",
        color = "Site")
-
-algae_biomass_time_plot
 
 epi_biomass_time_plot <- spp_biomass_df %>% 
   filter(new_group == "epilithic.sessile.invert") %>% 
@@ -773,8 +763,6 @@ epi_biomass_time_plot <- spp_biomass_df %>%
   labs(x = "Time since end of removal (years)", 
        y = "Biomass (dry g/m\U00B2)",
        color = "Site")
-
-epi_biomass_time_plot
 
 # ⟞ c. saving outputs -----------------------------------------------------
 

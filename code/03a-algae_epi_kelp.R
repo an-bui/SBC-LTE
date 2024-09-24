@@ -280,8 +280,8 @@ group_vs_kelp_table <- bind_rows(
 # ⟞ c. saving output ------------------------------------------------------
 
 # group_vs_kelp_table %>%
-#   save_as_docx(path = here::here("tables", 
-#                                  "ms-tables", 
+#   save_as_docx(path = here::here("tables",
+#                                  "ms-tables",
 #                                  paste0("tbl-S5_", today(), ".docx")))
 
 

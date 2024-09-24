@@ -42,18 +42,18 @@ library(broom.mixed)
 # ⟞ e. community analysis -------------------------------------------------
 
 library(vegan)
-library(vegclust)
-library(ecotraj)
-library(FD)
+# library(vegclust)
+# library(ecotraj)
+# library(FD)
 library(pairwiseAdonis)
 
 # ⟞ f. table making -------------------------------------------------------
 
 library(gt)
-library(ggpubr)
-library(webshot2)
+# library(ggpubr)
+# library(webshot2)
 library(flextable)
-library(gtsummary)
+# library(gtsummary)
 
 ##########################################################################-
 # 2. start and end dates --------------------------------------------------
@@ -145,73 +145,73 @@ carp_after_date_continual <- as_date("2017-08-10")
 ##########################################################################-
 
 # create a column for "after" experimental removal
-after_dates_column <- function(df) {
-  df %>% 
-    mutate(after_dates = case_when(
-      site == "aque" & treatment == "annual" ~ aque_after_date_annual,
-      site == "aque" & treatment == "continual" ~ aque_after_date_continual,
-      site == "aque" & treatment == "control" ~ aque_after_date_continual,
-      site == "napl" & treatment == "annual" ~ napl_after_date_annual,
-      site == "napl" & treatment == "continual" ~ napl_after_date_continual,
-      site == "napl" & treatment == "control" ~ napl_after_date_continual,
-      site == "ivee" & treatment == "annual" ~ ivee_after_date_annual,
-      site == "mohk" & treatment == "annual" ~ mohk_after_date_annual,
-      site == "mohk" & treatment == "continual" ~ mohk_after_date_continual,
-      site == "mohk" & treatment == "control" ~ mohk_after_date_continual,
-      site == "carp" & treatment == "annual" ~ carp_after_date_annual,
-      site == "carp" & treatment == "continual" ~ carp_after_date_continual,
-      site == "carp" & treatment == "control" ~ carp_after_date_continual
-    ))
-}
+# after_dates_column <- function(df) {
+#   df %>% 
+#     mutate(after_dates = case_when(
+#       site == "aque" & treatment == "annual" ~ aque_after_date_annual,
+#       site == "aque" & treatment == "continual" ~ aque_after_date_continual,
+#       site == "aque" & treatment == "control" ~ aque_after_date_continual,
+#       site == "napl" & treatment == "annual" ~ napl_after_date_annual,
+#       site == "napl" & treatment == "continual" ~ napl_after_date_continual,
+#       site == "napl" & treatment == "control" ~ napl_after_date_continual,
+#       site == "ivee" & treatment == "annual" ~ ivee_after_date_annual,
+#       site == "mohk" & treatment == "annual" ~ mohk_after_date_annual,
+#       site == "mohk" & treatment == "continual" ~ mohk_after_date_continual,
+#       site == "mohk" & treatment == "control" ~ mohk_after_date_continual,
+#       site == "carp" & treatment == "annual" ~ carp_after_date_annual,
+#       site == "carp" & treatment == "continual" ~ carp_after_date_continual,
+#       site == "carp" & treatment == "control" ~ carp_after_date_continual
+#     ))
+# }
 
 # make a new column for during and after and set factor levels
-exp_dates_column <- function(df) {
-  df %>% 
-    mutate(exp_dates = case_when(
-      # after for annual removal:
-      site == "aque" & treatment == "annual" & date > aque_after_date_annual ~ "after",
-      site == "napl" & treatment == "annual" & date > napl_after_date_annual ~ "after",
-      site == "ivee" & treatment == "annual" & date > ivee_after_date_annual ~ "after",
-      site == "mohk" & treatment == "annual" & date > mohk_after_date_annual ~ "after",
-      site == "carp" & treatment == "annual" & date > carp_after_date_annual ~ "after",
-      # after for continual removal:
-      site == "aque" & treatment == "continual" & date > aque_after_date_continual ~ "after",
-      site == "napl" & treatment == "continual" & date > napl_after_date_continual ~ "after",
-      site == "mohk" & treatment == "continual" & date > mohk_after_date_continual ~ "after",
-      site == "carp" & treatment == "continual" & date > carp_after_date_continual ~ "after",
-      # after for control:
-      site == "aque" & treatment == "control" & date > aque_after_date_annual ~ "after",
-      site == "napl" & treatment == "control" & date > napl_after_date_annual ~ "after",
-      site == "ivee" & treatment == "control" & date > ivee_after_date_annual ~ "after",
-      site == "mohk" & treatment == "control" & date > mohk_after_date_annual ~ "after",
-      site == "carp" & treatment == "control" & date > carp_after_date_annual ~ "after",
-      # everything else is "during" the experiment
-      TRUE ~ "during"
-    ),
-    exp_dates = fct_relevel(exp_dates, c("during", "after")))  
-}
+# exp_dates_column <- function(df) {
+#   df %>% 
+#     mutate(exp_dates = case_when(
+#       # after for annual removal:
+#       # site == "aque" & treatment == "annual" & date > aque_after_date_annual ~ "after",
+#       # site == "napl" & treatment == "annual" & date > napl_after_date_annual ~ "after",
+#       # site == "ivee" & treatment == "annual" & date > ivee_after_date_annual ~ "after",
+#       # site == "mohk" & treatment == "annual" & date > mohk_after_date_annual ~ "after",
+#       # site == "carp" & treatment == "annual" & date > carp_after_date_annual ~ "after",
+#       # after for continual removal:
+#       site == "aque" & treatment == "continual" & date > aque_after_date_continual ~ "after",
+#       site == "napl" & treatment == "continual" & date > napl_after_date_continual ~ "after",
+#       site == "mohk" & treatment == "continual" & date > mohk_after_date_continual ~ "after",
+#       site == "carp" & treatment == "continual" & date > carp_after_date_continual ~ "after",
+#       # after for control:
+#       site == "aque" & treatment == "control" & date > aque_after_date_annual ~ "after",
+#       site == "napl" & treatment == "control" & date > napl_after_date_annual ~ "after",
+#       site == "ivee" & treatment == "control" & date > ivee_after_date_annual ~ "after",
+#       site == "mohk" & treatment == "control" & date > mohk_after_date_annual ~ "after",
+#       site == "carp" & treatment == "control" & date > carp_after_date_annual ~ "after",
+#       # everything else is "during" the experiment
+#       TRUE ~ "during"
+#     ),
+#     exp_dates = fct_relevel(exp_dates, c("during", "after")))  
+# }
 
 # annual removal: make a new column for during and after and set factor levels
-exp_dates_column_annual <- function(df) {
-  df %>% 
-    mutate(exp_dates = case_when(
-      # after for annual removal:
-      site == "aque" & treatment == "annual" & date > aque_after_date_annual ~ "after",
-      site == "napl" & treatment == "annual" & date > napl_after_date_annual ~ "after",
-      site == "ivee" & treatment == "annual" & date > ivee_after_date_annual ~ "after",
-      site == "mohk" & treatment == "annual" & date > mohk_after_date_annual ~ "after",
-      site == "carp" & treatment == "annual" & date > carp_after_date_annual ~ "after",
-      # after for control:
-      site == "aque" & treatment == "control" & date > aque_after_date_annual ~ "after",
-      site == "napl" & treatment == "control" & date > napl_after_date_annual ~ "after",
-      site == "ivee" & treatment == "control" & date > ivee_after_date_annual ~ "after",
-      site == "mohk" & treatment == "control" & date > mohk_after_date_annual ~ "after",
-      site == "carp" & treatment == "control" & date > carp_after_date_annual ~ "after",
-      # everything else is "during" the experiment
-      TRUE ~ "during"
-    ),
-    exp_dates = fct_relevel(exp_dates, c("during", "after")))  
-}
+# exp_dates_column_annual <- function(df) {
+#   df %>% 
+#     mutate(exp_dates = case_when(
+#       # after for annual removal:
+#       site == "aque" & treatment == "annual" & date > aque_after_date_annual ~ "after",
+#       site == "napl" & treatment == "annual" & date > napl_after_date_annual ~ "after",
+#       site == "ivee" & treatment == "annual" & date > ivee_after_date_annual ~ "after",
+#       site == "mohk" & treatment == "annual" & date > mohk_after_date_annual ~ "after",
+#       site == "carp" & treatment == "annual" & date > carp_after_date_annual ~ "after",
+#       # after for control:
+#       site == "aque" & treatment == "control" & date > aque_after_date_annual ~ "after",
+#       site == "napl" & treatment == "control" & date > napl_after_date_annual ~ "after",
+#       site == "ivee" & treatment == "control" & date > ivee_after_date_annual ~ "after",
+#       site == "mohk" & treatment == "control" & date > mohk_after_date_annual ~ "after",
+#       site == "carp" & treatment == "control" & date > carp_after_date_annual ~ "after",
+#       # everything else is "during" the experiment
+#       TRUE ~ "during"
+#     ),
+#     exp_dates = fct_relevel(exp_dates, c("during", "after")))  
+# }
 
 # continual removal: make a new column for during and after and set factor levels
 exp_dates_column_continual <- function(df) {
@@ -267,41 +267,41 @@ se <- function(x,...){
 # time since start and time since end
 # expects data frame with the following columns:
 # site, year, month, date, control, annual, delta_annual
-time_since_columns_annual <- function(df) {
-  df %>% 
-    # create a column for quarter
-    mutate(quarter = case_when(
-      month <= 3 ~ "Q1",
-      month <= 6 ~ "Q2",
-      month <= 9 ~ "Q3",
-      TRUE ~ "Q4"
-    )) %>% 
-    # calculate time since start of experiment
-    mutate(time_yrs = case_when(
-      # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
-      site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
-      site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
-      site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
-      site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
-      # IVEE control and annual started in 2011
-      site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
-      site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
-      site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
-      site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
-    )) %>% 
-    group_by(site) %>% 
-    mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
-    ungroup() %>% 
-    # calculate time since end of experiment
-    group_by(site, exp_dates) %>% 
-    # if "after", then simple: the time in years - the minimum time in years
-    # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
-    mutate(time_since_end = case_when(
-      exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
-      exp_dates == "after" ~ time_yrs - min(time_yrs)
-    )) %>% 
-    ungroup()
-}
+# time_since_columns_annual <- function(df) {
+#   df %>% 
+#     # create a column for quarter
+#     mutate(quarter = case_when(
+#       month <= 3 ~ "Q1",
+#       month <= 6 ~ "Q2",
+#       month <= 9 ~ "Q3",
+#       TRUE ~ "Q4"
+#     )) %>% 
+#     # calculate time since start of experiment
+#     mutate(time_yrs = case_when(
+#       # AQUE, NAPL, MOHK, CARP: control and annual started in 2008
+#       site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q1" ~ year + 0.125 - 2008,
+#       site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q2" ~ year + 0.375 - 2008,
+#       site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q3" ~ year + 0.625 - 2008,
+#       site %in% c("aque", "napl", "mohk", "carp") & quarter == "Q4" ~ year + 0.875 - 2008, 
+#       # IVEE control and annual started in 2011
+#       site == "ivee" & quarter == "Q1" ~ year + 0.125 - 2011,
+#       site == "ivee" & quarter == "Q2" ~ year + 0.375 - 2011,
+#       site == "ivee" & quarter == "Q3" ~ year + 0.625 - 2011,
+#       site == "ivee" & quarter == "Q4" ~ year + 0.875 - 2011
+#     )) %>% 
+#     group_by(site) %>% 
+#     mutate(time_since_start = time_yrs - min(time_yrs)) %>% 
+#     ungroup() %>% 
+#     # calculate time since end of experiment
+#     group_by(site, exp_dates) %>% 
+#     # if "after", then simple: the time in years - the minimum time in years
+#     # if "during", then more complex: take the max time in years and add 0.25, then subtract the time in years
+#     mutate(time_since_end = case_when(
+#       exp_dates == "during" ~ -(max(time_yrs) + 0.25 - time_yrs),
+#       exp_dates == "after" ~ time_yrs - min(time_yrs)
+#     )) %>% 
+#     ungroup()
+# }
 
 time_since_columns_continual <- function(df) {
   df %>% 
@@ -354,30 +354,30 @@ kelp_year_column <- function(df) {
 
 # comparison column for annual removal
 # first 2 or 3 years of start, last 2 or 3 years during experimental removal, most recent 2 or 3 years
-comparison_column_annual <- function(df) {
-  df %>% 
-  mutate(comp_2yrs = case_when(
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
-    site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-    site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
-    site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
-    kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
-  )) %>% 
-    mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
-    # create a column for the points to compare for "3 year interval"
-    mutate(comp_3yrs = case_when(
-      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
-      site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
-      site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
-      site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
-      kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
-    )) %>% 
-    mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
-    # add in full names of sites
-    left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-    rename(site_full = value) %>% 
-    mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Isla Vista", "Mohawk", "Carpinteria"))
-}
+# comparison_column_annual <- function(df) {
+#   df %>% 
+#   mutate(comp_2yrs = case_when(
+#     site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010") ~ "start",
+#     site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+#     site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013") ~ "start",
+#     site == "ivee" & kelp_year %in% c("kelp_2015-2016", "kelp_2016-2017") ~ "during",
+#     kelp_year %in% c("kelp_2020-2021", "kelp_2021-2022") ~ "after"
+#   )) %>% 
+#     mutate(comp_2yrs = fct_relevel(comp_2yrs, "start", "during", "after")) %>% 
+#     # create a column for the points to compare for "3 year interval"
+#     mutate(comp_3yrs = case_when(
+#       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2008-2009", "kelp_2009-2010", "kelp_2010-2011") ~ "start",
+#       site %in% c("aque", "napl", "mohk", "carp") & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during", 
+#       site == "ivee" & kelp_year %in% c("kelp_2011-2012", "kelp_2012-2013", "kelp_2013-2014") ~ "start",
+#       site == "ivee" & kelp_year %in% c("kelp_2014-2015", "kelp_2015-2016", "kelp_2016-2017") ~ "during",
+#       kelp_year %in% c("kelp_2019-2020", "kelp_2020-2021", "kelp_2021-2022") ~ "after"
+#     )) %>% 
+#     mutate(comp_3yrs = fct_relevel(comp_3yrs, "start", "during", "after")) %>% 
+#     # add in full names of sites
+#     left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+#     rename(site_full = value) %>% 
+#     mutate(site_full = fct_relevel(site_full, "Arroyo Quemado", "Naples", "Isla Vista", "Mohawk", "Carpinteria"))
+# }
 
 # comparison_column_continual <- function(df) {
 #   df %>%
@@ -452,25 +452,25 @@ comparison_column_continual_new <- function(df) {
     unite("sample_ID_short", site, date, remove = FALSE)
 }
 
-anova_summary_fxn <- function(adonis2.obj) {
-  # turn object name into string
-  name <- deparse(substitute(adonis2.obj))
-  
-  adonis2.obj %>% 
-    # turn adonis2 result into data frame
-    as.data.frame() %>% 
-    # make rownames "variables"
-    rownames_to_column("variables") %>% 
-    # rename Pr(>F) column into something intelligible
-    rename(p = `Pr(>F)`) %>% 
-    # round values to 2 decimal points
-    mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
-    # replace comp_.yrs with time period
-    mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
-    mutate(variables = str_replace(variables, "comp_.yr", "time period")) %>% 
-    # make object name column
-    mutate(model = name) 
-}
+# anova_summary_fxn <- function(adonis2.obj) {
+#   # turn object name into string
+#   name <- deparse(substitute(adonis2.obj))
+#   
+#   adonis2.obj %>% 
+#     # turn adonis2 result into data frame
+#     as.data.frame() %>% 
+#     # make rownames "variables"
+#     rownames_to_column("variables") %>% 
+#     # rename Pr(>F) column into something intelligible
+#     rename(p = `Pr(>F)`) %>% 
+#     # round values to 2 decimal points
+#     mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
+#     # replace comp_.yrs with time period
+#     mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
+#     mutate(variables = str_replace(variables, "comp_.yr", "time period")) %>% 
+#     # make object name column
+#     mutate(model = name) 
+# }
 
 
 
@@ -494,17 +494,17 @@ anova_summary_fxn <- function(adonis2.obj) {
 #     mutate(model = name) 
 # }
 
-difflsmeans_summary_fxn <- function(anova.obj) {
-  anova.obj %>% 
-    difflsmeans(test.effs = "Group", ddf = "Kenward-Roger") %>% 
-    as.data.frame() %>% 
-    clean_names() %>% 
-    rownames_to_column("rowname") %>% 
-    select(levels, estimate, std_error, df, t_value, pr_t) %>% 
-    mutate(across(c(estimate, std_error, t_value, pr_t), ~round(., digits = 3))) %>% 
-    mutate(levels = fct_relevel(levels, c("start - during", "during - after", "start - after"))) %>% 
-    arrange(levels)
-}
+# difflsmeans_summary_fxn <- function(anova.obj) {
+#   anova.obj %>% 
+#     difflsmeans(test.effs = "Group", ddf = "Kenward-Roger") %>% 
+#     as.data.frame() %>% 
+#     clean_names() %>% 
+#     rownames_to_column("rowname") %>% 
+#     select(levels, estimate, std_error, df, t_value, pr_t) %>% 
+#     mutate(across(c(estimate, std_error, t_value, pr_t), ~round(., digits = 3))) %>% 
+#     mutate(levels = fct_relevel(levels, c("start - during", "during - after", "start - after"))) %>% 
+#     arrange(levels)
+# }
 
 # function to extract model summaries
 model_summary_fxn <- function(model) {
@@ -654,77 +654,77 @@ spp_names <- biomass %>%
   unique() 
 
 # vector of each species code (length: 221)
-spp_codes <- biomass %>% 
-  pull(sp_code) %>% 
-  unique()
+# spp_codes <- biomass %>% 
+#   pull(sp_code) %>% 
+#   unique()
 
 # vector of algae species
-algae_spp <- spp_names %>% 
-  filter(group == "algae") %>% 
-  pull(sp_code)
+# algae_spp <- spp_names %>% 
+#   filter(group == "algae") %>% 
+#   pull(sp_code)
 
 # vector of fish species
-fish_spp <- spp_names %>% 
-  filter(group == "fish") %>% 
-  pull(sp_code)
+# fish_spp <- spp_names %>% 
+#   filter(group == "fish") %>% 
+#   pull(sp_code)
 
 # vector of invert species
-invert_spp <- spp_names %>% 
-  filter(group == "invert") %>% 
-  pull(sp_code)
+# invert_spp <- spp_names %>% 
+#   filter(group == "invert") %>% 
+#   pull(sp_code)
 
 # vector of groups
-all_groups <- biomass %>% 
-  pull(group) %>% 
-  unique()
+# all_groups <- biomass %>% 
+#   pull(group) %>% 
+#   unique()
 
 # data frame of algae species
-algae_spp_names <- biomass %>% 
-  filter(group == "algae") %>% 
-  dplyr::select(sp_code, scientific_name, common_name, taxon_phylum, taxon_class, taxon_order, taxon_family) %>% 
-  unique() %>% 
-  # fill in missing orders with phyla
-  mutate(tax_group = case_when(
-    taxon_order == -99999  ~ paste("Unidentified ", taxon_phylum, sep = ""),
-    taxon_order = TRUE ~ taxon_order
-  ))
+# algae_spp_names <- biomass %>% 
+#   filter(group == "algae") %>% 
+#   dplyr::select(sp_code, scientific_name, common_name, taxon_phylum, taxon_class, taxon_order, taxon_family) %>% 
+#   unique() %>% 
+#   # fill in missing orders with phyla
+#   mutate(tax_group = case_when(
+#     taxon_order == -99999  ~ paste("Unidentified ", taxon_phylum, sep = ""),
+#     taxon_order = TRUE ~ taxon_order
+#   ))
 
-algae_orders <- unique(algae_spp_names$tax_group)
+# algae_orders <- unique(algae_spp_names$tax_group)
+# 
+# epi_spp_names <- biomass %>% 
+#   filter(new_group == "epilithic.sessile.invert") %>% 
+#   dplyr::select(sp_code, scientific_name, common_name, taxon_phylum, taxon_class, taxon_order, taxon_family) %>% 
+#   unique() %>% 
+#   # fill in missing classes with phyla
+#   mutate(tax_group = case_when(
+#     taxon_class == -99999  ~ paste("Unidentified ", taxon_phylum, sep = ""),
+#     taxon_class = TRUE ~ taxon_class
+#   ))
 
-epi_spp_names <- biomass %>% 
-  filter(new_group == "epilithic.sessile.invert") %>% 
-  dplyr::select(sp_code, scientific_name, common_name, taxon_phylum, taxon_class, taxon_order, taxon_family) %>% 
-  unique() %>% 
-  # fill in missing classes with phyla
-  mutate(tax_group = case_when(
-    taxon_class == -99999  ~ paste("Unidentified ", taxon_phylum, sep = ""),
-    taxon_class = TRUE ~ taxon_class
-  ))
-
-epi_classes <- unique(epi_spp_names$tax_group)
+# epi_classes <- unique(epi_spp_names$tax_group)
 
 # most abundant algae
-common_algae <- c("PH", "PTCA", # Pterygophora californica 
-                  "DL", # Desmarestia ligulata
-                  "R", # Rhodymenia californica 
-                  "CC", # Chondracanthus corymbiferus 
-                  "POLA", # Polyneura latissima 
-                  "CYOS", # Stephanocystis osmundacea 
-                  "FTHR", # Pterosiphonia dendroidea 
-                  "CO", # Corallina officinalis var. chilensis 
-                  "LX", # Osmundea spectabilis
-                  "GS", # Gracilaria spp. 
-                  "BR", # Halymenia spp.
-                  "BO", # Bossiella orbigniana 
-                  "FB", # Ectocarpaceae spp. 
-                  "BF", # Cryptopleura ruprechtiana 
-                  "LAFA", # Laminaria farlowii 
-                  "CF", # Callophyllis rhynchocarpa 
-                  "DP" # Dictyota spp. 
-)
+# common_algae <- c("PH", "PTCA", # Pterygophora californica 
+#                   "DL", # Desmarestia ligulata
+#                   "R", # Rhodymenia californica 
+#                   "CC", # Chondracanthus corymbiferus 
+#                   "POLA", # Polyneura latissima 
+#                   "CYOS", # Stephanocystis osmundacea 
+#                   "FTHR", # Pterosiphonia dendroidea 
+#                   "CO", # Corallina officinalis var. chilensis 
+#                   "LX", # Osmundea spectabilis
+#                   "GS", # Gracilaria spp. 
+#                   "BR", # Halymenia spp.
+#                   "BO", # Bossiella orbigniana 
+#                   "FB", # Ectocarpaceae spp. 
+#                   "BF", # Cryptopleura ruprechtiana 
+#                   "LAFA", # Laminaria farlowii 
+#                   "CF", # Callophyllis rhynchocarpa 
+#                   "DP" # Dictyota spp. 
+# )
 
 # from rank abundance curves
-algae_selection <- c("PTCA", "DL", "CYOS", "CC", "R", "EC", "POLA", "RAT", "CO", "EGME", "BO", "AU")
+# algae_selection <- c("PTCA", "DL", "CYOS", "CC", "R", "EC", "POLA", "RAT", "CO", "EGME", "BO", "AU")
 
 
 # ⟞ b. sites --------------------------------------------------------------
@@ -749,7 +749,7 @@ site_quality <- tribble(
           
 aque_col <- '#D46F10'
 napl_col <- '#4CA49E'
-ivee_col <- '#69B9FA'
+# ivee_col <- '#69B9FA'
 mohk_col <- '#6B6D9F'
 carp_col <- '#4B8FF7'
 
@@ -758,11 +758,11 @@ color_palette_site <- c("aque" = aque_col,
                         "mohk" = mohk_col, 
                         "carp" = carp_col)
 
-color_palette_site_annual <- c("aque" = aque_col, 
-                               "napl" = napl_col, 
-                               "ivee" = ivee_col,
-                               "mohk" = mohk_col, 
-                               "carp" = carp_col)
+# color_palette_site_annual <- c("aque" = aque_col, 
+#                                "napl" = napl_col, 
+#                                "ivee" = ivee_col,
+#                                "mohk" = mohk_col, 
+#                                "carp" = carp_col)
 
 aque_shape <- 21
 napl_shape <- 22
@@ -775,22 +775,22 @@ shape_palette_site <- c("aque" = aque_shape,
                         "carp" = carp_shape)
 
 removal_col <- "#CC7540"
-annual_col <- "#009BB0"
+# annual_col <- "#009BB0"
 reference_col <- "#6D5A18"
 kelp_col <- "#6D5A18"
 under_col <- "#6B6D9F"
   
-site_raw_biomass_theme <- function() {
-  theme_bw() + 
-    theme(axis.title = element_text(size = 8),
-          plot.title = element_text(size = 8),
-          axis.text = element_text(size = 7),
-          legend.text = element_text(size = 6), 
-          legend.position = "none", 
-          strip.background = element_rect(fill = "#FFFFFF", color = "#FFFFFF"),
-          strip.text = element_text(size = 8, hjust = 0),
-          panel.grid.minor = element_line(color = "#FFFFFF")) 
-}
+# site_raw_biomass_theme <- function() {
+#   theme_bw() +
+#     theme(axis.title = element_text(size = 8),
+#           plot.title = element_text(size = 8),
+#           axis.text = element_text(size = 7),
+#           legend.text = element_text(size = 6),
+#           legend.position = "none",
+#           strip.background = element_rect(fill = "#FFFFFF", color = "#FFFFFF"),
+#           strip.text = element_text(size = 8, hjust = 0),
+#           panel.grid.minor = element_line(color = "#FFFFFF"))
+# }
 
 model_predictions_theme <- theme_bw() +
   # coord_cartesian(ylim = c(30, 800)) +
@@ -846,15 +846,15 @@ model_predictions_background <- list(
 
 # ⟞ b. treatment colors and shapes ----------------------------------------
 
-color_palette <- c("annual" = annual_col, 
+color_palette <- c(# "annual" = annual_col, 
                    "continual" = removal_col, 
                    "control" = reference_col)
 
-annual_shape <- 19
+# annual_shape <- 19
 continual_shape <- 17
 control_shape <- 21
 
-shape_palette <- c("annual" = annual_shape, 
+shape_palette <- c(# "annual" = annual_shape, 
                    "continual" = continual_shape, 
                    "control" = control_shape)
 
@@ -881,16 +881,16 @@ shape_palette <- c("annual" = annual_shape,
 
 aque_full <- "Arroyo Quemado"
 napl_full <- "Naples"
-ivee_full <- "Isla Vista"
+# ivee_full <- "Isla Vista"
 mohk_full <- "Mohawk"
 carp_full <- "Carpinteria"
 
-sites_full_levels <- c("Arroyo Quemado", 
-                       "Naples", 
-                       "Isla Vista", 
-                       "Mohawk", 
-                       "Carpinteria")
-
+# sites_full_levels <- c("Arroyo Quemado", 
+#                        "Naples", 
+#                        "Isla Vista", 
+#                        "Mohawk", 
+#                        "Carpinteria")
+# 
 sites_full <- setNames(c("Arroyo Quemado",
                          "Naples",
                          "Isla Vista",
@@ -901,15 +901,15 @@ sites_full <- setNames(c("Arroyo Quemado",
                          "ivee",
                          "mohk",
                          "carp"))
-
-sites_continual_full <- setNames(c("Arroyo Quemado",
-                         "Naples",
-                         "Mohawk",
-                         "Carpinteria"),
-                       c("aque",
-                         "napl",
-                         "mohk",
-                         "carp"))
+# 
+# sites_continual_full <- setNames(c("Arroyo Quemado",
+#                          "Naples",
+#                          "Mohawk",
+#                          "Carpinteria"),
+#                        c("aque",
+#                          "napl",
+#                          "mohk",
+#                          "carp"))
 
 # ⟞ f. delta timeseries ---------------------------------------------------
 
@@ -1120,19 +1120,19 @@ kelp_title <- ggplot(data.frame(l = "Giant kelp", x = 1, y = 1)) +
   theme_void() +
   coord_cartesian(clip = "off")
 
-start_title <- ggplot(data.frame(l = "Start of removal", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), size = 4.5) + 
-  theme_void() +
-  coord_cartesian(clip = "off")
-
-during_title <- ggplot(data.frame(l = "End of removal", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), size = 4.5) + 
-  theme_void() +
-  coord_cartesian(clip = "off")
-
-after_title <- ggplot(data.frame(l = "Recovery period", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), size = 4.5) + 
-  theme_void() +
-  coord_cartesian(clip = "off")
+# start_title <- ggplot(data.frame(l = "Start of removal", x = 1, y = 1)) +
+#   geom_text(aes(x, y, label = l), size = 4.5) + 
+#   theme_void() +
+#   coord_cartesian(clip = "off")
+# 
+# during_title <- ggplot(data.frame(l = "End of removal", x = 1, y = 1)) +
+#   geom_text(aes(x, y, label = l), size = 4.5) + 
+#   theme_void() +
+#   coord_cartesian(clip = "off")
+# 
+# after_title <- ggplot(data.frame(l = "Recovery period", x = 1, y = 1)) +
+#   geom_text(aes(x, y, label = l), size = 4.5) + 
+#   theme_void() +
+#   coord_cartesian(clip = "off")
 
 

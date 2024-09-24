@@ -395,7 +395,6 @@ aque_bacips_plot <- aque_biomass_continual %>%
   bacips_labs + 
   labs(title = "(a) Arroyo Quemado") +
   bacips_theme
-aque_bacips_plot 
 
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
 
@@ -427,8 +426,6 @@ aque_time_since_end <- aque_biomass_continual %>%
   labs(title = "(a) Arroyo Quemado") +
   bacips_theme
 
-aque_time_since_end
-
 # ⟞ c. Naples -------------------------------------------------------------
 
 # ⟞ ⟞ i. time.model -------------------------------------------------------
@@ -447,8 +444,6 @@ napl_bacips_plot <- napl_biomass_continual %>%
   bacips_labs + 
   labs(title = "(b) Naples") +
   bacips_theme
-
-napl_bacips_plot 
 
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
 
@@ -469,8 +464,6 @@ napl_time_since_end <- napl_biomass_continual %>%
   time_since_end_labs + 
   labs(title = "(b) Naples") +
   bacips_theme
-
-napl_time_since_end
 
 
 # ⟞ d. Mohawk -------------------------------------------------------------
@@ -497,7 +490,6 @@ mohk_bacips_plot <- mohk_biomass_continual %>%
   bacips_labs + 
   labs(title = "(c) Mohawk") +
   bacips_theme
-mohk_bacips_plot 
 
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
 
@@ -529,8 +521,6 @@ mohk_time_since_end <- mohk_biomass_continual %>%
   labs(title = "(c) Mohawk") +
   bacips_theme
 
-mohk_time_since_end
-
 # ⟞ e. Carpinteria --------------------------------------------------------
 
 # ⟞ ⟞ i. time.model -------------------------------------------------------
@@ -555,7 +545,6 @@ carp_bacips_plot <- carp_biomass_continual %>%
   bacips_labs + 
   labs(title = "(d) Carpinteria") +
   bacips_theme
-carp_bacips_plot 
 
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
 
@@ -587,8 +576,6 @@ carp_time_since_end <- carp_biomass_continual %>%
   labs(title = "(d) Carpinteria") +
   bacips_theme
 
-carp_time_since_end
-
 
 # ⟞ f. saving output ------------------------------------------------------
 
@@ -599,8 +586,6 @@ bacips_plots <- plot_grid(
   mohk_bacips_plot, carp_bacips_plot,
   nrow = 2, ncol = 2
 )
-
-bacips_plots
 
 # ggsave(here::here("figures", "ms-figures", paste("bacips_plots-", today(), ".jpg", sep = "")),
 #        plot = bacips_plots,

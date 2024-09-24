@@ -280,8 +280,6 @@ overall_algae_predictions <- ggplot() +
   labs(title = "(c)",
        y = "") 
 
-overall_algae_predictions
-
 # ⟞ ⟞ ii. sessile invertebrates -------------------------------------------
 
 overall_epi_predictions <- ggplot() +
@@ -328,7 +326,6 @@ overall_epi_predictions <- ggplot() +
   labs(title = "(e)",
        y = "") 
 
-overall_epi_predictions
 
 # ⟞ b. delta biomass  -----------------------------------------------------
 
@@ -364,8 +361,6 @@ delta_algae_predictions <- ggplot() +
   labs(title = "(d)",
        y = "")
 
-delta_algae_predictions
-
 # ⟞ ⟞ ii. sessile invertebrates -------------------------------------------
 
 delta_epi_predictions <- ggplot() +
@@ -391,8 +386,6 @@ delta_epi_predictions <- ggplot() +
   model_predictions_theme +
   labs(title = "(f)",
        y = "")
-
-delta_epi_predictions
 
 # ⟞ c. saving outputs -----------------------------------------------------
 
@@ -425,7 +418,7 @@ obj <- ggplot() +
         legend.text = element_text(size = 9),
         legend.title = element_text(size = 9))
 
-legend <-  get_plot_component(obj, "guide-box-right", return_all = TRUE)
+legend <- get_plot_component(obj, "guide-box-right", return_all = TRUE)
 
 # ⟞ ⟞ ii. plot arrangement ------------------------------------------------
 
@@ -519,8 +512,6 @@ algae_biomass_timeseries <- algae_continual_long %>%
   labs(y = "Understory macroalgae biomass (dry g/m\U00B2)") +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
 
-algae_biomass_timeseries
-
 # ⟞ b. sessile invertebrates ----------------------------------------------
 
 epi_biomass_timeseries <- epi_continual_long %>% 
@@ -559,8 +550,6 @@ epi_biomass_timeseries <- epi_continual_long %>%
   raw_biomass_plot_theme +
   labs(y = "Sessile invertebrate biomass (dry g/m\U00B2)") +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
-
-epi_biomass_timeseries
 
 # ⟞ c. saving outputs -----------------------------------------------------
 
