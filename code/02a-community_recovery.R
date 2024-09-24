@@ -628,7 +628,8 @@ model_summary_table <- bind_rows(
     group == "understory algae" ~ "Understory macroalgae",
     group == "sessile inverts" ~ "Sessile invertebrates"
   )) %>% 
-  # as_grouped_data(groups = c("group")) %>% 
+  
+  # turn object into a flextable, select columns to display
   flextable(col_keys = c("group",
                          "term_removal",
                          "estimate_removal",
@@ -638,21 +639,16 @@ model_summary_table <- bind_rows(
                          "estimate_recovery",
                          "p.value_recovery",
                          "ci_interval_recovery")) %>%
+  # add a header row and center align
   add_header_row(top = TRUE, 
                  values = c("", "Kelp removal", "Recovery"), 
                  colwidths = c(1, 4, 4)) %>% 
-  style(i = ~ signif_removal == "yes",
-        j = "p.value_removal",
-        pr_t = officer::fp_text(bold = TRUE),
-        part = "body") %>% 
-  style(i = ~ signif_recovery == "yes",
-        j = "p.value_recovery",
-        pr_t = officer::fp_text(bold = TRUE),
-        part = "body") %>% 
   align(i = 1, 
         j = NULL, 
         align = "center", 
         part = "header") %>% 
+  
+  # change the column names
   set_header_labels("group" = " ",
                     "term_removal" = "Term",
                     "estimate_removal" = "Estimate",
@@ -662,6 +658,19 @@ model_summary_table <- bind_rows(
                     "estimate_recovery" = "Estimate",
                     "p.value_recovery" = "p-value",
                     "ci_interval_recovery" = "95% CI") %>% 
+
+  
+  # bold p values if they are significant
+  style(i = ~ signif_removal == "yes",
+        j = "p.value_removal",
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  style(i = ~ signif_recovery == "yes",
+        j = "p.value_recovery",
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  
+  # add a footnote for 95% CI
   footnote(
     i = 2, 
     j = c(5, 9),
@@ -669,10 +678,14 @@ model_summary_table <- bind_rows(
     value = as_paragraph("Confidence interval"),
     part = "header"
   ) %>% 
+  
+  # merge group cells to create a grouping column
   merge_v(j = ~ group) %>% 
   valign(j = ~ group,
         i = NULL,
         valign = "top") %>% 
+  
+  # final formatting
   autofit %>% 
   fit_to_width(10) %>% 
   font(fontname = "Times New Roman",

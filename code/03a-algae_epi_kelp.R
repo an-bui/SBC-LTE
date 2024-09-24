@@ -135,7 +135,6 @@ algae_predictions <- ggpredict(
   type = "fixed"
 )
 
-
 # ⟞ b. visualizations -----------------------------------------------------
 
 # ⟞ ⟞ i. understory algae -------------------------------------------------
@@ -167,7 +166,6 @@ algae_vs_kelp_plot <- pluck(delta_biomass, 2, 1) %>%
            label = "conditional R\U00B2 = 0.51\nmarginal R\U00B2 = 0.42\np < 0.001",
            size = 1.5) +
   model_predictions_theme
-algae_vs_kelp_plot
 
 # ⟞ ⟞ ii. sessile invertebrates -------------------------------------------
 
@@ -181,7 +179,6 @@ epi_vs_kelp_plot <- pluck(delta_biomass, 2, 2) %>%
        y = "\U0394 sessile invertebrate biomass\n(removal - reference, dry g/m\U00B2)", 
        title = "(b) Sessile invertebrates") +
   model_predictions_theme
-epi_vs_kelp_plot
 
 # ⟞ c. saving outputs -----------------------------------------------------
 
@@ -238,22 +235,22 @@ epi_table <- group_vs_kelp_table_fxn(pluck(delta_biomass, 3, 2)) %>%
 
 group_vs_kelp_table <- bind_rows(
   algae_table,
-  epi_table
-) %>% 
+  epi_table) %>% 
+  
+  # change object into a flextable, select columns to display
   flextable(col_keys = c("group",
                          "term",
                          "estimate",
                          "p.value",
-                         "ci_interval")) %>%
-  style(i = ~ signif == "yes",
-        j = "p.value",
-        pr_t = officer::fp_text(bold = TRUE),
-        part = "body")  %>% 
+                         "ci_interval")) %>% 
+  
+  # change column names
   set_header_labels("group" = " ",
                     "term" = "Term",
                     "estimate" = "Estimate",
                     "p.value" = "p-value",
                     "ci_interval" = "95% CI") %>% 
+  # add footnote for 95% CI
   footnote(
     i = 1, 
     j = 5,
@@ -261,10 +258,20 @@ group_vs_kelp_table <- bind_rows(
     value = as_paragraph("Confidence interval"),
     part = "header"
   ) %>% 
+  
+  # bold p-values if significant
+  style(i = ~ signif == "yes",
+        j = "p.value",
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  
+  # merge group cells to create a grouping column
   merge_v(j = ~ group) %>% 
   valign(j = ~ group,
          i = NULL,
          valign = "top") %>% 
+  
+  # final formatting
   autofit %>% 
   fit_to_width(5) %>% 
   font(fontname = "Times New Roman",
