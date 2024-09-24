@@ -230,7 +230,7 @@ plot(pluck(models, 6, 2))
 # the observed biomass at each sampling point) is plotted underneath the
 # predictions.
 
-# The  figures in this section and the following section rely on aesthetics 
+# The figures in this section and the following section rely on aesthetics 
 # that are saved in objects in the `00-set_up.R` script because they are also
 # used in the `01a-kelp_recovery.R` script.
 
