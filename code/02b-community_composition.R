@@ -49,15 +49,33 @@ anova_summary_fxn <- function(adonis2.obj, name) {
     as.data.frame() %>% 
     # make rownames "variables"
     rownames_to_column("variables") %>% 
-    # rename Pr(>F) column into something intelligible
+    # rename Pr(>F) column 
     rename(p = `Pr(>F)`) %>% 
-    # round values to 2 decimal points
-    mutate(across(SumOfSqs:p, ~ round(.x, digits = 3))) %>% 
+    # create a new column that indicates whether a p-value is significant
+    mutate(signif = case_when(
+      p <= 0.05 ~ "yes",
+      TRUE ~ "no"
+    )) %>% 
+    # create a p-value column that converts very small values to < 0.001
+    # and rounds all other values to relevant digits
+    mutate(p.value = case_when(
+      between(p, 0, 0.001) ~ "<0.001",
+      between(p, 0.001, 0.01) ~ as.character(round(p, digits = 3)),
+      between(p, 0.01, 1) ~ as.character(round(p, digits = 2))
+    )) %>%
+    # round other numeric values to two digits
+    mutate(across(SumOfSqs:`F`, ~ round(., digits = 2))) %>%
     # replace comp_.yrs with time period
     mutate(variables = str_replace(variables, "comp_.yrs", "time period")) %>% 
     mutate(variables = str_replace(variables, "comp_.yr", "time period")) %>% 
     # make object name column
-    mutate(model = name) 
+    mutate(model = name) %>% 
+    mutate(variables = case_when(
+      variables == "treatment" ~ "Treatment",
+      variables == "time period" ~ "Time period",
+      variables == "treatment:time period" ~ "Treatment × time period",
+      TRUE ~ variables
+    ))
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -71,23 +89,23 @@ anova_summary_fxn <- function(adonis2.obj, name) {
 # ⟞ a. species biomass with metadata --------------------------------------
 
 comm_df <- biomass %>% 
-  filter(treatment %in% c("control", "continual")) %>% 
+  #filter(treatment %in% c("control", "continual")) %>% 
   # select columns of interest 
-  dplyr::select(site, year, month, treatment, 
-                date, new_group, sp_code, dry_gm2) %>% 
-  unite("sample_ID_short", site, date, remove = FALSE) %>% 
-  # filtered from kelp delta data frame created in upstream script
-  filter(sample_ID_short %in% (delta_continual$sample_ID_short)) %>% 
-  # add column for experiment during/after
-  exp_dates_column_continual() %>% 
-  # add column for time since end of the experiment
-  time_since_columns_continual() %>% 
-  # add column for kelp year
-  kelp_year_column() %>% 
-  # add column for 1 year, 2 years, 3 years comparison
-  comparison_column_continual_new() %>% 
+  # dplyr::select(site, year, month, treatment, 
+  #               date, new_group, sp_code, dry_gm2) %>% 
+  # unite("sample_ID_short", site, date, remove = FALSE) %>% 
+  # # filtered from kelp delta data frame created in upstream script
+  # filter(sample_ID_short %in% (delta_continual$sample_ID_short)) %>% 
+  # # add column for experiment during/after
+  # exp_dates_column_continual() %>% 
+  # # add column for time since end of the experiment
+  # time_since_columns_continual() %>% 
+  # # add column for kelp year
+  # kelp_year_column() %>% 
+  # # add column for 1 year, 2 years, 3 years comparison
+  # comparison_column_continual_new() %>% 
   # join with site quality data frame and data frame of full names of site
-  full_join(., site_quality, 
+  left_join(., site_quality, 
             by = "site") %>% 
   left_join(., enframe(sites_full), 
             by = c("site" = "name")) %>% 
@@ -859,6 +877,107 @@ comm_permanova_tables <- comm_permanova %>%
 algae_permanova <- pluck(comm_permanova_tables, 8, 2)
 
 epi_permanova <- pluck(comm_permanova_tables, 8, 1)
+
+all_permanova <- bind_rows(algae_permanova, epi_permanova) %>% 
+  mutate(group = case_when(
+    group == "algae" ~ "Understory macroalgae",
+    group == "epilithic.sessile.invert" ~ "Sessile invertebrates"
+  )) %>% 
+  select(!contains("model")) %>% 
+  flextable(col_keys = c("group",
+                         "variables...2" ,
+                         "Df...3" ,
+                         "SumOfSqs...4" ,
+                         "R2...5" ,
+                         "F...6" ,
+                         "p.value...9" ,
+                         
+                         "variables...11" ,
+                         "Df...12",
+                         "SumOfSqs...13",
+                         "R2...14",
+                         "F...15" ,
+                         "p.value...18",
+                         
+                         "variables...20",
+                         "Df...21",
+                         "SumOfSqs...22",
+                         "R2...23",
+                         "F...24" ,
+                         "p.value...27"
+  ))  %>%
+  # add a header row and center align
+  add_header_row(top = TRUE, 
+                 values = c("", "1 year", "2 years", "3 years"), 
+                 colwidths = c(1, 6, 6, 6)) %>% 
+  align(i = 1, 
+        j = NULL, 
+        align = "center", 
+        part = "header") %>% 
+  
+  # start editing here
+  
+  # change the column names
+  set_header_labels(
+    "group" == "",
+    "variables...2" = "Variables",
+    "Df...3" = "df",
+    "SumOfSqs...4" = "Sum of squares",
+    "R2...5" = "R\U00B2",
+    "F...6" = "F",
+    "p...7" = "p-value",
+    
+    "variables...10" = "Variables",
+    "Df...11" = "df",
+    "SumOfSqs...12" = "Sum of squares",
+    "R2...13" = "R\U00B2",
+    "F...14" = "F",
+    "p...15" = "p-value",
+    
+    "variables...18" = "Variables",
+    "Df...19" = "df",
+    "SumOfSqs...20" = "Sum of squares",
+    "R2...21" = "R\U00B2",
+    "F...22" = "F",
+    "p...23" = "p-value"
+  ) %>% 
+  
+  # bold p values if they are significant
+  style(i = ~ signif...8 == "yes",
+        j = c("variables...2", "p...7"),
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  style(i = ~ signif...16 == "yes",
+        j = c("variables...10", "p...15"),
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  style(i = ~ signif...24 == "yes",
+        j = c("variables...18", "p...23"),
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  
+  # add a footnote for 95% CI
+  footnote(
+    i = 2, 
+    j = c(5, 9),
+    ref_symbols = "1",
+    value = as_paragraph("Confidence interval"),
+    part = "header"
+  ) %>% 
+  
+  # merge group cells to create a grouping column
+  merge_v(j = ~ group) %>% 
+  valign(j = ~ group,
+         i = NULL,
+         valign = "top") %>% 
+  
+  # final formatting
+  autofit %>% 
+  # fit_to_width(10) %>% 
+  font(fontname = "Times New Roman",
+       part = "all")
+
+all_permanova
 
 # create table using gt
 all_permanova <- bind_rows(algae_permanova, epi_permanova) %>% 

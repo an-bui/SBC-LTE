@@ -30,28 +30,16 @@ source(here::here("code", "00-set_up.R"))
 # This code also relies on wrangling functions that are created in the 
 # `00-set_up.R` script.
 
+# missing data from MOHK in continual plot from 2010-05-05
+# missing data from NAPL in continual plot from 2014-11-14
+
 delta_continual <- biomass %>% 
   filter(sp_code == "MAPY" & treatment %in% c("control", "continual")) %>% 
   dplyr::select(-sp_code) %>% 
-  dplyr::select(site, year, month, treatment, date, dry_gm2) %>% 
+  dplyr::select(site, year, month, treatment, date, dry_gm2, exp_dates:kelp_year) %>% 
   pivot_wider(names_from = treatment, values_from = dry_gm2) %>% 
   # calculate delta
-  mutate(delta_continual = continual - control) %>%  
-  # take out years where continual removal hadn't happened yet
-  drop_na(delta_continual) %>% 
-  mutate(exp_dates = case_when(
-    # after removal ended
-    site == "aque" & date >= aque_after_date_continual ~ "after",
-    site == "napl" & date >= napl_after_date_continual ~ "after",
-    site == "mohk" & date >= mohk_after_date_continual ~ "after",
-    site == "carp" & date >= carp_after_date_continual ~ "after",
-    # everything else is "during" removal
-    TRUE ~ "during"
-  ),
-  exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  time_since_columns_continual() %>% 
-  kelp_year_column() %>% 
-  comparison_column_continual_new() %>% 
+  mutate(delta_continual = continual - control) %>% 
   left_join(., site_quality, by = "site") %>% 
   left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
   rename("site_full" = value) %>% 
@@ -61,6 +49,31 @@ delta_continual <- biomass %>%
   mutate(site = fct_relevel(
     site, 
     "aque", "napl", "mohk", "carp"))
+
+  # take out years where continual removal hadn't happened yet
+  # drop_na(delta_continual) %>% 
+  # mutate(exp_dates = case_when(
+  #   # after removal ended
+  #   site == "aque" & date >= aque_after_date_continual ~ "after",
+  #   site == "napl" & date >= napl_after_date_continual ~ "after",
+  #   site == "mohk" & date >= mohk_after_date_continual ~ "after",
+  #   site == "carp" & date >= carp_after_date_continual ~ "after",
+  #   # everything else is "during" removal
+  #   TRUE ~ "during"
+  # ),
+  # exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+  # time_since_columns_continual() %>% 
+  # kelp_year_column() %>% 
+  # comparison_column_continual_new() %>% 
+  # left_join(., site_quality, by = "site") %>% 
+  # left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
+  # rename("site_full" = value) %>% 
+  # mutate(site_full = fct_relevel(
+  #   site_full, 
+  #   "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+  # mutate(site = fct_relevel(
+  #   site, 
+  #   "aque", "napl", "mohk", "carp"))
 
 # ⟞ b. kelp biomass in long format ----------------------------------------
 
@@ -305,8 +318,8 @@ kelp_biomass_timeseries
 variation_site <- continual_long %>% 
   select(exp_dates, treatment, site, kelp_biomass) %>% 
   group_by(exp_dates, treatment, site) %>% 
-  summarize(mean = mean(kelp_biomass),
-            variation = sd(kelp_biomass)/mean(kelp_biomass)) %>% 
+  summarize(mean = mean(kelp_biomass, na.rm = TRUE),
+            variation = sd(kelp_biomass, na.rm = TRUE)/mean(kelp_biomass, na.rm = TRUE)) %>% 
   ungroup()
 
 variation_plot <- ggplot(variation_site, 
