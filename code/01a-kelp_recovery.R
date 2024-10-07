@@ -30,9 +30,6 @@ source(here::here("code", "00-set_up.R"))
 # This code also relies on wrangling functions that are created in the 
 # `00-set_up.R` script.
 
-# missing data from MOHK in continual plot from 2010-05-05
-# missing data from NAPL in continual plot from 2014-11-14
-
 delta_continual <- biomass %>% 
   filter(sp_code == "MAPY" & treatment %in% c("control", "continual")) %>% 
   dplyr::select(-sp_code) %>% 
