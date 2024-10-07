@@ -264,19 +264,11 @@ aque_time_since_end_predictions <- ggpredict(aque_time_since_end,
 
 # ⟞ b. Naples -------------------------------------------------------------
 
-napl_biomass_continual <- time.model.fxn.new("napl", "continual", "all") %>% 
-  mutate(prediction = naples_sig_fun(time.model))
+napl_biomass_continual <- time.model.fxn.new("napl", "continual", "all") 
 
 napl_continual_bacips_results <- biomass.pcbacips(napl_biomass_continual)
 
 # Best model is the sigmoid model.
-
-M <- 240.441
-B <- -239.528
-L <- 6.492
-K <- 153.824
-
-# time.model.of.impact = max(which(time.model == 0))
 
 naples_sig <-function(delta, time.model, time.true)
 {
@@ -302,14 +294,20 @@ naples_sig <-function(delta, time.model, time.true)
   sigFit<-nls2(foSIG, start=startPar, algorithm="brute-force") # nls2 enables to calculate AICc
   sigFit
 }
-# Fit the sigmoid model
-naples_mod_fit<-naples_sig(delta=napl_biomass_continual$delta_continual,
-                           time.model=napl_biomass_continual$time.model,
-                           time.true=napl_biomass_continual$date)
 
+# Fit the sigmoid model
+naples_mod_fit <- naples_sig(delta = napl_biomass_continual$delta_continual,
+                             time.model = napl_biomass_continual$time.model,
+                             time.true = napl_biomass_continual$date)
+
+# model equation
 naples_sig_fun <- function(x) (M * (x/L) ^ K) / (1 + (x/L) ^ K) + B
 
-
+# model coefficients
+M <- 240.441
+B <- -239.528
+L <- 6.492
+K <- 153.824
 
 # ⟞ c. Mohawk -------------------------------------------------------------
 
@@ -468,6 +466,7 @@ aque_time_since_end <- aque_biomass_continual %>%
 # ⟞ ⟞ i. time.model -------------------------------------------------------
 
 napl_bacips_plot <- napl_biomass_continual %>% 
+  mutate(prediction = naples_sig_fun(time.model)) %>% 
   mutate(time_since_end_model = case_when(
     date <= "2016-05-17" ~ 0,
     TRUE ~ time_since_end
@@ -488,6 +487,7 @@ napl_bacips_plot <- napl_biomass_continual %>%
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
 
 napl_time_since_end <- napl_biomass_continual %>% 
+  mutate(prediction = naples_sig_fun(time.model)) %>%  
   mutate(time_since_end_model = case_when(
     date <= "2016-05-17" ~ 0,
     TRUE ~ time_since_end
