@@ -14,7 +14,8 @@ This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef:
 ├── README.md
 ├── SBC-LTE.Rproj
 ├── code
-│   ├── 00-set_up.R
+│   ├── 00a-set_up.R
+│   ├── 00b-getting_data_from_EDI.R
 │   ├── 01a-kelp_recovery.R
 │   ├── 01b-kelp_BACIPS.R
 │   ├── 02a-community_recovery.R
@@ -32,11 +33,6 @@ This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef:
 ├── data
 │   ├── README.md
 │   └── all-species-biomass
-│       ├── LTE_All_Species_Biomass_at_transect_20220202.csv
-│       ├── LTE_All_Species_Biomass_at_transect_20220208.csv
-│       ├── LTE_All_Species_Biomass_at_transect_20220314.csv
-│       ├── LTE_All_Species_Biomass_at_transect_20230323.csv
-│       ├── LTE_All_Species_Biomass_at_transect_20230530.csv
 │       ├── LTE_All_Species_Biomass_at_transect_20240501.csv
 │       └── biomass.RDS
 ├── figures

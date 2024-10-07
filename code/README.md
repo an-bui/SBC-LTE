@@ -3,7 +3,8 @@
 **last updated: 2024-10-07**
 
 ## Set up
-- `00-set_up.R`: libraries, functions, operators, objects  
+- `00a-set_up.R`: libraries, functions, operators, objects  
+- `00b-getting_data_from_EDI.R`: a script to download a zipped version of the data used in this analysis from the Environmental Data Initiative. **Note:** this code only has to be run _once_ to use the code; if the code is already downloaded in the correct place, then start with `00a-set_up.R`.  
 
 ## Kelp recovery
 - `01a-kelp_recovery.R`: sources `00-set_up.R`, analysis of kelp removal and recovery deltas  
