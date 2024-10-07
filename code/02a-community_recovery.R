@@ -26,19 +26,20 @@ group_biomass_wrangle <- function(df) {
     # take out years where continual removal hadn't happened yet
     drop_na(delta_continual) %>% 
     select(!delta_continual) %>% 
-    mutate(exp_dates = case_when(
-      # after for continual removal:
-      site == "aque" & date >= aque_after_date_continual ~ "after",
-      site == "napl" & date >= napl_after_date_continual ~ "after",
-      site == "mohk" & date >= mohk_after_date_continual ~ "after",
-      site == "carp" & date >= carp_after_date_continual ~ "after",
-      # everything else is "during" the experiment
-      TRUE ~ "during"
-    ),
-    exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+      mutate(exp_dates = case_when(
+        site == "aque" & date >= aque_start_date_continual & date < aque_after_date_continual ~ "during",
+        site == "aque" & date >= aque_after_date_continual ~ "after",
+        site == "napl" & date >= napl_start_date_continual & date < napl_after_date_continual ~ "during",
+        site == "napl" & date >= napl_after_date_continual ~ "after",
+        site == "mohk" & date >= mohk_start_date_continual & date < mohk_after_date_continual ~ "during",
+        site == "mohk" & date >= mohk_after_date_continual ~ "after",
+        site == "carp" & date >= carp_start_date_continual & date < carp_after_date_continual ~ "during",
+        site == "carp" & date >= carp_after_date_continual ~ "after"
+      ),
+      exp_dates = fct_relevel(exp_dates, "during", "after")) %>%
     time_since_columns_continual() %>% 
     kelp_year_column() %>% 
-    comparison_column_continual_new() %>% 
+    comparison_column_continual() %>% 
     # make it longer
     pivot_longer(cols = c(control, continual)) %>% 
     # rename columns
@@ -47,7 +48,8 @@ group_biomass_wrangle <- function(df) {
     mutate(treatment = case_match(
       treatment, 
       "control" ~ "reference", 
-      "continual" ~ "removal")) %>% 
+      "continual" ~ "removal"),
+      treatment = as_factor(treatment)) %>% 
     # create a new sample ID that is site, year, quarter, treatment
     unite("sample_ID", site, date, quarter, treatment, remove = FALSE) %>% 
     # join only with kelp biomass (long format)
@@ -63,19 +65,20 @@ delta_biomass_wrangle <- function(df) {
     select(site, year, month, date, reference, removal, delta_continual) %>% 
     # take out years where continual removal hadn't happened yet
     drop_na(delta_continual) %>% 
-    mutate(exp_dates = case_when(
-      # after removal ended
-      site == "aque" & date >= aque_after_date_continual ~ "after",
-      site == "napl" & date >= napl_after_date_continual ~ "after",
-      site == "mohk" & date >= mohk_after_date_continual ~ "after",
-      site == "carp" & date >= carp_after_date_continual ~ "after",
-      # everything else is "during" removal
-      TRUE ~ "during"
-    ),
-    exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
+      mutate(exp_dates = case_when(
+        site == "aque" & date >= aque_start_date_continual & date < aque_after_date_continual ~ "during",
+        site == "aque" & date >= aque_after_date_continual ~ "after",
+        site == "napl" & date >= napl_start_date_continual & date < napl_after_date_continual ~ "during",
+        site == "napl" & date >= napl_after_date_continual ~ "after",
+        site == "mohk" & date >= mohk_start_date_continual & date < mohk_after_date_continual ~ "during",
+        site == "mohk" & date >= mohk_after_date_continual ~ "after",
+        site == "carp" & date >= carp_start_date_continual & date < carp_after_date_continual ~ "during",
+        site == "carp" & date >= carp_after_date_continual ~ "after"
+      ),
+      exp_dates = fct_relevel(exp_dates, "during", "after")) %>%
     time_since_columns_continual() %>% 
     kelp_year_column() %>% 
-    comparison_column_continual_new() %>% 
+    comparison_column_continual() %>% 
     left_join(., site_quality, by = "site") %>% 
     left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
     rename("site_full" = value) %>% 
@@ -555,13 +558,13 @@ epi_biomass_timeseries <- epi_continual_long %>%
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S4_", today(), ".jpg", sep = "")),
-#        plot = delta_continual_sites_algae_raw,
+#        plot = algae_biomass_timeseries,
 #        height = 12, width = 8, units = "cm",
 #        dpi = 300)
 # 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste("fig-S5_", today(), ".jpg", sep = "")),
-#        plot = delta_continual_sites_epi_raw,
+#        plot = epi_biomass_timeseries,
 #        height = 12, width = 8, units = "cm",
 #        dpi = 300)
 

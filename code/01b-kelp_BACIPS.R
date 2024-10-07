@@ -264,13 +264,52 @@ aque_time_since_end_predictions <- ggpredict(aque_time_since_end,
 
 # ⟞ b. Naples -------------------------------------------------------------
 
-napl_biomass_continual <- time.model.fxn.new("napl", "continual", "all")
+napl_biomass_continual <- time.model.fxn.new("napl", "continual", "all") %>% 
+  mutate(prediction = naples_sig_fun(time.model))
 
 napl_continual_bacips_results <- biomass.pcbacips(napl_biomass_continual)
 
-# Equal support for step, linear, and sigmoid models. Visualizations depict 
-# step model (immediate increase in removal plot relative to reference), which 
-# has the lowest AIC.
+# Best model is the sigmoid model.
+
+M <- 240.441
+B <- -239.528
+L <- 6.492
+K <- 153.824
+
+# time.model.of.impact = max(which(time.model == 0))
+
+naples_sig <-function(delta, time.model, time.true)
+{
+  time.model.of.impact = max(which(time.model == 0))
+  time.true = time.true
+    funSIG<-function(parS, time.model)	(parS$M * (time.model/parS$L)^parS$K) / (1 + (time.model/parS$L) ^ parS$K) + parS$B
+  residFun<-function(p, observed, time.model) observed + funSIG(p,time.model)
+  parStart <- list(M=mean(delta[time.model.of.impact:length(time.true)]), 
+                   B=mean(delta[1:time.model.of.impact]), 
+                   L=mean(time.model), 
+                   K=5)
+  nls_SIG_out <- nls.lm(par=parStart, 
+                        fn= residFun, 
+                        observed=delta, 
+                        time.model=time.model, 
+                        control = nls.lm.control(maxfev = integer(), 
+                                                 maxiter = 1000))
+  foSIG<-delta~(M * (time.model/L) ^ K) / (1 + (time.model/L) ^ K) + B
+  startPar<-c(-coef(nls_SIG_out)[1],
+              -coef(nls_SIG_out)[2],
+              coef(nls_SIG_out)[3],
+              coef(nls_SIG_out)[4])
+  sigFit<-nls2(foSIG, start=startPar, algorithm="brute-force") # nls2 enables to calculate AICc
+  sigFit
+}
+# Fit the sigmoid model
+naples_mod_fit<-naples_sig(delta=napl_biomass_continual$delta_continual,
+                           time.model=napl_biomass_continual$time.model,
+                           time.true=napl_biomass_continual$date)
+
+naples_sig_fun <- function(x) (M * (x/L) ^ K) / (1 + (x/L) ^ K) + B
+
+
 
 # ⟞ c. Mohawk -------------------------------------------------------------
 
@@ -278,9 +317,7 @@ mohk_biomass_continual <- time.model.fxn.new("mohk", "continual", "all")
 
 mohk_continual_bacips_results <- biomass.pcbacips(mohk_biomass_continual)
 
-# Equal support for linear and sigmoid model. Visualizations depict linear 
-# model (gradual increase in removal plot relative to reference), which has the
-# lowest AIC.
+# Best model is the linear model.
 
 # fitting linear model to extract model predictions
 mohk_bacips_linear <- lm(delta_continual ~ time.model, 
@@ -432,14 +469,17 @@ aque_time_since_end <- aque_biomass_continual %>%
 
 napl_bacips_plot <- napl_biomass_continual %>% 
   mutate(time_since_end_model = case_when(
-    date < "2016-05-17" ~ 0,
+    date <= "2016-05-17" ~ 0,
     TRUE ~ time_since_end
   )) %>% 
-  ggplot(aes(x = time_since_end_model, y = delta_continual)) +
+  ggplot(aes(x = time.model, y = delta_continual)) +
+  bacips_hline + 
   geom_point(aes(alpha = exp_dates), 
              fill = napl_col, size = 4, shape = 21) +
-  geom_hline(yintercept = 0, linewidth = 1) +
-  # scale_x_continuous(breaks = time_since_end) +
+  geom_line(aes(x = time.model,
+                y = prediction),
+            linewidth = 1) +
+  # scale_x_continuous(breaks = time.model) +
   bacips_aesthetics + 
   bacips_labs + 
   labs(title = "(b) Naples") +
@@ -449,7 +489,7 @@ napl_bacips_plot <- napl_biomass_continual %>%
 
 napl_time_since_end <- napl_biomass_continual %>% 
   mutate(time_since_end_model = case_when(
-    date < "2016-05-17" ~ 0,
+    date <= "2016-05-17" ~ 0,
     TRUE ~ time_since_end
   )) %>% 
   ggplot(aes(x = time_since_end_model, 
@@ -459,7 +499,10 @@ napl_time_since_end <- napl_biomass_continual %>%
              shape = 21, 
              fill = napl_col, 
              size = 4) +
-  geom_hline(yintercept = 0, linewidth = 1) +
+  geom_line(aes(x = time_since_end_model,
+                y = prediction),
+            linewidth = 1) +
+  # geom_hline(yintercept = 0, linewidth = 1) +
   bacips_aesthetics +
   time_since_end_labs + 
   labs(title = "(b) Naples") +
@@ -599,8 +642,6 @@ time_since_end_plots <- plot_grid(
   nrow = 2, ncol = 2
 )
 
-time_since_end_plots
-
 # ggsave(here::here("figures", "ms-figures", paste0("time_since_end_plots-", today(), ".jpg")),
 #        plot = time_since_end_plots,
 #        height = 8, width = 12, dpi = 300)
@@ -690,7 +731,7 @@ model_selection_summary_table <- bind_rows(
 
 # model_selection_summary_table %>%
 #   save_as_docx(path = here::here(
-#     "tables", 
-#     "ms-tables", 
+#     "tables",
+#     "ms-tables",
 #     paste("tbl-S2_", today(), ".docx", sep = "")))
 

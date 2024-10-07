@@ -48,7 +48,10 @@ delta_continual <- biomass %>%
     "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
   mutate(site = fct_relevel(
     site, 
-    "aque", "napl", "mohk", "carp"))
+    "aque", "napl", "mohk", "carp")) %>% 
+  # take out the missing survey from Naples
+  drop_na(delta_continual) %>% 
+  unite("sample_ID_short", site, date, sep = "_", remove = FALSE)
 
   # take out years where continual removal hadn't happened yet
   # drop_na(delta_continual) %>% 
@@ -85,10 +88,13 @@ continual_long <- delta_continual %>%
   mutate(treatment = case_match(
     treatment, 
     "control" ~ "reference", 
-    "continual" ~ "removal")) %>% 
+    "continual" ~ "removal"),
+    treatment = as_factor(treatment)) %>% 
   unite("sample_ID", site, date, quarter, treatment, remove = FALSE) %>% 
+  # take out the missing NAPL survey
+  filter(sample_ID != "napl_2014-11-14_Q4_removal") %>% 
   # calculate variation by observation
-  group_by(exp_dates, treatment) %>% 
+  group_by(site, exp_dates, treatment) %>% 
   mutate(mean = mean(kelp_biomass),
          variation = 
            ((kelp_biomass - mean(kelp_biomass))/mean(kelp_biomass))^2) %>% 
@@ -211,8 +217,8 @@ overall_kelp_predictions <- ggplot() +
                   group = group), 
               alpha = 0.05) +
   # theming
-  model_predictions_theme + 
-  model_predictions_aesthetics + 
+  model_predictions_theme +
+  model_predictions_aesthetics +
   coord_cartesian(ylim = c(-10, 2000)) +
   labs(title = "(a)") 
 
@@ -267,13 +273,13 @@ kelp_biomass_timeseries <- continual_long %>%
     site == "carp" ~ paste("(d) ", site_full, sep = "")
   )) %>% 
   mutate(removal_annotation = case_when(
-    sample_ID_short == "aque_2010-06-15" ~ "Removal"
+    sample_ID == "aque_2010-04-26_Q2_removal" ~ "Removal"
   ),
   recovery_annotation = case_when(
-    sample_ID_short == "aque_2010-06-15" ~ "Recovery"
+    sample_ID == "aque_2010-04-26_Q2_removal" ~ "Recovery"
   ),
   annotation_y = case_when(
-    sample_ID_short == "aque_2010-06-15" ~ 840
+    sample_ID == "aque_2010-04-26_Q2_removal" ~ 840
   )) %>% 
   ggplot(aes(x = time_since_end,
              y = kelp_biomass,
@@ -1500,39 +1506,39 @@ means
 # 4. variation plots ------------------------------------------------------
 ##########################################################################-
 
-# variation_during <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "during"))
-# summary(variation_during)
-# var_during_df <- ggpredict(variation_during, terms = c("treatment")) %>% 
-#   as_tibble() %>% 
-#   mutate(exp_dates = "during")
-# variation_after <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "after"))
-# summary(variation_after)
-# var_after_df <- ggpredict(variation_after, terms = c("treatment")) %>% 
-#   as_tibble() %>% 
-#   mutate(exp_dates = "after")
+variation_during <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "during"))
+summary(variation_during)
+var_during_df <- ggpredict(variation_during, terms = c("treatment")) %>%
+  as_tibble() %>%
+  mutate(exp_dates = "during")
+variation_after <- aov(variation ~ treatment, data = continual_long %>% filter(exp_dates == "after"))
+summary(variation_after)
+var_after_df <- ggpredict(variation_after, terms = c("treatment")) %>%
+  as_tibble() %>%
+  mutate(exp_dates = "after")
 # 
-# var_df <- rbind(var_during_df, var_after_df) %>% 
-#   rename(treatment = x) %>% 
-#   mutate(exp_dates = fct_relevel(exp_dates, "during", "after"))
+var_df <- rbind(var_during_df, var_after_df) %>%
+  rename(treatment = x) %>%
+  mutate(exp_dates = fct_relevel(exp_dates, "during", "after"))
 # 
-# ggplot(data = var_df, aes(x = treatment, y = predicted)) +
-#   geom_point(data = continual_long, aes(x = treatment, y = variation),
-#              alpha = 0.2, shape = 21,
-#              position = position_jitter(width = 0.2)) +
-#   geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
-#   facet_wrap(~exp_dates) +
-#   labs(x = "Treatment", 
-#        y = "Variation") +
-#   theme_bw() +
-#   theme(panel.grid = element_blank())
+ggplot(data = var_df, aes(x = treatment, y = predicted)) +
+  geom_point(data = continual_long, aes(x = treatment, y = variation),
+             alpha = 0.2, shape = 21,
+             position = position_jitter(width = 0.2)) +
+  geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
+  facet_wrap(~exp_dates) +
+  labs(x = "Treatment",
+       y = "Variation") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
 # 
-# ggplot(data = var_df, aes(x = treatment, y = predicted)) +
-#   geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
-#   facet_wrap(~exp_dates) +
-#   labs(x = "Treatment", 
-#        y = "Variation") +
-#   theme_bw() +
-#   theme(panel.grid = element_blank())
+ggplot(data = var_df, aes(x = treatment, y = predicted)) +
+  geom_pointrange(aes(x = treatment, y = predicted, ymin = conf.low, ymax = conf.high)) +
+  facet_wrap(~exp_dates) +
+  labs(x = "Treatment",
+       y = "Variation") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
 
 variation_site <- continual_long %>% 
   select(exp_dates, treatment, site, kelp_biomass) %>% 

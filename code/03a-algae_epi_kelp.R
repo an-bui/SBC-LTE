@@ -69,9 +69,6 @@ delta_biomass <- bind_rows(
     ~ simulateResiduals(.x)
   )) 
 
-# nothing from naples 2014-11-14 in continual removal plot
-# nothing from mohk 2010-06-14 in continual removal plot
-
 # ⟞ b. model diagnostics --------------------------------------------------
 
 # for understory algae
