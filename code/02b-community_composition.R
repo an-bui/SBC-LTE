@@ -967,80 +967,6 @@ all_permanova <- bind_rows(algae_permanova, epi_permanova) %>%
 
 all_permanova
 
-# create table using gt
-# all_permanova <- bind_rows(algae_permanova, epi_permanova) %>% 
-#   mutate(group = case_when(
-#     group == "algae" ~ "Understory macroalgae",
-#     group == "epilithic.sessile.invert" ~ "Sessile invertebrates"
-#   )) %>% 
-#   select(!contains("model")) %>% 
-#   gt(
-#     groupname_col = "group",
-#     row_group_as_column = TRUE
-#   ) %>% 
-#   sub_missing(
-#     columns = everything(),
-#     missing_text = "--"
-#   ) %>% 
-#   tab_spanner(label = "1 year",
-#               columns = c("variables...2", 
-#                           "Df...3", 
-#                           "SumOfSqs...4", 
-#                           "R2...5", 
-#                           "F...6", 
-#                           "p...7")) %>% 
-#   tab_spanner(label = "2 year",
-#               columns = c("variables...9", 
-#                           "Df...10", 
-#                           "SumOfSqs...11", 
-#                           "R2...12", 
-#                           "F...13", 
-#                           "p...14")) %>% 
-#   tab_spanner(label = "3 year",
-#               columns = c("variables...16", 
-#                           "Df...17",
-#                           "SumOfSqs...18",
-#                           "R2...19",
-#                           "F...20",
-#                           "p...21")) %>% 
-#   # change column names
-#   cols_label(
-#     `variables...2` = "Variables",
-#     `variables...9` = "Variables",
-#     `variables...16` = "Variables",
-#     `Df...3` = "df",
-#     `Df...10` = "df",
-#     `Df...17` = "df",
-#     `SumOfSqs...4` = "Sum of squares",
-#     `SumOfSqs...11` = "Sum of squares",
-#     `SumOfSqs...18` = "Sum of squares",
-#     `R2...5` = "R\U00B2",
-#     `R2...12` = "R\U00B2",
-#     `R2...19` = "R\U00B2",
-#     `F...6` = "F",
-#     `F...13` = "F",
-#     `F...20` = "F",
-#     `p...7` = "Pr(>F)",
-#     `p...14` = "Pr(>F)",
-#     `p...21` = "Pr(>F)"
-#   ) 
-# 
-# permanova_12_table <- all_permanova %>%
-#   cols_hide(columns = c("variables...16",
-#                         "Df...17",
-#                         "SumOfSqs...18",
-#                         "R2...19",
-#                         "F...20",
-#                         "p...21"))
-# 
-# permanova_3_table <- all_permanova %>% 
-#   cols_hide(!(columns = c("variables...16", 
-#                           "Df...17",
-#                           "SumOfSqs...18",
-#                           "R2...19",
-#                           "F...20",
-#                           "p...21")))
-
 
 # ⟞ b. control pairwise tables --------------------------------------------
 
@@ -1147,8 +1073,3 @@ all_pairwise <- bind_rows(algae_pairwise, epi_pairwise) %>%
 #     paste0("tbl-S6_", today(), ".docx"))
 #     )
 
-# gtsave(all_pairwise,
-#        here::here("tables",
-#                   "ms-tables",
-#                   paste0("tbl-S6_", today(), ".docx")),
-#        vwidth = 1500, vheight = 1000)

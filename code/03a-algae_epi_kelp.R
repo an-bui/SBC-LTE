@@ -136,6 +136,20 @@ algae_predictions <- ggpredict(
   type = "fixed"
 )
 
+# model with outliers
+algae_predictions_with_outliers <- ggpredict(
+  pluck(delta_biomass, 3, 1),
+  terms = c("delta_kelp"),
+  type = "fixed"
+) %>% 
+  plot(show_data = TRUE) +
+  model_predictions_theme +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  labs(x = "\U0394 giant kelp biomass\n(removal - reference, dry g/m\U00B2)",
+       y = "\U0394 understory macroalgae biomass\n(removal - reference, dry g/m\U00B2)", 
+       title = "Model predictions with outliers")
+
 # ⟞ b. visualizations -----------------------------------------------------
 
 # ⟞ ⟞ i. understory algae -------------------------------------------------
@@ -198,6 +212,13 @@ outlier_checks <- plot_grid(outlier_check1, outlier_check2, ncol = 2)
 #                   paste0("outlier-checks_", today(), ".jpg", sep = "")),
 #        plot = outlier_checks,
 #        height = 6, width = 16, units = "cm",
+#        dpi = 200)
+
+# model predictions with outliers
+# ggsave(here::here("figures", "ms-figures",
+#                   paste0("model-with-outliers_", today(), ".jpg", sep = "")),
+#        plot = algae_predictions_with_outliers,
+#        height = 8, width = 10, units = "cm",
 #        dpi = 200)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
