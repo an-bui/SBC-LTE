@@ -122,7 +122,7 @@ kelp_models <- continual_long %>%
   )) %>% 
   mutate(residuals = map(
     kelp_model,
-    ~ simulateResiduals(.x)
+    ~ simulateResiduals(.x, quantreg = TRUE)
   )) %>% 
   mutate(r2 = map(
     kelp_model,
@@ -158,6 +158,14 @@ plot(pluck(kelp_models, 4, 1))
 
 # residuals for model after experimental removal (during recovery period)
 plot(pluck(kelp_models, 4, 2))
+
+# plotting residuals against predictors during experimental removal
+plotResiduals(pluck(kelp_models, 3, 1), 
+              form = pluck(kelp_models, 2, 1)$time_since_end)
+
+# plotting residuals against predictors after experimental removal
+plotResiduals(pluck(kelp_models, 3, 2), 
+              form = pluck(kelp_models, 2, 2)$time_since_end)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ----------------------- 3. model visualizations -------------------------
