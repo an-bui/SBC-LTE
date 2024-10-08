@@ -318,8 +318,10 @@ kelp_biomass_timeseries
 #        dpi = 300)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# --------------------------- 5. variation plots --------------------------
+# ------------------------------ 5. variation -----------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ⟞ a. wrangling ----------------------------------------------------------
 
 variation_site <- continual_long %>% 
   select(exp_dates, treatment, site, kelp_biomass) %>% 
@@ -328,7 +330,11 @@ variation_site <- continual_long %>%
             variation = sd(kelp_biomass, na.rm = TRUE)/mean(kelp_biomass, na.rm = TRUE)) %>% 
   ungroup()
 
-# Make new figure: panel a compares CV of removal and reference in the recovery, and panel b compares CV of removal and recovery in reference plots
+# ⟞ b. variation in recovery period ---------------------------------------
+
+# testing differences in variation using t-test
+t.test(variation ~ treatment, 
+       data = variation_site %>% filter(exp_dates == "after"))
 
 # panel A
 recovery_variation <- ggplot(variation_site %>% filter(exp_dates == "after"),
@@ -352,6 +358,13 @@ recovery_variation <- ggplot(variation_site %>% filter(exp_dates == "after"),
         plot.title.position = "plot",
         text = element_text(size = 6)) 
 
+
+# ⟞ c. variation in reference plots ---------------------------------------
+
+# testing differences in variation using t-test
+t.test(variation ~ exp_dates, 
+       data = variation_site %>% filter(treatment == "reference"))
+
 reference_variation <- ggplot(variation_site %>% filter(treatment == "reference"),
                              aes(x = exp_dates,
                                  y = variation)) +
@@ -371,6 +384,8 @@ reference_variation <- ggplot(variation_site %>% filter(treatment == "reference"
         legend.position = "none",
         plot.title.position = "plot",
         text = element_text(size = 6)) 
+
+# ⟞ d. saving outputs -----------------------------------------------------
 
 variation_plots <- recovery_variation + reference_variation
 
