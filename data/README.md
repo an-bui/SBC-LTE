@@ -4,4 +4,6 @@ The most recent version of this data set on the Environmental Data Initiative (E
 
 Past analyses used previous revisions of this package, which are listed under "All revisions" on the EDI page for this data package.
 
-We have included the data we used as a `.rds` file in the `all-species-biomass` file because the original dataset is too big for upload.
+We have included the data we used as a `.rds` file in the `all-species-biomass` file because the original dataset is too big for upload.  
+
+Alternatively, you can download a zipped file from the EDI database using the `00b-getting_data_from_EDI.R` script.
