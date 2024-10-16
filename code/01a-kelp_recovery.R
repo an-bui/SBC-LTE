@@ -227,7 +227,7 @@ overall_kelp_predictions <- ggplot() +
   # theming
   model_predictions_theme +
   model_predictions_aesthetics +
-  coord_cartesian(ylim = c(-10, 2000)) +
+  coord_cartesian(ylim = c(-10, 1800)) +
   labs(title = "(a)") 
 
 overall_kelp_predictions
