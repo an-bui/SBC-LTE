@@ -80,40 +80,23 @@ plot(pluck(delta_biomass, 4, 2))
 # ⟞ c. reworking understory algae model -----------------------------------
 
 # check for outliers using `performance::check_outliers`
-outlier_check1 <- check_outliers(pluck(delta_biomass, 3, 1), 
+outlier_check <- check_outliers(pluck(delta_biomass, 3, 1), 
                                  c("cook")) %>% 
   plot()
 # case 96: napl_2023-05-18_Q2
 
-algae_no_outlier_v1 <- lmer(
+algae_no_outlier <- lmer(
   delta_group ~ delta_kelp + (1|site) + (1|year),
   data = pluck(delta_biomass, 2, 1) %>% 
     filter(sample_ID_short %!in% c("napl_2023-05-18"))
 )
 
-plot(simulateResiduals(algae_no_outlier_v1)) 
-
-outlier_check2 <- check_outliers(algae_no_outlier_v1, 
-                                 c("cook")) %>% 
-  plot()
-# case 56: mohk_2019_11-19
-
-algae_no_outlier_v2 <- lmer(
-  delta_group ~ delta_kelp + (1|site) + (1|year),
-  data = pluck(delta_biomass, 2, 1) %>% 
-    filter(sample_ID_short %!in% c("napl_2023-05-18", "mohk_2019-11-19"))
-)
-
-plot(simulateResiduals(algae_no_outlier_v2))
-# residuals look much better
-
-check_outliers(algae_no_outlier_v2, c("cook"))
-# no outliers
+plot(simulateResiduals(algae_no_outlier)) 
 
 # ⟞ d. R2 values ----------------------------------------------------------
 
 # for understory algae
-r.squaredGLMM(algae_no_outlier_v2)
+r.squaredGLMM(algae_no_outlier)
 
 # for sessile inverts
 r.squaredGLMM(pluck(delta_biomass, 3, 2))
@@ -131,7 +114,7 @@ r.squaredGLMM(pluck(delta_biomass, 3, 2))
 # ⟞ a. model predictions --------------------------------------------------
 
 algae_predictions <- ggpredict(
-  algae_no_outlier_v2,
+  algae_no_outlier,
   terms = c("delta_kelp"),
   type = "fixed"
 )
@@ -206,12 +189,11 @@ group_vs_kelp <- plot_grid(algae_vs_kelp_plot, epi_vs_kelp_plot, ncol = 2)
 #        dpi = 300)
 
 # outlier checks
-outlier_checks <- plot_grid(outlier_check1, outlier_check2, ncol = 2)
 
 # ggsave(here::here("figures", "ms-figures",
 #                   paste0("outlier-checks_", today(), ".jpg", sep = "")),
-#        plot = outlier_checks,
-#        height = 6, width = 16, units = "cm",
+#        plot = outlier_check,
+#        height = 8, width = 12, units = "cm",
 #        dpi = 200)
 
 # model predictions with outliers
@@ -254,7 +236,7 @@ group_vs_kelp_table_fxn <- function(model) {
   
 }
 
-algae_table <- group_vs_kelp_table_fxn(algae_no_outlier_v2) %>% 
+algae_table <- group_vs_kelp_table_fxn(algae_no_outlier) %>% 
   mutate(group = "Understory macroalgae") %>% 
   relocate(group, .before = term)
 

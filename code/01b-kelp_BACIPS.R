@@ -268,13 +268,21 @@ napl_biomass_continual <- time.model.fxn.new("napl", "continual", "all")
 
 napl_continual_bacips_results <- biomass.pcbacips(napl_biomass_continual)
 
-# Best model is the sigmoid model.
+# Best model is the step model
 
-naples_sig <-function(delta, time.model, time.true)
+# ⟞ c. Mohawk -------------------------------------------------------------
+
+mohk_biomass_continual <- time.model.fxn.new("mohk", "continual", "all")
+
+mohk_continual_bacips_results <- biomass.pcbacips(mohk_biomass_continual)
+
+# Best model is the sigmoid model
+
+mohk_sig <-function(delta, time.model, time.true)
 {
   time.model.of.impact = max(which(time.model == 0))
   time.true = time.true
-    funSIG<-function(parS, time.model)	(parS$M * (time.model/parS$L)^parS$K) / (1 + (time.model/parS$L) ^ parS$K) + parS$B
+  funSIG<-function(parS, time.model)	(parS$M * (time.model/parS$L)^parS$K) / (1 + (time.model/parS$L) ^ parS$K) + parS$B
   residFun<-function(p, observed, time.model) observed + funSIG(p,time.model)
   parStart <- list(M=mean(delta[time.model.of.impact:length(time.true)]), 
                    B=mean(delta[1:time.model.of.impact]), 
@@ -296,43 +304,37 @@ naples_sig <-function(delta, time.model, time.true)
 }
 
 # Fit the sigmoid model
-naples_mod_fit <- naples_sig(delta = napl_biomass_continual$delta_continual,
-                             time.model = napl_biomass_continual$time.model,
-                             time.true = napl_biomass_continual$date)
-
-# model equation
-naples_sig_fun <- function(x) (M * (x/L) ^ K) / (1 + (x/L) ^ K) + B
+mohk_mod_fit <- mohk_sig(delta = mohk_biomass_continual$delta_continual,
+                         time.model = mohk_biomass_continual$time.model,
+                         time.true = mohk_biomass_continual$date)
 
 # model coefficients
-M <- 240.441
-B <- -239.528
-L <- 6.492
-K <- 153.824
+M <- 881.6
+B <- -777
+L <- 12
+K <- 192.1
 
-# ⟞ c. Mohawk -------------------------------------------------------------
+# model equation
+mohk_sig_fun <- function(x) (M * (x/L) ^ K) / (1 + (x/L) ^ K) + B
 
-mohk_biomass_continual <- time.model.fxn.new("mohk", "continual", "all")
+# Fit the sigmoid model
+mohk_time_since_end_df <- mohk_biomass_continual %>% 
+  mutate(new_time_since_end = case_when(
+    date <= "2017-08-16" ~ 0,
+    TRUE ~ time_since_end
+  ))
 
-mohk_continual_bacips_results <- biomass.pcbacips(mohk_biomass_continual)
+mohk_time_since_end_mod <- mohk_sig(delta = mohk_time_since_end_df$delta_continual,
+                                    time.model = mohk_time_since_end_df$new_time_since_end,
+                                    time.true = mohk_time_since_end_df$date)
 
-# Best model is the linear model.
+M_time_since_end <- 881.649
+B_time_since_end <- -776.973
+L_time_since_end <- 3.001
+K_time_since_end <- 184.532
 
-# fitting linear model to extract model predictions
-mohk_bacips_linear <- lm(delta_continual ~ time.model, 
-                         data = mohk_biomass_continual)
-
-mohk_bacips_predictions <- ggpredict(mohk_bacips_linear, 
-                                     terms = "time.model",
-                                     type = "fixed")
-
-# fitting model with time since end as a predictor for visualization
-mohk_time_since_end <- lm(delta_continual ~ time_since_end, 
-                          data = mohk_biomass_continual %>% 
-                            filter(exp_dates == "after"))
-
-mohk_time_since_end_predictions <- ggpredict(mohk_time_since_end, 
-                                             terms = "time_since_end",
-                                             type = "fixed")
+# model equation
+mohk_sig_time_since_end <- function(x) (M_time_since_end * (x/L_time_since_end) ^ K_time_since_end) / (1 + (x/L_time_since_end) ^ K_time_since_end) + B_time_since_end
 
 # ⟞ d. Carpinteria --------------------------------------------------------
 
@@ -377,7 +379,7 @@ carp_time_since_end_predictions <- ggpredict(carp_time_since_end,
 # For all figures depicting timesteps (`time.model`), the "during" removal
 # points are shown at the 0 point on the x-axis to represent the way the
 # Progressive Change BACIPS procedure handles observations during a 
-# disturbance.
+# disturbance. During a disturbance, all observations are assigned time "0".
 
 # ⟞ a. figure aesthetics --------------------------------------------------
 
@@ -466,7 +468,6 @@ aque_time_since_end <- aque_biomass_continual %>%
 # ⟞ ⟞ i. time.model -------------------------------------------------------
 
 napl_bacips_plot <- napl_biomass_continual %>% 
-  mutate(prediction = naples_sig_fun(time.model)) %>% 
   mutate(time_since_end_model = case_when(
     date <= "2016-05-17" ~ 0,
     TRUE ~ time_since_end
@@ -476,9 +477,8 @@ napl_bacips_plot <- napl_biomass_continual %>%
   geom_point(aes(alpha = exp_dates), 
              fill = napl_col, size = 4, shape = 21) +
   geom_line(aes(x = time.model,
-                y = prediction),
+                y = 0),
             linewidth = 1) +
-  # scale_x_continuous(breaks = time.model) +
   bacips_aesthetics + 
   bacips_labs + 
   labs(title = "(b) Naples") +
@@ -487,7 +487,6 @@ napl_bacips_plot <- napl_biomass_continual %>%
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
 
 napl_time_since_end <- napl_biomass_continual %>% 
-  mutate(prediction = naples_sig_fun(time.model)) %>%  
   mutate(time_since_end_model = case_when(
     date <= "2016-05-17" ~ 0,
     TRUE ~ time_since_end
@@ -500,9 +499,8 @@ napl_time_since_end <- napl_biomass_continual %>%
              fill = napl_col, 
              size = 4) +
   geom_line(aes(x = time_since_end_model,
-                y = prediction),
+                y = 0),
             linewidth = 1) +
-  # geom_hline(yintercept = 0, linewidth = 1) +
   bacips_aesthetics +
   time_since_end_labs + 
   labs(title = "(b) Naples") +
@@ -513,22 +511,28 @@ napl_time_since_end <- napl_biomass_continual %>%
 
 # ⟞ ⟞ i. time.model -------------------------------------------------------
 
+mohk_predictions <- seq(from = 0, to = 23, by = 0.25) %>% 
+  enframe() %>% 
+  select(!name) %>% 
+  rename(time.model = value) %>% 
+  mutate(prediction = mohk_sig_fun(time.model))
+
 mohk_bacips_plot <- mohk_biomass_continual %>% 
   mutate(time_since_end_model = case_when(
-    date < "2017-08-16" ~ 0,
+    date <= "2017-08-16" ~ 0,
     TRUE ~ time_since_end
   )) %>% 
-  ggplot(aes(x = time.model, y = delta_continual)) +
-  bacips_hline +
+  ggplot(aes(x = time.model, 
+             y = delta_continual)) +
+  bacips_hline + 
   geom_point(aes(alpha = exp_dates), 
-             shape = 21, fill = mohk_col, size = 4) +
-  geom_line(data = mohk_bacips_predictions,
-            aes(x = x, y = predicted),
-            linewidth = 1) + 
-  geom_ribbon(data = mohk_bacips_predictions,
-              aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high),
-              linewidth = 1, 
-              alpha = 0.1) +
+             fill = mohk_col, 
+             size = 4, 
+             shape = 21) +
+  geom_line(data = mohk_predictions,
+            aes(x = time.model,
+                y = prediction),
+            linewidth = 1) +
   bacips_aesthetics + 
   bacips_labs + 
   labs(title = "(c) Mohawk") +
@@ -536,9 +540,16 @@ mohk_bacips_plot <- mohk_biomass_continual %>%
 
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
 
+mohk_predictions_time_since_end <- seq(from = 0, to = 6, by = 0.1) %>% 
+  enframe() %>% 
+  select(!name) %>% 
+  rename(time.model = value) %>% 
+  mutate(prediction = mohk_sig_time_since_end(time.model))
+
 mohk_time_since_end <- mohk_biomass_continual %>% 
+  mutate(prediction = mohk_sig_fun(time_since_end)) %>%  
   mutate(time_since_end_model = case_when(
-    date < "2017-08-16" ~ 0,
+    date <= "2017-08-16" ~ 0,
     TRUE ~ time_since_end
   )) %>% 
   ggplot(aes(x = time_since_end_model, 
@@ -548,21 +559,15 @@ mohk_time_since_end <- mohk_biomass_continual %>%
              shape = 21, 
              fill = mohk_col, 
              size = 4) +
-  geom_line(data = mohk_time_since_end_predictions,
-            aes(x = x, 
-                y = predicted),
-            linewidth = 1) + 
-  geom_ribbon(data = mohk_time_since_end_predictions,
-              aes(x = x, 
-                  y = predicted, 
-                  ymin = conf.low,
-                  ymax = conf.high),
-              linewidth = 1, 
-              alpha = 0.1) +
+  geom_line(data = mohk_predictions_time_since_end,
+            aes(x = time.model,
+                y = prediction),
+            linewidth = 1) +
   bacips_aesthetics +
   time_since_end_labs + 
   labs(title = "(c) Mohawk") +
   bacips_theme
+
 
 # ⟞ e. Carpinteria --------------------------------------------------------
 
