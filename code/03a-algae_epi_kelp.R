@@ -93,6 +93,10 @@ algae_no_outlier <- lmer(
 
 plot(simulateResiduals(algae_no_outlier)) 
 
+confint(algae_no_outlier)
+
+summary(algae_no_outlier)
+
 # ⟞ d. R2 values ----------------------------------------------------------
 
 # for understory algae
