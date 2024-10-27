@@ -391,6 +391,14 @@ permutest(algae_betadisper_time)
 
 set.seed(1)
 
+epi_betadisper_time <- betadisper(
+  comm_betadisper[[5]][[1]], 
+  comm_betadisper[[3]][[1]]$comp_3yrs)
+
+permutest(epi_betadisper_time)
+
+TukeyHSD(epi_betadisper_time)
+
 # calculating beta dispersion between treatments and time periods for inverts
 epi_betadisper_combo <- betadisper(
   comm_betadisper[[5]][[1]], 
@@ -401,10 +409,12 @@ permutest(epi_betadisper_combo)
 
 TukeyHSD(epi_betadisper_combo)
 # pairwise comparisons of differences between dispersions that are meaningful:
-# during control and after control: reference plots differed in dispersion
-# in the last 3 years of the experiment and in the recovery period
-# start control and start continual: reference and removal plots differed in
-# dispersion at the start of the experiment
+# during control and after control (p = 0.006): reference plots differed in 
+# dispersion in the last 3 years of the experiment and in the recovery period
+# start control and after control (p = 0.006): reference plots differed in 
+# dispersion in the beginning of the experiment and in the recovery period
+# start control and start continual (p = 0.02): reference and removal plots 
+# differed in dispersion at the start of the experiment
 
 # ⟞ d. control pairwise comparisons ---------------------------------------
 

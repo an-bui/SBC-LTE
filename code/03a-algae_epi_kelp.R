@@ -161,7 +161,7 @@ algae_vs_kelp_plot <- pluck(delta_biomass, 2, 1) %>%
        y = "\U0394 understory macroalgae biomass\n(removal - reference, dry g/m\U00B2)", 
        title = "(a) Understory macroalgae") +
   annotate("text", x = -1100, y = -200,
-           label = "conditional R\U00B2 = 0.51\nmarginal R\U00B2 = 0.42\np < 0.001",
+           label = "conditional R\U00B2 = 0.53\nmarginal R\U00B2 = 0.43\np < 0.001",
            size = 1.5) +
   model_predictions_theme
 
