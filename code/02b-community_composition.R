@@ -501,7 +501,7 @@ control_pairwise <- comm_permanova %>%
     ~ as_tibble(.x) %>% 
       mutate(Components = c("Time period", "Residual", "Total")) %>% 
       relocate(Components, .before = Df) %>% 
-      mutate(comparison = "start-during") %>% 
+      mutate(comparison = "start-end") %>% 
       mutate(across(SumOfSqs:`F`, ~ round(., digits = 2)))
   )) %>% 
   mutate(start_after_altgower_table = map(
@@ -509,7 +509,7 @@ control_pairwise <- comm_permanova %>%
     ~ as_tibble(.x) %>% 
       mutate(Components = c("Time period", "Residual", "Total")) %>% 
       relocate(Components, .before = Df) %>% 
-      mutate(comparison = "start-after") %>% 
+      mutate(comparison = "start-recovery") %>% 
       mutate(across(SumOfSqs:`F`, ~ round(., digits = 2)))
   )) %>% 
   mutate(during_after_altgower_table = map(
@@ -517,7 +517,7 @@ control_pairwise <- comm_permanova %>%
     ~ as_tibble(.x) %>% 
       mutate(Components = c("Time period", "Residual", "Total")) %>% 
       relocate(Components, .before = Df) %>% 
-      mutate(comparison = "during-after") %>% 
+      mutate(comparison = "end-recovery") %>% 
       mutate(across(SumOfSqs:`F`, ~ round(., digits = 2)))
   )) %>% 
   
@@ -526,12 +526,12 @@ control_pairwise <- comm_permanova %>%
     list(start_during_altgower_table,
          start_after_altgower_table,
          during_after_altgower_table),
-    bind_cols
+    bind_rows
   )) %>% 
   mutate(full_table = map2(
     full_table, new_group,
-    ~ mutate(.x, group = .y) %>% 
-      relocate(group, .before = "Components...1")
+    ~ mutate(.x, group = .y) %>%
+      relocate(group, .before = "Components")
   ))
 
 
@@ -861,105 +861,60 @@ comm_permanova_tables <- comm_permanova %>%
          altgower_comp_3yrs_permanova) %>% 
   mutate(perm1yr_table = map(
     altgower_comp_1yr_permanova, 
-    ~ anova_summary_fxn(.x, "1yr")
+    ~ anova_summary_fxn(.x, "1 year")
   )) %>% 
   mutate(perm2yr_table = map(
     altgower_comp_2yrs_permanova, 
-    ~ anova_summary_fxn(.x, "2yr")
+    ~ anova_summary_fxn(.x, "2 years")
   )) %>% 
   mutate(perm3yr_table = map(
     altgower_comp_3yrs_permanova, 
-    ~ anova_summary_fxn(.x, "3yr")
+    ~ anova_summary_fxn(.x, "3 years")
   )) %>% 
   mutate(full_table = pmap(
     list(perm1yr_table, perm2yr_table, perm3yr_table),
-    bind_cols
+    bind_rows
   )) %>% 
   mutate(full_table = map2(
     full_table, new_group,
     ~ mutate(.x, group = .y) %>% 
-      relocate(group, .before = "variables...1")
+      relocate(group, .before = "variables") %>% 
+      relocate(model, .before = "variables")
   ))
 
 algae_permanova <- pluck(comm_permanova_tables, 8, 2)
 
 epi_permanova <- pluck(comm_permanova_tables, 8, 1)
 
-all_permanova <- bind_rows(algae_permanova, epi_permanova) %>% 
+main_permanova <- bind_rows(algae_permanova, epi_permanova) %>% 
+  filter(model == "3 years") %>% 
   mutate(group = case_when(
     group == "algae" ~ "Understory macroalgae",
     group == "epilithic.sessile.invert" ~ "Sessile invertebrates"
   )) %>% 
-  select(!contains("model")) %>% 
+  # select(!contains("model")) %>% 
   flextable(col_keys = c("group",
-                         "variables...2" ,
-                         "Df...3" ,
-                         "SumOfSqs...4" ,
-                         "R2...5" ,
-                         "F...6" ,
-                         "p.value...9" ,
-                         
-                         "variables...11" ,
-                         "Df...12",
-                         "SumOfSqs...13",
-                         "R2...14",
-                         "F...15" ,
-                         "p.value...18",
-                         
-                         "variables...20",
-                         "Df...21",
-                         "SumOfSqs...22",
-                         "R2...23",
-                         "F...24" ,
-                         "p.value...27"
+                         "variables",
+                         "Df",
+                         "SumOfSqs",
+                         "R2",
+                         "F",
+                         "p.value"
   )) %>%
-  # add a header row and center align
-  add_header_row(top = TRUE, 
-                 values = c("", "1 year", "2 years", "3 years"), 
-                 colwidths = c(1, 6, 6, 6)) %>% 
-  align(i = 1, 
-        j = NULL, 
-        align = "center", 
-        part = "header") %>% 
-  
-  # start editing here
-  
   # change the column names
   set_header_labels(
-    "group" == "",
-    "variables...2" = "Variables",
-    "Df...3" = "df",
-    "SumOfSqs...4" = "Sum of squares",
-    "R2...5" = "R\U00B2",
-    "F...6" = "F",
-    "p.value...9" = "p-value",
-    
-    "variables...11" = "Variables",
-    "Df...12" = "df",
-    "SumOfSqs...13" = "Sum of squares",
-    "R2...14" = "R\U00B2",
-    "F...15" = "F",
-    "p.value...18" = "p-value",
-    
-    "variables...20" = "Variables",
-    "Df...21" = "df",
-    "SumOfSqs...22" = "Sum of squares",
-    "R2...23" = "R\U00B2",
-    "F...24" = "F",
-    "p.value...27" = "p-value"
+    "group" = "Community",
+    "variables" = "Variables",
+    "Df" = "Degrees of freedom",
+    "SumOfSqs" = "Sum of squares",
+    "R2" = "R\U00B2",
+    "F" = "F",
+    "p.value" = "p-value"
   ) %>% 
   
   # bold p values if they are significant
-  style(i = ~ signif...8 == "yes",
-        j = c("variables...2", "p.value...9"),
-        pr_t = officer::fp_text(bold = TRUE),
-        part = "body") %>% 
-  style(i = ~ signif...17 == "yes",
-        j = c("variables...11", "p.value...18"),
-        pr_t = officer::fp_text(bold = TRUE),
-        part = "body") %>% 
-  style(i = ~ signif...26 == "yes",
-        j = c("variables...20", "p.value...27"),
+  style(i = ~ signif == "yes",
+        j = c("variables", "p.value"),
         pr_t = officer::fp_text(bold = TRUE),
         part = "body") %>% 
   
@@ -971,11 +926,69 @@ all_permanova <- bind_rows(algae_permanova, epi_permanova) %>%
   
   # final formatting
   autofit %>% 
-  # fit_to_width(10) %>% 
+  fit_to_width(7) %>% 
   font(fontname = "Times New Roman",
-       part = "all")
+       part = "all") %>% 
+  border_inner(
+    part = "all", 
+    border = officer::fp_border(color="gray",  width = 0.5)
+  ) 
 
-all_permanova
+supplement_permanova <- bind_rows(algae_permanova, epi_permanova) %>% 
+  filter(model %in% c("1 year", "2 years")) %>% 
+  mutate(group = case_when(
+    group == "algae" ~ "Understory macroalgae",
+    group == "epilithic.sessile.invert" ~ "Sessile invertebrates"
+  )) %>% 
+  # select(!contains("model")) %>% 
+  flextable(col_keys = c("group",
+                         "model",
+                         "variables",
+                         "Df",
+                         "SumOfSqs",
+                         "R2",
+                         "F",
+                         "p.value"
+  )) %>%
+  # change the column names
+  set_header_labels(
+    "group" = "Community",
+    "model" = "Comparison",
+    "variables" = "Variables",
+    "Df" = "Degrees of freedom",
+    "SumOfSqs" = "Sum of squares",
+    "R2" = "R\U00B2",
+    "F" = "F",
+    "p.value" = "p-value"
+    ) %>% 
+  
+  # bold p values if they are significant
+  style(i = ~ signif == "yes",
+        j = c("variables", "p.value"),
+        pr_t = officer::fp_text(bold = TRUE),
+        part = "body") %>% 
+  
+  # merge group cells to create a grouping column
+  merge_v(j = ~ group) %>% 
+  merge_v(j = ~ model) %>% 
+  valign(j = ~ group,
+         i = NULL,
+         valign = "top") %>% 
+  valign(j = ~ model,
+         i = NULL,
+         valign = "top") %>% 
+  
+  # final formatting
+  autofit %>% 
+  fit_to_width(7) %>% 
+  font(fontname = "Times New Roman",
+       part = "all") %>% 
+  border_inner(
+    part = "all", 
+    border = officer::fp_border(color="gray",  width = 0.5)
+  ) 
+
+supplement_permanova
 
 
 # ⟞ b. control pairwise tables --------------------------------------------
@@ -994,84 +1007,65 @@ all_pairwise <- bind_rows(algae_pairwise, epi_pairwise) %>%
     group == "algae" ~ "Understory algae",
     group == "epilithic.sessile.invert" ~ "Sessile invertebrates"
   )) %>% 
-  select(!contains("comparison")) %>% 
+  # select(!contains("comparison")) %>% 
   flextable(col_keys = c("group",
-                         "Components...2",
-                         "Df...3",
-                         "SumOfSqs...4",
-                         "R2...5",
-                         "F...6",
-                         "Pr(>F)...7",
-                         
-                         "Components...9",
-                         "Df...10",
-                         "SumOfSqs...11",
-                         "R2...12",
-                         "F...13",
-                         "Pr(>F)...14",
-                         
-                         "Components...16",
-                         "Df...17",
-                         "SumOfSqs...18",
-                         "R2...19",
-                         "F...20",
-                         "Pr(>F)...21"
+                         "comparison",
+                         "Components",
+                         "Df",
+                         "SumOfSqs",
+                         "R2",
+                         "F",
+                         "Pr(>F)"
   )) %>%
-  # add a header row and center align
-  add_header_row(top = TRUE, 
-                 values = c("", "start-during", "start-after", "during-after"), 
-                 colwidths = c(1, 6, 6, 6)) %>% 
-  align(i = 1, 
-        j = NULL, 
-        align = "center", 
-        part = "header") %>% 
-  
-  # change the column names
-  set_header_labels(
-    "group" = "",
-    "Components...2" = "Components",
-    "Df...3" = "df",
-    "SumOfSqs...4" = "Sum of squares",
-    "R2...5" = "R\U00B2",
-    "F...6" = "F",
-    "Pr(>F)...7" = "p-value",
-    
-    "Components...9" = "Components",
-    "Df...10" = "df",
-    "SumOfSqs...11" = "Sum of squares",
-    "R2...12" = "R\U00B2",
-    "F...13" = "F",
-    "Pr(>F)...14" = "p-value",
-    
-    "Components...16" = "Components",
-    "Df...17" = "df",
-    "SumOfSqs...18" = "Sum of squares",
-    "R2...19" = "R\U00B2",
-    "F...20" = "F",
-    "Pr(>F)...21" = "p-value"
-  ) %>% 
   
   # merge group cells to create a grouping column
+  merge_v(j = ~ comparison) %>% 
   merge_v(j = ~ group) %>% 
   valign(j = ~ group,
          i = NULL,
+         valign = "center") %>% 
+  valign(j = ~ comparison,
+         i = NULL,
          valign = "top") %>% 
+  
+  # change the column names
+  set_header_labels(
+    "group" = "Community",
+    "comparison" = "Comparison",
+    "Components" = "Components",
+    "Df" = "Degrees of freedom",
+    "SumOfSqs" = "Sum of squares",
+    "R2" = "R\U00B2",
+    "F" = "F",
+    "Pr(>F)" = "p-value"
+  ) %>% 
   
   # final formatting
   autofit %>% 
-  fit_to_width(10) %>% 
+  fit_to_width(7) %>% 
   font(fontname = "Times New Roman",
-       part = "all")
+       part = "all") %>% 
+  border_inner(
+    part = "all", 
+    border = officer::fp_border(color="gray",  width = 0.5)
+  ) 
 
 # ⟞ c. saving outputs -----------------------------------------------------
 
 # ⟞ ⟞ i. PERMANOVA tables -------------------------------------------------
 
-# all_permanova %>%
+# supplement_permanova %>%
 #   save_as_docx(path = here::here(
 #     "tables",
 #     "ms-tables",
-#     paste0("tbl-S4_altgower_", today(), ".docx"))
+#     paste0("tbl-S3_altgower_", today(), ".docx"))
+#   )
+# 
+# main_permanova %>%
+#   save_as_docx(path = here::here(
+#     "tables",
+#     "ms-tables",
+#     paste0("tbl-2_altgower_", today(), ".docx"))
 #     )
 
 # ⟞ ⟞ ii. control pairwise PERMANOVA table --------------------------------
