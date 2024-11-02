@@ -262,7 +262,7 @@ delta_kelp_predictions <- ggplot() +
   delta_aesthetics +
   model_predictions_theme +
   scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1800, 1000)) +
-  labs(title = "(a)")
+  labs(title = "(b)")
 
 delta_kelp_predictions
 
