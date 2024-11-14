@@ -2,7 +2,7 @@
 
 **last updated: 2024-11-14**  
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14165445.svg)](https://doi.org/10.5281/zenodo.14165445)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14165444.svg)](https://doi.org/10.5281/zenodo.14165444)
 
 This is a repository for analyzing kelp and kelp-associated community recovery dynamics from the long term kelp removal experiment in the Santa Barbara Coastal Long Term Ecological Research (SBC LTER) network. The analysis accompanies Bui et al. 2024, "Foundation species recovery yields inconsistent recovery of associated community: a long-term experiment" (in preparation for submission to _Ecology Letters_).  
 
