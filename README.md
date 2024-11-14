@@ -6,9 +6,12 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
 
 ## Data citation
 
-This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef: Long-term experiment: biomass of kelp forest species, ongoing since 2008 ver 11. Environmental Data Initiative. https://doi.org/10.6073/pasta/1d4a114b80d8d3ceb5adc668d5fbe497 (Accessed 2024-10-07).
+This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef: Long-term experiment: biomass of kelp forest species, ongoing since 2008 ver 12. Environmental Data Initiative. https://doi.org/10.6073/pasta/75841791b57dc90086fd01fe80779c0c (Accessed 2024-11-14).
 
 ## Repository structure:
+
+Please see the README in the `code` and `data` directories for more information.
+
 ```
 .
 ├── README.md
@@ -22,7 +25,6 @@ This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef:
 │   ├── 02b-community_composition.R
 │   ├── 03a-algae_epi_kelp.R
 │   ├── README.md
-│   ├── old-code
 │   └── resources
 │       ├── Thiault
 │       │   └── mee312655-sup-0001-appendixs1.r
@@ -36,11 +38,9 @@ This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef:
 │       ├── LTE_All_Species_Biomass_at_transect_20240501.csv
 │       └── biomass.RDS
 ├── figures
-│   ├── fg-recovery
+│   ├── icons
 │   ├── ms-figures
-│   └── old
 ├── tables
 │   ├── ms-tables
-│   └── old
 ```
 
