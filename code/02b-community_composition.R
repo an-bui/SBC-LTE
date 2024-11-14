@@ -89,21 +89,6 @@ anova_summary_fxn <- function(adonis2.obj, name) {
 # ⟞ a. species biomass with metadata --------------------------------------
 
 comm_df <- biomass %>% 
-  #filter(treatment %in% c("control", "continual")) %>% 
-  # select columns of interest 
-  # dplyr::select(site, year, month, treatment, 
-  #               date, new_group, sp_code, dry_gm2) %>% 
-  # unite("sample_ID_short", site, date, remove = FALSE) %>% 
-  # # filtered from kelp delta data frame created in upstream script
-  # filter(sample_ID_short %in% (delta_continual$sample_ID_short)) %>% 
-  # # add column for experiment during/after
-  # exp_dates_column_continual() %>% 
-  # # add column for time since end of the experiment
-  # time_since_columns_continual() %>% 
-  # # add column for kelp year
-  # kelp_year_column() %>% 
-  # # add column for 1 year, 2 years, 3 years comparison
-  # comparison_column_continual_new() %>% 
   # join with site quality data frame and data frame of full names of site
   left_join(., site_quality, 
             by = "site") %>% 
@@ -852,7 +837,7 @@ all_altgower_plots <- plot_grid(algae_altgower_labelled,
 
 # ⟞ a. PERMANOVA summary tables -------------------------------------------
 
-# This section creates Table _____ and Table _______.
+# This section creates tables in the supplemental material.
 
 comm_permanova_tables <- comm_permanova %>% 
   select(new_group, 
@@ -987,9 +972,6 @@ supplement_permanova <- bind_rows(algae_permanova, epi_permanova) %>%
     part = "all", 
     border = officer::fp_border(color="gray",  width = 0.5)
   ) 
-
-supplement_permanova
-
 
 # ⟞ b. control pairwise tables --------------------------------------------
 

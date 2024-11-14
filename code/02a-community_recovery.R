@@ -466,7 +466,7 @@ all_columns_with_legend <- plot_grid(kelp_column,
 
 # This section includes code to generate timeseries of understory algae and
 # sessile invertebrate biomass in reference and removal plots with separate
-# panels for each site. These correspond to Supplemental Material figures ____.
+# panels for each site. These figures are in the supplemental material.
 
 # The `raw_biomass_plot_theme()` used below is generated in the 00-set_up.R 
 # script because it is also used in the 01a-kelp_recovery.R script.

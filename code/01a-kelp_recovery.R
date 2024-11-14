@@ -103,14 +103,16 @@ continual_long <- delta_continual %>%
 
 # This section includes code to model the effect of time since the end of the
 # experiment and treatment (reference or removal) on kelp biomass with random
-# effects of site and year using a zero-inflated Gammer distribution with a 
+# effects of site and year using a zero-inflated Gamma distribution with a 
 # log link. 
 
 # Before settling on this distribution, we tried many different models, which 
-# are archived in the GitHub repo for this project.
+# are archived in the GitHub repo for this project in the `main` branch in the
+# `old-code` folder.
 
 kelp_models <- continual_long %>% 
   nest(data = everything(), .by = exp_dates) %>% 
+  # fit the model
   mutate(kelp_model = map(
     data,
     ~ glmmTMB(
@@ -120,14 +122,17 @@ kelp_models <- continual_long %>%
         ziformula = ~1
     )
   )) %>% 
+  # simulate residuals
   mutate(residuals = map(
     kelp_model,
     ~ simulateResiduals(.x, quantreg = TRUE)
   )) %>% 
+  # calculate R2
   mutate(r2 = map(
     kelp_model,
     ~ r.squaredGLMM(.x)
   )) %>% 
+  # generate model predictions
   mutate(predictions = case_when(
     exp_dates == "during" ~ map(
       kelp_model,
@@ -142,6 +147,7 @@ kelp_models <- continual_long %>%
                   type = "fixed")
     )
   )) %>% 
+  # generate deltas (removal - reference biomass)
   mutate(delta_predictions = map2(
     predictions, exp_dates,
     ~ as.data.frame(.x) %>% 
@@ -186,9 +192,6 @@ plotResiduals(pluck(kelp_models, 3, 2),
 
 overall_kelp_predictions <- ggplot() +
   model_predictions_background +
-  # removal/recovery labels
-  # annotate(geom = "text", x = -6.75, y = 1925, label = "Removal", size = 3) +
-  # annotate(geom = "text", x = 5.5, y = 1925, label = "Recovery", size = 3) +
   
   # raw data 
   geom_point(data = continual_long, 
@@ -271,23 +274,15 @@ delta_kelp_predictions
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # This section contains code to create timeseries of kelp biomass for each
-# site.
+# site, which is Figure 1.
 
 kelp_biomass_timeseries <- continual_long %>% 
+  # create a column for the strip label
   mutate(strip = case_when(
     site == "aque" ~ paste("(a) ", site_full, sep = ""),
     site == "napl" ~ paste("(b) ", site_full, sep = ""),
     site == "mohk" ~ paste("(c) ", site_full, sep = ""),
     site == "carp" ~ paste("(d) ", site_full, sep = "")
-  )) %>% 
-  mutate(removal_annotation = case_when(
-    sample_ID == "aque_2010-04-26_Q2_removal" ~ "Removal"
-  ),
-  recovery_annotation = case_when(
-    sample_ID == "aque_2010-04-26_Q2_removal" ~ "Recovery"
-  ),
-  annotation_y = case_when(
-    sample_ID == "aque_2010-04-26_Q2_removal" ~ 840
   )) %>% 
   ggplot(aes(x = time_since_end,
              y = kelp_biomass,
@@ -297,15 +292,6 @@ kelp_biomass_timeseries <- continual_long %>%
   model_predictions_background +
   geom_line(alpha = 0.9,
             linewidth = 0.5) +
-
-  # geom_text(aes(x = -6.75, 
-  #               y = annotation_y, 
-  #               label = removal_annotation), 
-  #           size = 2, color = "black") +
-  # geom_text(aes(x = 5.5, 
-  #               y = annotation_y, 
-  #               label = recovery_annotation), 
-  #           size = 2, color = "black") +
   model_predictions_aesthetics +
   raw_biomass_plot_theme +
   labs(y = "Giant kelp biomass (dry g/m\U00B2)") +
@@ -326,16 +312,36 @@ kelp_biomass_timeseries
 #        dpi = 300)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ------------------------------ 5. variation -----------------------------
+# ---------------------- 5. coefficient of variation ----------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# This section includes code to calculate the coefficient of variation (CV), 
+# which represents temporal variation in giant kelp biomass. 
+
+# We then asked if temporal variation differed between removal and reference 
+# plots in the recovery period (section b). If so, this would indicate that 
+# giant kelp did not recover its temporal variation in recovery.
+
+# We also tested whether temporal variation differed in the reference plots
+# between removal and recovery periods (section c). This would indicate that 
+# temporal variation changed in reference plots.
+
+# We found that temporal variation did not differ between removal and reference
+# plots in the recovery period, suggesting that giant kelp recovered its 
+# temporal variation. We also found that temporal variation did not differ in
+# reference plots between removal and recovery periods, suggesting that
+# temporal variation in the reference plots remained consistent between the two
+# study periods.
 
 # ⟞ a. wrangling ----------------------------------------------------------
 
 variation_site <- continual_long %>% 
   select(exp_dates, treatment, site, kelp_biomass) %>% 
   group_by(exp_dates, treatment, site) %>% 
+  # calculating CV
   summarize(mean = mean(kelp_biomass, na.rm = TRUE),
-            variation = sd(kelp_biomass, na.rm = TRUE)/mean(kelp_biomass, na.rm = TRUE)) %>% 
+            variation = sd(kelp_biomass, na.rm = TRUE)/
+              mean(kelp_biomass, na.rm = TRUE)) %>% 
   ungroup()
 
 # ⟞ b. variation in recovery period ---------------------------------------
@@ -411,7 +417,7 @@ variation_plots <- recovery_variation + reference_variation
 # predicted kelp biomass in reference and removal plots in the recovery period.
 # There are two panels: one panel showing the difference between reference and
 # removal plots when time since end = 0 (i.e. at the beginning of the recovery
-# period), and another panel shwoing time since end = 4 (in the most recent
+# period), and another panel showing time since end = 4 (in the most recent
 # year of the recovery period).
 
 predicted_kelp_after_0 <- pluck(kelp_models, 3, 2) %>% 
