@@ -20,13 +20,12 @@ source(here::here("code", "02a-community_recovery.R"))
 # Similarly to model construction in previous sections, I constructed models
 # and simulated residuals within the nested data frame, but extracted the 
 # residuals to visualize outside of the nested data frame. This process 
-# revealed two outliers for understory algae: 1) Naples on 2023-05-18 likely 
-# because of high Pterygophora californica biomass in the reference plot, and 
-# 2) Mohawk on 2019-11-19 likely because of high giant kelp biomass in the 
-# removal plot. I excluded these observations from the data set, reran the 
-# model, and checked the residuals to verify that these outliers improved model
-# fit. In the manuscript, we present the model without outliers in the main 
-# text, and provide a visualization of the model with both outliers in the 
+# revealed an outlier for understory algae at Naples on 2023-05-18 likely 
+# because of high Pterygophora californica biomass in the reference plot. I
+# excluded these observations from the data set, reran the model, and checked 
+# the residuals to verify that removing the outlier improved model fit. In 
+# the manuscript, we present the model without the outlier in the main text, 
+# and provide a visualization of the model with both outliers in the 
 # supplemental material.
 
 # The nested data frame relies on the `models` object created in the 
