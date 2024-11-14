@@ -156,12 +156,8 @@ kelp_year_column <- function(df) {
 comparison_column_continual <- function(df) {
   df %>% 
     mutate(comp_1yrs = case_when(
-      # site %in% c("aque", "mohk", "carp") & time_since_end >= -7.25 & time_since_end <= -6.25 ~ "start",
-      # site == "napl" & time_since_end >= -6.25 & time_since_end <= -5.25 ~ "start",
       site %in% c("aque", "mohk", "carp") & between(time_since_end, -7.25, -6.25) ~ "start",
       site == "napl" & between(time_since_end, -6.25, -5.25) ~ "start",
-      # site == "napl" & between(time_since_end, -6.25, -5.25) ~ "start",
-      # site == "mohk" & between(time_since_end, -7.25, -6.25) ~ "start",
       
       site %in% c("aque", "napl", "mohk", "carp") & between(time_since_end, -1.25, -0.25) ~ "during",
       
@@ -278,7 +274,9 @@ biomass <- read_csv(here::here("data",
   exp_dates = fct_relevel(exp_dates, "during", "after")) %>%
   # take out all surveys that were before the removal experiment started
   drop_na(exp_dates) %>%
+  # add in time since the end of the experiment
   time_since_columns_continual() %>%
+  # take average biomass for surveys that were done 2x seasonally
   group_by(site, year, treatment, quarter, sp_code) %>%
   mutate(dry_gm2 = mean(dry_gm2),
          wm_gm2 = mean(wm_gm2),
@@ -288,24 +286,13 @@ biomass <- read_csv(here::here("data",
   ungroup() %>%
   # take out extraneous columns from time_since_columns_continual()
   select(!test_min_time_yrs) %>%
+  # add the 1, 2, and 3 year comparisons
   comparison_column_continual() %>%
+  # add the "kelp year" column
   kelp_year_column()
 
-# writing RDS to push
-# write_rds(biomass, file = here("data", "all-species-biomass", "biomass.RDS"))
-
-biomass <- read_rds(here("data", "all-species-biomass", "biomass.RDS")) 
-
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ----------------------------- 5. operators ------------------------------
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# not in operator
-'%!in%' <- function(x,y)!('%in%'(x,y))
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ------------------- 6. useful vectors and data frames -------------------
+# ------------------- 5. useful vectors and data frames -------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # ⟞ a. species -----------------------------------------------------------
@@ -352,14 +339,13 @@ napl_shape <- 22
 mohk_shape <- 23
 carp_shape <- 24
 
-shape_palette_site <- c("aque" = aque_shape, 
-                        "napl" = napl_shape, 
-                        "mohk" = mohk_shape, 
+shape_palette_site <- c("aque" = aque_shape,
+                        "napl" = napl_shape,
+                        "mohk" = mohk_shape,
                         "carp" = carp_shape)
 
 removal_col <- "#CC7540"
 reference_col <- "#6D5A18"
-kelp_col <- "#6D5A18"
 under_col <- "#6B6D9F"
 
 model_predictions_theme <- theme_bw() +
@@ -418,18 +404,7 @@ model_predictions_background <- list(
              fill = "grey", alpha = 0.3)
 )
 
-# ⟞ b. treatment colors and shapes ----------------------------------------
-
-color_palette <- c("continual" = removal_col, 
-                   "control" = reference_col)
-
-continual_shape <- 17
-control_shape <- 21
-
-shape_palette <- c("continual" = continual_shape, 
-                   "control" = control_shape)
-
-# ⟞ d. site full names ----------------------------------------------------
+# ⟞ b. site full names ----------------------------------------------------
 
 aque_full <- "Arroyo Quemado"
 napl_full <- "Naples"
@@ -447,9 +422,12 @@ sites_full <- setNames(c("Arroyo Quemado",
                          "mohk",
                          "carp"))
 
-# ⟞ e. raw biomass plots --------------------------------------------------
+# ⟞ c. raw biomass plots --------------------------------------------------
 
-raw_biomass_plot_theme <- 
+# This theme is used to create the plots of biomass through time for giant
+# kelp, understory macroalgae, and sessile invertebrates.
+
+raw_biomass_plot_theme <-
     theme_bw() +
     theme(axis.title = element_text(size = 8),
           plot.title = element_text(size = 8),
@@ -458,9 +436,9 @@ raw_biomass_plot_theme <-
           strip.background = element_blank(),
           legend.text = element_text(size = 7),
           legend.position = "none",
-          panel.grid = element_blank()) 
+          panel.grid = element_blank())
 
-# ⟞ f. column titles ------------------------------------------------------
+# ⟞ d. column titles ------------------------------------------------------
 
 algae_title <- ggplot(data.frame(l = "Understory macroalgae", x = 1, y = 1)) +
   geom_text(aes(x, y, label = l), size = 4.5) + 

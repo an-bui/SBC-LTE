@@ -88,12 +88,10 @@ outlier_check <- check_outliers(pluck(delta_biomass, 3, 1),
 algae_no_outlier <- lmer(
   delta_group ~ delta_kelp + (1|site) + (1|year),
   data = pluck(delta_biomass, 2, 1) %>% 
-    filter(sample_ID_short %!in% c("napl_2023-05-18"))
+    filter(!(sample_ID_short %in% c("napl_2023-05-18")))
 )
 
 plot(simulateResiduals(algae_no_outlier)) 
-
-confint(algae_no_outlier)
 
 summary(algae_no_outlier)
 
@@ -104,6 +102,9 @@ r.squaredGLMM(algae_no_outlier)
 
 # for sessile inverts
 r.squaredGLMM(pluck(delta_biomass, 3, 2))
+
+# sessile invert summary
+summary(pluck(delta_biomass, 3, 2))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ----------------------- 2. model visualizations -------------------------
