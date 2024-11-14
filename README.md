@@ -10,7 +10,7 @@ This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef:
 
 ## Repository structure:
 
-Please see the README in the `code` and `data` directories for more information.
+Please see the READMEs in the [`code`](https://github.com/an-bui/SBC-LTE/tree/submission/code) and [`data`](https://github.com/an-bui/SBC-LTE/tree/submission/data) directories for more information.
 
 ```
 .
