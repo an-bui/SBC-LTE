@@ -10,7 +10,7 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
 
 This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef: Long-term experiment: biomass of kelp forest species, ongoing since 2008 ver 13. Environmental Data Initiative. https://doi.org/10.6073/pasta/4c63cd36279b7e8448d09651a51ed8a6 (Accessed 2024-11-26).  
 
-Please see the README in the [`code`](https://github.com/an-bui/SBC-LTE/tree/submission/code) directory for information on downloading the data from EDI.
+Please see the README in the [`data`](https://github.com/an-bui/SBC-LTE/tree/submission/data) directory for information on downloading the data from EDI.
 
 ## Repository structure:
 
