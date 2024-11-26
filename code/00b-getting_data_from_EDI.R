@@ -23,11 +23,13 @@ library(tidyverse)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # SBC LTE package ID
-packageID <- "knb-lter-sbc.119.12"
+packageID <- "knb-lter-sbc.119.13"
 
 # downloads zipped file
 read_data_package_archive(packageID, path = here("data", "all-species-biomass"))
 
 # unzips file
-unzip(zipfile = here("data", "all-species-biomass", "knb-lter-sbc.119.12.zip"),
-      exdir = here("data", "all-species-biomass", "knb-lter-sbc.119.12"))
+unzip(zipfile = here("data", "all-species-biomass", "knb-lter-sbc.119.13.zip"),
+      exdir = here("data", "all-species-biomass", "knb-lter-sbc.119.13"))
+
+
