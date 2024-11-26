@@ -656,7 +656,7 @@ time_since_end_plots <- plot_grid(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # This section includes code to create the summary table in Supplmentary 
-# Material _____.
+# Material Table S4.
 
 # ⟞ a. table formatting ---------------------------------------------------
 
