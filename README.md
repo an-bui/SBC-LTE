@@ -14,7 +14,9 @@ Please see the README in the [`data`](https://github.com/an-bui/SBC-LTE/tree/sub
 
 ## Repository structure:
 
-Please see the READMEs in the [`code`](https://github.com/an-bui/SBC-LTE/tree/submission/code) and [`data`](https://github.com/an-bui/SBC-LTE/tree/submission/data) directories for more information.
+Please see the READMEs in the [`code`](https://github.com/an-bui/SBC-LTE/tree/submission/code) and [`data`](https://github.com/an-bui/SBC-LTE/tree/submission/data) directories for more information.  
+
+Files in the `figures` and `tables` directories are not listed in full; please see those directories for all files included in the manuscript.
 
 ```
 .
@@ -43,42 +45,11 @@ Please see the READMEs in the [`code`](https://github.com/an-bui/SBC-LTE/tree/su
 │           ├── knb-lter-sbc.119.13.txt
 │           ├── knb-lter-sbc.119.13.xml
 │           └── manifest.txt
-├── figures
+├── figure
 │   ├── icons
-│   │   ├── algae.png
-│   │   ├── expanded-kelp.png
-│   │   └── inverts.png
-│   └── ms-figures
-│       ├── cov_plot_2024-10-25.jpg
-│       ├── cov_plot_2024-10-25_with-icons.jpg
-│       ├── fig-2_new-model_v1_2024-11-18.jpg
-│       ├── fig-2_new-model_v1_2024-11-18_with-icons.jpg
-│       ├── fig-3_altgower_v2_2024-11-18.jpg
-│       ├── fig-3_altgower_v2_2024-11-18_with-icons.jpg
-│       ├── fig-4_2024-11-18.jpg
-│       ├── fig-4_2024-11-18_with-icons.jpg
-│       ├── fig-S10_2024-10-27.jpg
-│       ├── fig-S10_2024-10-27_with-icons.jpg
-│       ├── fig-S1_2024-10-25.jpg
-│       ├── fig-S1_2024-10-25_with-icons.jpg
-│       ├── fig-S4_2024-11-18.jpg
-│       ├── fig-S4_2024-11-18_with-icons.jpg
-│       ├── fig-S5_2024-10-25.jpg
-│       ├── fig-S5_2024-10-25_with-icons.jpg
-│       ├── fig-S9_2024-10-27.jpg
-│       ├── fig-S9_2024-10-27_with-icons.jpg
-│       ├── kelp_means_plot_2024-10-25.jpg
-│       ├── kelp_means_plot_2024-10-25_with-icons.jpg
-│       └── time_since_end_plots-2024-10-25.jpg
-└── tables
+│   └── ms-figures 
+└── tables             
     └── ms-tables
-        ├── tbl-2_altgower_2024-11-18.docx
-        ├── tbl-S1_2024-11-18.docx
-        ├── tbl-S2_2024-10-25.docx
-        ├── tbl-S3_altgower_2024-11-18.docx
-        ├── tbl-S5_2024-11-18.docx
-        ├── tbl-S6_2024-11-18.docx
-        └── ~$l-2_altgower_2024-11-18.docx
 ```
 
 ## License
