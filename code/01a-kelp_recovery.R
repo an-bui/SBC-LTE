@@ -174,6 +174,7 @@ overall_kelp_predictions <- ggplot() +
                  y = kelp_biomass, 
                  color = treatment), 
              shape = 21,
+             alpha = 0.7,
              size = 0.75) +
   
   # model predictions
@@ -188,7 +189,8 @@ overall_kelp_predictions <- ggplot() +
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.05) +
+              alpha = 0.2,
+              fill = "grey") +
   geom_line(data = pluck(kelp_models, 6, 2), 
             aes(x = x, 
                 y = predicted, 
@@ -200,7 +202,8 @@ overall_kelp_predictions <- ggplot() +
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.05) +
+              alpha = 0.2,
+              fill = "grey") +
   # theming
   model_predictions_theme +
   model_predictions_aesthetics +
@@ -234,9 +237,9 @@ delta_kelp_predictions <- ggplot() +
              aes(x = time_since_end, 
                  y = delta_continual), 
              shape = 2, 
-             alpha = 0.15,
+             alpha = 0.7,
              size = 0.75,
-             color = "white") +
+             color = "grey") +
   
   # delta biomass
   geom_line(data = pluck(kelp_models, 7, 1), 

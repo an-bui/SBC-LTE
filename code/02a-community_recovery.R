@@ -248,7 +248,7 @@ overall_algae_predictions <- ggplot() +
                  y = biomass, 
                  color = treatment), 
              shape = 21,
-             alpha = 0.15,
+             alpha = 0.7,
              size = 0.75) +
   
   # model predictions
@@ -263,7 +263,8 @@ overall_algae_predictions <- ggplot() +
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.05) +
+              alpha = 0.2,
+              fill = "grey") +
   geom_line(data = models[[10]][[1]], 
             aes(x = x, 
                 y = predicted, 
@@ -275,7 +276,8 @@ overall_algae_predictions <- ggplot() +
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.05) +
+              alpha = 0.2,
+              fill = "grey") +
   # theming
   model_predictions_theme + 
   model_predictions_aesthetics + 
@@ -305,7 +307,7 @@ overall_epi_predictions <- ggplot() +
                  y = biomass, 
                  color = treatment), 
              shape = 21,
-             alpha = 0.15,
+             alpha = 0.7,
              size = 0.75) +
   
   # model predictions
@@ -320,7 +322,8 @@ overall_epi_predictions <- ggplot() +
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.05) +
+              alpha = 0.15,
+              fill = "grey") +
   geom_line(data = models[[10]][[2]], 
             aes(x = x, 
                 y = predicted, 
@@ -332,7 +335,8 @@ overall_epi_predictions <- ggplot() +
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.05) +
+              alpha = 0.15,
+              fill = "grey") +
   # theming
   model_predictions_theme + 
   model_predictions_aesthetics + 
@@ -368,9 +372,9 @@ delta_algae_predictions <- ggplot() +
              aes(x = time_since_end, 
                  y = delta_continual), 
              shape = 2, 
-             alpha = 0.15,
+             alpha = 0.7,
              size = 0.75,
-             color = "white") +
+             color = "grey") +
   
   # delta biomass
   geom_line(data = models[[12]][[1]], 
@@ -397,9 +401,9 @@ delta_epi_predictions <- ggplot() +
              aes(x = time_since_end, 
                  y = delta_continual), 
              shape = 2, 
-             alpha = 0.15,
+             alpha = 0.7,
              size = 0.75,
-             color = "white") +
+             color = "grey") +
   
   # delta biomass
   geom_line(data = models[[12]][[2]], 

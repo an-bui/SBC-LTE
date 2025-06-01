@@ -109,7 +109,7 @@ algae_vs_kelp_plot <- pluck(delta_biomass, 2, 1) %>%
   ggplot(aes(x = delta_kelp, y = delta_group)) +
   geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  geom_point(size = 1, shape = 21, alpha = 0.4, color = under_col) + 
+  geom_point(size = 1, shape = 21, alpha = 0.7, color = under_col) + 
   geom_ribbon(data = algae_predictions, 
               aes(x = x, 
                   y = predicted, 
