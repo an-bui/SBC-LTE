@@ -174,7 +174,6 @@ overall_kelp_predictions <- ggplot() +
                  y = kelp_biomass, 
                  color = treatment), 
              shape = 21,
-             alpha = 0.15,
              size = 0.75) +
   
   # model predictions
@@ -205,10 +204,21 @@ overall_kelp_predictions <- ggplot() +
   # theming
   model_predictions_theme +
   model_predictions_aesthetics +
-  coord_cartesian(ylim = c(-10, 1650)) +
-  labs(title = "(a)") 
+  transparent_theme +
+  coord_cartesian(ylim = c(-10, 1650))
 
 overall_kelp_predictions
+
+ggsave(
+  plot = overall_kelp_predictions,
+  filename = here("figures", "talk-figures",
+                  paste0("kelp-biomass_", today(), ".png")),
+  width = 12,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
 
 # ⟞ b. delta biomass  -----------------------------------------------------
 
@@ -225,24 +235,121 @@ delta_kelp_predictions <- ggplot() +
                  y = delta_continual), 
              shape = 2, 
              alpha = 0.15,
-             size = 0.75) +
+             size = 0.75,
+             color = "white") +
   
   # delta biomass
   geom_line(data = pluck(kelp_models, 7, 1), 
             aes(x = x, 
                 y = delta), 
-            linewidth = 1) +
+            linewidth = 1,
+            color = "white") +
   geom_line(data = pluck(kelp_models, 7, 2), 
             aes(x = x, 
                 y = delta), 
-            linewidth = 1) +
+            linewidth = 1,
+            color = "white") +
   
   delta_aesthetics +
   model_predictions_theme +
-  scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1800, 1000)) +
-  labs(title = "(b)")
+  transparent_theme + 
+  scale_y_continuous(breaks = seq(-1500, 1000, by = 500), limits = c(-1800, 1000))
 
 delta_kelp_predictions
+
+ggsave(
+  plot = delta_kelp_predictions,
+  filename = here("figures", "talk-figures",
+                  paste0("delta-kelp-biomass_", today(), ".png")),
+  width = 12,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
+
+
+# ⟞ c. intercepts ---------------------------------------------------------
+
+intercepts <- kelp_models |> 
+  mutate(intercepts = map(
+    kelp_model,
+    ~ ggpredict(.x, terms = c("treatment"))
+  )) |> 
+  select(exp_dates, intercepts) |> 
+  unnest(cols = c(intercepts)) |> 
+  rename(treatment = x) 
+
+kelp_intercepts <- ggplot() +
+  geom_point(data = continual_long |> filter(treatment == "removal"),
+             aes(x = exp_dates,
+                 y = kelp_biomass,
+                 color = treatment), 
+             shape = 21,
+             position = position_jitter(
+               width = 0.2,
+               height = 0,
+               seed = 666
+             )) +
+  geom_pointrange(data = intercepts |> filter(treatment == "removal"),
+                  aes(x = exp_dates,
+                      y = predicted,
+                      ymin = conf.low,
+                      ymax = conf.high),
+                  color = "white") +
+  scale_color_manual(values = c(reference = reference_col, 
+                                removal = removal_col)) +
+  scale_x_discrete(labels = c("during" = "During removal",
+                              "after" = "After removal")) +
+  labs(y = "Giant kelp biomass (dry g/m\U00B2)") +
+  model_predictions_theme +
+  transparent_theme +
+  theme(axis.title.x = element_blank(),
+        legend.position = "none")
+
+ggsave(
+  plot = kelp_intercepts,
+  filename = here("figures", 
+                  "talk-figures",
+                  paste0("intercepts-kelp-biomass_", today(), ".png")),
+  width = 6,
+  height = 10,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
+
+
+# ⟞ d. example plot -------------------------------------------------------
+
+example_plot <- ggplot() +
+model_predictions_background +
+  
+  # raw data 
+  geom_point(data = continual_long, 
+             aes(x = time_since_end, 
+                 y = kelp_biomass, 
+                 color = treatment), 
+             alpha = 0) +
+  # theming
+  model_predictions_theme +
+  model_predictions_aesthetics +
+  transparent_theme +
+  coord_cartesian(ylim = c(-10, 1650))
+
+example_plot
+
+ggsave(
+  plot = example_plot,
+  filename = here("figures", 
+                  "talk-figures",
+                  paste0("example-model-predictions_", today(), ".png")),
+  width = 12,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # -------------------------- 4. timeseries plot ---------------------------
@@ -270,21 +377,24 @@ kelp_biomass_timeseries <- continual_long %>%
   model_predictions_aesthetics +
   raw_biomass_plot_theme +
   labs(y = "Giant kelp biomass (dry g/m\U00B2)") +
-  theme(legend.position = "inside",
+  transparent_theme +
+  theme(legend.position = "none",
         legend.position.inside = c(0.9, 0.95),
         legend.title = element_blank(),
         legend.text = element_text(size = 5),
         legend.background = element_blank(),
-        legend.key.size = unit(0.4, "cm")) +
+        legend.key.size = unit(0.4, "cm"),
+        strip.text = element_text(color = "white")) +
   facet_wrap(~strip, scales = "free_y", nrow = 4)
 
 kelp_biomass_timeseries
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-S1_", today(), ".jpg", sep = "")),
-#        plot = kelp_biomass_timeseries,
-#        height = 12, width = 10, units = "cm",
-#        dpi = 300)
+ggsave(here::here("figures", "talk-figures",
+                  paste("fig-S1_", today(), ".png", sep = "")),
+       plot = kelp_biomass_timeseries,
+       height = 12, width = 10, units = "cm",
+       dpi = 300,
+       bg = "transparent")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ---------------------- 5. coefficient of variation ----------------------
@@ -340,12 +450,10 @@ recovery_variation <- ggplot(variation_site %>% filter(exp_dates == "after"),
                               removal = "Removal")) +
   labs(x = "Treatment",
        y = "Coefficient of variation",
-       title = "a) Comparison of treatments in recovery period") +
+       title = "a) Comparison of treatments in \nrecovery period") +
   theme_bw() +
-  theme(panel.grid = element_blank(),
-        legend.position = "none",
-        plot.title.position = "plot",
-        text = element_text(size = 6)) 
+  theme(legend.position = "none") +
+  transparent_theme 
 
 
 # ⟞ c. variation in reference plots ---------------------------------------
@@ -367,22 +475,24 @@ reference_variation <- ggplot(variation_site %>% filter(treatment == "reference"
                               after = "Recovery period")) +
   labs(x = "Time period",
        y = "Coefficient of variation",
-       title = "b) Comparison of reference plots between time periods") +
+       title = "b) Comparison of reference plots \nbetween time periods") +
   theme_bw() +
-  theme(panel.grid = element_blank(),
-        legend.position = "none",
-        plot.title.position = "plot",
-        text = element_text(size = 6)) 
+  transparent_theme
 
 # ⟞ d. saving outputs -----------------------------------------------------
 
-variation_plots <- recovery_variation + reference_variation
+variation_plots <- recovery_variation + reference_variation & 
+  theme(plot.background = element_rect(fill='transparent',
+                                       color = "transparent"),
+        legend.background = element_rect(fill = 'transparent')
+  )
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("cov_plot_", today(), ".jpg", sep = "")),
-#        plot = variation_plots,
-#        height = 7, width = 14, units = "cm",
-#        dpi = 300)
+ggsave(here::here("figures", "talk-figures",
+                  paste("cov_plot_", today(), ".png", sep = "")),
+       plot = variation_plots,
+       height = 7, width = 16, units = "cm",
+       dpi = 300,
+       bg = "transparent")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ----------------------------- 6. means plots ----------------------------
@@ -426,18 +536,20 @@ means <- continual_long %>%
   theme_bw() +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7),
-        strip.text = element_text(hjust = 0, size = 10),
+        strip.text = element_text(hjust = 0, size = 10, color = "white"),
         strip.background = element_blank(),
         panel.grid = element_blank(),
         legend.position = "none") +
+  transparent_theme + 
   facet_wrap(~time_since_end, 
              labeller = labeller(
                time_since_end = c("0" = "(a) Time since end = 0", 
                                   "4" = "(b) Time since end = 4")))
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("kelp_means_plot_", today(), ".jpg", sep = "")),
+# ggsave(here::here("figures", "talk-figures",
+#                   paste("kelp_means_plot_", today(), ".png", sep = "")),
 #        plot = means,
+#        bg = "transparent",
 #        height = 7, width = 14, units = "cm",
 #        dpi = 200)
 

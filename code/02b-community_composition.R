@@ -41,6 +41,35 @@ nmds_plot_fxn <- function(df, time_period) {
           aspect.ratio = 1)
 }
 
+nmds_plot_fxn_with_treatment <- function(df, time_period, treatment) {
+  df %>% 
+    filter(comp_3yrs == time_period & treatment == treatment) %>% 
+    ggplot(aes(x = NMDS1, y = NMDS2,
+               color = treatment,
+               fill = treatment,
+               shape = treatment,
+               linetype = treatment)) +
+    coord_fixed(ratio = 1) +
+    geom_vline(xintercept = 0, color = "grey", lty = 2) +
+    geom_hline(yintercept = 0, color = "grey", lty = 2) +
+    geom_point(size = 1, alpha = 0.9) +
+    stat_ellipse() +
+    scale_linetype_manual(values = c("continual" = 1, 
+                                     "control" = 2)) +
+    scale_color_manual(values = c("continual" = removal_col, 
+                                  "control" = reference_col)) +
+    theme_bw() +
+    theme(axis.title = element_text(size = 8),
+          axis.text = element_text(size = 7),
+          legend.text = element_text(size = 7), 
+          legend.position = "none",
+          panel.grid = element_blank(),
+          plot.title = element_text(size = 8),
+          plot.title.position = "plot",
+          legend.key.size = unit(0.5, units = "cm"),
+          aspect.ratio = 1)
+}
+
 # This is a function to generate the PERMANOVA summary tables in section 4a.
 
 anova_summary_fxn <- function(adonis2.obj, name) {
@@ -635,17 +664,20 @@ algae_start_plot <- nmds_plot_fxn(algae_scores,
            label = "Removal", 
            color = removal_col, 
            size = 2) +
-  labs(title = "(a) Start of removal") 
+  labs(title = "(a) Start of removal") +
+  transparent_theme
 
 algae_during_plot <- nmds_plot_fxn(algae_scores,
                                      "during") +
   algae_axis_limits +
-  labs(title = "(b) End of removal") 
+  labs(title = "(b) End of removal") +
+  transparent_theme
 
 algae_after_plot <- nmds_plot_fxn(algae_scores,
                                       "after") +
   algae_axis_limits +
-  labs(title = "(c) Recovery period") 
+  labs(title = "(c) Recovery period") +
+  transparent_theme
 
 epi_axis_limits <- list(
   scale_x_continuous(limits = c(-0.35, 0.25)),
@@ -665,17 +697,221 @@ epi_start_plot <- nmds_plot_fxn(epi_scores,
            label = "Removal", 
            color = removal_col, 
            size = 2) +
-  labs(title = "(d) Start of removal") 
+  labs(title = "(d) Start of removal") +
+  transparent_theme
 
 epi_during_plot <- nmds_plot_fxn(epi_scores,
                                       "during") +
   epi_axis_limits +
-  labs(title = "(e) End of removal") 
+  labs(title = "(e) End of removal") +
+  transparent_theme
 
 epi_after_plot <- nmds_plot_fxn(epi_scores,
                                      "after") +
   epi_axis_limits +
-  labs(title = "(f) Recovery period") 
+  labs(title = "(f) Recovery period") +
+  transparent_theme
+
+# ⟞ ⟞ removal plots only --------------------------------------------------
+
+algae_removal_plots <- algae_scores |> 
+  filter(treatment == "continual") |> 
+  ggplot(aes(x = NMDS1, y = NMDS2,
+             color = comp_3yrs,
+             fill = comp_3yrs,
+             shape = comp_3yrs)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse(linewidth = 1) +
+  scale_color_manual(values = c("start" = "#84A6A2", 
+                                "during" = "#BE5A47",
+                                "after" = "#A99CD9")) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1) +
+  transparent_theme
+
+algae_removal_plots
+
+epi_removal_plots <- epi_scores |> 
+  filter(treatment == "continual") |> 
+  ggplot(aes(x = NMDS1, y = NMDS2,
+             color = comp_3yrs,
+             fill = comp_3yrs,
+             shape = comp_3yrs)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse(linewidth = 1) +
+  scale_color_manual(values = c("start" = "#84A6A2", 
+                                "during" = "#BE5A47",
+                                "after" = "#A99CD9")) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1) +
+  transparent_theme
+
+epi_removal_plots
+
+algae_all_plots <- algae_scores |> 
+  ggplot(aes(x = NMDS1, y = NMDS2,
+             color = comp_3yrs,
+             fill = comp_3yrs,
+             shape = comp_3yrs,
+             alpha = treatment,
+             linetype = treatment)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse(linewidth = 1) +
+  scale_linetype_manual(values = c("control" = 2,
+                                   "continual" = 1)) +
+  scale_alpha_manual(values = c("control" = 0.5,
+                                "continual" = 1)) +
+  scale_color_manual(values = c("start" = "#84A6A2", 
+                                "during" = "#BE5A47",
+                                "after" = "#A99CD9")) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1) +
+  transparent_theme
+
+algae_all_plots
+
+epi_all_plots <- epi_scores |> 
+  ggplot(aes(x = NMDS1, y = NMDS2,
+             color = comp_3yrs,
+             fill = comp_3yrs,
+             shape = comp_3yrs,
+             alpha = treatment,
+             linetype = treatment)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0.9) +
+  stat_ellipse(linewidth = 1) +
+  scale_linetype_manual(values = c("control" = 2,
+                                   "continual" = 1)) +
+  scale_alpha_manual(values = c("control" = 0.5,
+                                "continual" = 1)) +
+  scale_color_manual(values = c("start" = "#84A6A2", 
+                                "during" = "#BE5A47",
+                                "after" = "#A99CD9")) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1) +
+  transparent_theme
+
+epi_all_plots
+
+example_nmds <- algae_scores |> 
+  filter(treatment == "continual") |> 
+  ggplot(aes(x = NMDS1, y = NMDS2,
+             color = comp_3yrs,
+             fill = comp_3yrs,
+             shape = comp_3yrs)) +
+  coord_fixed(ratio = 1) +
+  geom_vline(xintercept = 0, color = "grey", lty = 2) +
+  geom_hline(yintercept = 0, color = "grey", lty = 2) +
+  geom_point(size = 1, alpha = 0) +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        legend.text = element_text(size = 7), 
+        legend.position = "none",
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.title.position = "plot",
+        legend.key.size = unit(0.5, units = "cm"),
+        aspect.ratio = 1) +
+  transparent_theme
+
+ggsave(
+  filename = here("figures", "talk-figures",
+                  paste0("algae-removal-NMDS_", today(), ".png")),
+  plot = algae_removal_plots,
+  width = 8,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
+
+ggsave(
+  filename = here("figures", "talk-figures",
+                  paste0("epi-removal-NMDS_", today(), ".png")),
+  plot = epi_removal_plots,
+  width = 8,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
+
+ggsave(
+  filename = here("figures", "talk-figures",
+                  paste0("algae-all-plots-NMDS_", today(), ".png")),
+  plot = algae_all_plots,
+  width = 8,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
+
+ggsave(
+  filename = here("figures", "talk-figures",
+                  paste0("epi-all-plots-NMDS_", today(), ".png")),
+  plot = epi_all_plots,
+  width = 8,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
+
+ggsave(
+  filename = here("figures", "talk-figures",
+                  paste0("example-NMDS_", today(), ".png")),
+  plot = example_nmds,
+  width = 8,
+  height = 8,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
 
 # ⟞ b. individual species through time ------------------------------------
 
@@ -799,9 +1035,10 @@ all_altgower_plots <- plot_grid(algae_altgower_labelled,
                                 rel_widths = c(1, 1))
 
 # saving
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-3_altgower_v2_", today(), ".jpg", sep = "")),
+# ggsave(here::here("figures", "talk-figures",
+#                   paste("fig-3_altgower_v2_", today(), ".png", sep = "")),
 #        plot = all_altgower_plots,
+#        bg = "transparent",
 #        height = 16, width = 12, units = "cm",
 #        dpi = 300)
 

@@ -114,8 +114,9 @@ algae_vs_kelp_plot <- pluck(delta_biomass, 2, 1) %>%
               aes(x = x, 
                   y = predicted, 
                   ymin = conf.low, 
-                  ymax = conf.high), 
-              alpha = 0.1) +
+                  ymax = conf.high),
+              alpha = 0.1,
+              fill = "grey") +
   geom_line(data = algae_predictions, 
             aes(x = x, y = predicted), 
             linewidth = 1,
@@ -124,12 +125,57 @@ algae_vs_kelp_plot <- pluck(delta_biomass, 2, 1) %>%
                      minor_breaks = seq(-2000, 2000, by = 500)) +
   scale_y_continuous(breaks = seq(-200, 400, by = 200)) +
   labs(x = "\U0394 giant kelp biomass\n(removal - reference, dry g/m\U00B2)",
-       y = "\U0394 understory macroalgae biomass\n(removal - reference, dry g/m\U00B2)", 
-       title = "(a) Understory macroalgae") +
-  annotate("text", x = -1100, y = -200,
-           label = "conditional R\U00B2 = 0.53\nmarginal R\U00B2 = 0.43\np < 0.001",
-           size = 1.5) +
-  model_predictions_theme
+       y = "\U0394 understory macroalgae biomass\n(removal - reference, dry g/m\U00B2)") +
+  model_predictions_theme +
+  transparent_theme
+
+example_plot <- pluck(delta_biomass, 2, 1) %>% 
+  filter(exp_dates == "after") %>% 
+  ggplot(aes(x = delta_kelp, y = delta_group)) +
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
+  geom_point(size = 1, shape = 21, alpha = 0, color = under_col) + 
+  geom_ribbon(data = algae_predictions, 
+              aes(x = x, 
+                  y = predicted, 
+                  ymin = conf.low, 
+                  ymax = conf.high),
+              alpha = 0,
+              fill = "grey") +
+  geom_line(data = algae_predictions, 
+            aes(x = x, y = predicted), 
+            linewidth = 1,
+            color = under_col,
+            alpha = 0) +
+  scale_x_continuous(breaks = seq(-2000, 2000, by = 1000), 
+                     minor_breaks = seq(-2000, 2000, by = 500)) +
+  scale_y_continuous(breaks = seq(-200, 400, by = 200)) +
+  labs(x = "\U0394 giant kelp biomass\n(removal - reference, dry g/m\U00B2)",
+       y = "\U0394 understory macroalgae biomass\n(removal - reference, dry g/m\U00B2)") +
+  model_predictions_theme +
+  transparent_theme
+
+ggsave(
+  filename = here("figures", "talk-figures",
+                  paste0("algae-vs-kelp_", today(), ".png")),
+  plot = algae_vs_kelp_plot,
+  bg = "transparent",
+  width = 10,
+  height = 10,
+  units = "cm",
+  dpi = 300
+)
+
+ggsave(
+  filename = here("figures", "talk-figures",
+                  paste0("example-algae-kelp-plot_", today(), ".png")),
+  plot = example_plot,
+  bg = "transparent",
+  width = 10,
+  height = 10,
+  units = "cm",
+  dpi = 300
+)
 
 # ⟞ ⟞ ii. sessile invertebrates -------------------------------------------
 
@@ -138,21 +184,22 @@ epi_vs_kelp_plot <- pluck(delta_biomass, 2, 2) %>%
   ggplot(aes(x = delta_kelp, y = delta_group)) +
   geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
-  geom_point(size = 1, shape = 21, alpha = 0.4) + 
+  geom_point(size = 1, shape = 21, alpha = 0.4, color = "white") + 
   labs(x = "\U0394 giant kelp biomass\n(removal - reference, dry g/m\U00B2)",
-       y = "\U0394 sessile invertebrate biomass\n(removal - reference, dry g/m\U00B2)", 
-       title = "(b) Sessile invertebrates") +
-  model_predictions_theme
+       y = "\U0394 sessile invertebrate biomass\n(removal - reference, dry g/m\U00B2)") +
+  model_predictions_theme +
+  transparent_theme
 
 # ⟞ c. saving outputs -----------------------------------------------------
 
 group_vs_kelp <- plot_grid(algae_vs_kelp_plot, epi_vs_kelp_plot, ncol = 2)
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("fig-4_", today(), ".jpg", sep = "")),
-#        plot = group_vs_kelp,
-#        height = 8, width = 14, units = "cm",
-#        dpi = 300)
+ggsave(here::here("figures", "talk-figures",
+                  paste("fig-4_", today(), ".png", sep = "")),
+       plot = group_vs_kelp,
+       bg = "transparent",
+       height = 8, width = 16, units = "cm",
+       dpi = 300)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ------------------------------ 3. tables --------------------------------

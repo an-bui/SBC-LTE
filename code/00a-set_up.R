@@ -441,17 +441,37 @@ raw_biomass_plot_theme <-
 # ⟞ d. column titles ------------------------------------------------------
 
 algae_title <- ggplot(data.frame(l = "Understory macroalgae", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), size = 4.5) + 
+  geom_text(aes(x, y, label = l), size = 4.5, color = "white", family = "Lato") + 
   theme_void() +
   coord_cartesian(clip = "off")
 
 epi_title <- ggplot(data.frame(l = "Sessile invertebrates", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), size = 4.5) + 
+  geom_text(aes(x, y, label = l), size = 4.5, color = "white", family = "Lato") + 
   theme_void() +
   coord_cartesian(clip = "off")
 
 kelp_title <- ggplot(data.frame(l = "Giant kelp", x = 1, y = 1)) +
-  geom_text(aes(x, y, label = l), size = 4.5) + 
+  geom_text(aes(x, y, label = l), size = 4.5, color = "white", family = "Lato") + 
   theme_void() +
   coord_cartesian(clip = "off")
+
+
+# ⟞ e. transparent theme --------------------------------------------------
+
+transparent_theme <- theme(
+  panel.background = element_rect(fill = "transparent",
+                                  colour = NA), # necessary to avoid drawing panel outline
+  panel.grid.major = element_blank(), # get rid of major grid
+  panel.grid.minor = element_blank(), # get rid of minor grid
+  plot.background = element_rect(fill = "transparent",
+                                 colour = NA), # necessary to avoid drawing plot outline
+  legend.background = element_rect(fill = "transparent"),
+  legend.box.background = element_rect(fill = "transparent"),
+  legend.key = element_rect(fill = "transparent"),
+  text = element_text(color = "white",
+                      family = "Lato"),
+  axis.text = element_text(color = "white",
+                           family = "Lato"),
+  axis.ticks = element_line(color = "white")
+)
 

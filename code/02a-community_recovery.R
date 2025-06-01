@@ -279,9 +279,20 @@ overall_algae_predictions <- ggplot() +
   # theming
   model_predictions_theme + 
   model_predictions_aesthetics + 
+  transparent_theme +
   coord_cartesian(ylim = c(30, 800)) +
-  labs(title = "(c)",
-       y = "") 
+  labs(y = "") 
+
+ggsave(
+  plot = overall_algae_predictions,
+  filename = here("figures", "talk-figures",
+       paste0("algae-predictions_", today(), ".png")),
+  width = 8,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
 
 # ⟞ ⟞ ii. sessile invertebrates -------------------------------------------
 
@@ -325,9 +336,20 @@ overall_epi_predictions <- ggplot() +
   # theming
   model_predictions_theme + 
   model_predictions_aesthetics + 
+  transparent_theme + 
   coord_cartesian(ylim = c(5, 155)) +
-  labs(title = "(e)",
-       y = "") 
+  labs(y = "") 
+
+ggsave(
+  plot = overall_epi_predictions,
+  filename = here("figures", "talk-figures",
+                  paste0("epi-predictions_", today(), ".png")),
+  width = 8,
+  height = 6,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
 
 
 # ⟞ b. delta biomass  -----------------------------------------------------
@@ -347,22 +369,25 @@ delta_algae_predictions <- ggplot() +
                  y = delta_continual), 
              shape = 2, 
              alpha = 0.15,
-             size = 0.75) +
+             size = 0.75,
+             color = "white") +
   
   # delta biomass
   geom_line(data = models[[12]][[1]], 
             aes(x = x, 
                 y = delta), 
-            linewidth = 1) +
+            linewidth = 1,
+            color = "white") +
   geom_line(data = models[[13]][[1]], 
             aes(x = x, 
                 y = delta), 
-            linewidth = 1) +
+            linewidth = 1,
+            color = "white") +
   
   delta_aesthetics +
   model_predictions_theme +
-  labs(title = "(d)",
-       y = "")
+  transparent_theme +
+  labs(y = "")
 
 # ⟞ ⟞ ii. sessile invertebrates -------------------------------------------
 
@@ -373,22 +398,25 @@ delta_epi_predictions <- ggplot() +
                  y = delta_continual), 
              shape = 2, 
              alpha = 0.15,
-             size = 0.75) +
+             size = 0.75,
+             color = "white") +
   
   # delta biomass
   geom_line(data = models[[12]][[2]], 
             aes(x = x, 
                 y = delta), 
-            linewidth = 1) +
+            linewidth = 1,
+            color = "white") +
   geom_line(data = models[[13]][[2]], 
             aes(x = x, 
                 y = delta), 
-            linewidth = 1) +
+            linewidth = 1,
+            color = "white") +
   
   delta_aesthetics +
   model_predictions_theme +
-  labs(title = "(f)",
-       y = "")
+  transparent_theme +
+  labs(y = "")
 
 # ⟞ c. saving outputs -----------------------------------------------------
 
@@ -418,8 +446,9 @@ obj <- ggplot() +
   model_predictions_theme + 
   model_predictions_aesthetics + 
   theme(legend.position = "right",
-        legend.text = element_text(size = 9),
-        legend.title = element_text(size = 9))
+        legend.text = element_text(size = 9, color = "white"),
+        legend.title = element_text(size = 9, color = "white"),
+        legend.key = element_blank())
 
 legend <- get_plot_component(obj, "guide-box-right", return_all = TRUE)
 
@@ -454,11 +483,12 @@ all_columns_with_legend <- plot_grid(kelp_column,
 
 # ⟞ ⟞ iii. saving ---------------------------------------------------------
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste0("fig-2_new-model_v1_", today(), ".jpg")),
-#        plot = all_columns_with_legend,
-#        height = 16, width = 24, units = "cm",
-#        dpi = 400)
+ggsave(here::here("figures", "talk-figures",
+                  paste0("fig-2_new-model_v1_", today(), ".png")),
+       plot = all_columns_with_legend,
+       bg = "transparent",
+       height = 16, width = 24, units = "cm",
+       dpi = 400)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # -------------------------- 4. timeseries plots --------------------------

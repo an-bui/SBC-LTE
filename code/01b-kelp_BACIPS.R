@@ -450,7 +450,8 @@ aque_time_since_end <- aque_biomass_continual %>%
   geom_line(data = aque_time_since_end_predictions,
             aes(x = x, 
                 y = predicted),
-            linewidth = 1) + 
+            linewidth = 1,
+            color = aque_col) + 
   geom_ribbon(data = aque_time_since_end_predictions,
               aes(x = x, 
                   y = predicted, 
@@ -461,7 +462,8 @@ aque_time_since_end <- aque_biomass_continual %>%
   bacips_aesthetics +
   time_since_end_labs + 
   labs(title = "(a) Arroyo Quemado") +
-  bacips_theme
+  bacips_theme +
+  transparent_theme
 
 # ⟞ c. Naples -------------------------------------------------------------
 
@@ -478,11 +480,13 @@ napl_bacips_plot <- napl_biomass_continual %>%
              fill = napl_col, size = 4, shape = 21) +
   geom_line(aes(x = time.model,
                 y = 0),
-            linewidth = 1) +
+            linewidth = 1,
+            color = napl_col) +
   bacips_aesthetics + 
   bacips_labs + 
   labs(title = "(b) Naples") +
-  bacips_theme
+  bacips_theme +
+  transparent_theme
 
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
 
@@ -500,11 +504,13 @@ napl_time_since_end <- napl_biomass_continual %>%
              size = 4) +
   geom_line(aes(x = time_since_end_model,
                 y = 0),
-            linewidth = 1) +
+            linewidth = 1,
+            color = napl_col) +
   bacips_aesthetics +
   time_since_end_labs + 
   labs(title = "(b) Naples") +
-  bacips_theme
+  bacips_theme +
+  transparent_theme
 
 
 # ⟞ d. Mohawk -------------------------------------------------------------
@@ -562,11 +568,13 @@ mohk_time_since_end <- mohk_biomass_continual %>%
   geom_line(data = mohk_predictions_time_since_end,
             aes(x = time.model,
                 y = prediction),
-            linewidth = 1) +
+            linewidth = 1,
+            color = mohk_col) +
   bacips_aesthetics +
   time_since_end_labs + 
   labs(title = "(c) Mohawk") +
-  bacips_theme
+  bacips_theme +
+  transparent_theme
 
 
 # ⟞ e. Carpinteria --------------------------------------------------------
@@ -611,7 +619,8 @@ carp_time_since_end <- carp_biomass_continual %>%
   geom_line(data = carp_time_since_end_predictions,
             aes(x = x, 
                 y = predicted),
-            linewidth = 1) + 
+            linewidth = 1,
+            color = carp_col) + 
   geom_ribbon(data = carp_time_since_end_predictions,
               aes(x = x, 
                   y = predicted, 
@@ -622,7 +631,8 @@ carp_time_since_end <- carp_biomass_continual %>%
   bacips_aesthetics +
   time_since_end_labs + 
   labs(title = "(d) Carpinteria") +
-  bacips_theme
+  bacips_theme +
+  transparent_theme
 
 
 # ⟞ f. saving output ------------------------------------------------------
@@ -645,11 +655,16 @@ time_since_end_plots <- plot_grid(
   aque_time_since_end, napl_time_since_end,
   mohk_time_since_end, carp_time_since_end,
   nrow = 2, ncol = 2
-)
-
-# ggsave(here::here("figures", "ms-figures", paste0("time_since_end_plots-", today(), ".jpg")),
-#        plot = time_since_end_plots,
-#        height = 8, width = 12, dpi = 300)
+) & 
+  theme(plot.background = element_rect(fill='transparent',
+                                       color = "transparent"),
+        legend.background = element_rect(fill = 'transparent')
+  )
+# 
+ggsave(here::here("figures", "talk-figures", paste0("time_since_end_plots-", today(), ".png")),
+       plot = time_since_end_plots,
+       bg = "transparent",
+       height = 20, width = 26, units = "cm", dpi = 300)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ------------------------------ 4. tables --------------------------------
