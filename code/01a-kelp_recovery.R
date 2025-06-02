@@ -212,12 +212,73 @@ overall_kelp_predictions <- ggplot() +
 
 overall_kelp_predictions
 
+recovery_kelp_only <- ggplot() +
+  model_predictions_background +
+  
+  # raw data 
+  geom_point(data = continual_long |> filter(exp_dates == "after"), 
+             aes(x = time_since_end, 
+                 y = kelp_biomass, 
+                 color = treatment), 
+             shape = 21,
+             alpha = 0.7,
+             size = 0.75) +
+  
+  # model predictions
+  geom_line(data = pluck(kelp_models, 6, 2), 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+  geom_ribbon(data = pluck(kelp_models, 6, 2), 
+              aes(x = x, 
+                  ymax = conf.high, 
+                  ymin = conf.low, 
+                  group = group), 
+              alpha = 0.2,
+              fill = "grey") +
+  # theming
+  model_predictions_theme +
+  scale_color_manual(values = c(reference = reference_col, 
+                                removal = removal_col),
+                     labels = c(reference = "Reference", 
+                                removal = "Removal")) +
+  scale_linetype_manual(values = c(reference = "22", 
+                                   removal = "solid"),
+                        labels = c(reference = "Reference", 
+                                   removal = "Removal")) +
+  guides(color = guide_legend(keyheight = 0.6),
+         shape = guide_legend(keyheight = 0.6),
+         lty = guide_legend(keyheight = 0.6),
+         keyheight = 1) +
+  labs(x = "Time since end of removal (years)", 
+       y = "Biomass (dry g/m\U00B2)", 
+       linetype = "Treatment",
+       color = "Treatment",
+       shape = "Treatment",
+       size = "Treatment",
+       group = "Treatment") +
+  transparent_theme +
+  coord_cartesian(ylim = c(-10, 1650))
+
 ggsave(
   plot = overall_kelp_predictions,
   filename = here("figures", "talk-figures",
                   paste0("kelp-biomass_", today(), ".png")),
   width = 12,
   height = 6,
+  units = "cm",
+  dpi = 300,
+  bg = "transparent"
+)
+
+ggsave(
+  plot = recovery_kelp_only,
+  filename = here("figures", "talk-figures",
+                  paste0("kelp-biomass-recovery_", today(), ".png")),
+  width = 8,
+  height = 8,
   units = "cm",
   dpi = 300,
   bg = "transparent"
