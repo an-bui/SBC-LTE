@@ -345,7 +345,7 @@ shape_palette_site <- c("aque" = aque_shape,
                         "carp" = carp_shape)
 
 removal_col <- "#CC7540"
-reference_col <- "#6D5A18"
+reference_col <- "#AC8E26"
 under_col <- "#6B6D9F"
 
 model_predictions_theme <- theme_bw() +
@@ -399,9 +399,9 @@ delta_aesthetics <- list(
 
 model_predictions_background <- list(
   geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey"),
-    geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey"),
-    annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
-             fill = "grey", alpha = 0.3)
+    geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey")#,
+    # annotate(geom = "rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, 
+    #          fill = "grey", alpha = 0.3)
 )
 
 # ⟞ b. site full names ----------------------------------------------------

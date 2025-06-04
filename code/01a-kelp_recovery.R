@@ -178,12 +178,6 @@ overall_kelp_predictions <- ggplot() +
              size = 0.75) +
   
   # model predictions
-  geom_line(data = pluck(kelp_models, 6, 1), 
-            aes(x = x, 
-                y = predicted, 
-                color = group, 
-                linetype = group), 
-            linewidth = 1) +
   geom_ribbon(data = pluck(kelp_models, 6, 1), 
               aes(x = x, 
                   ymax = conf.high, 
@@ -191,7 +185,7 @@ overall_kelp_predictions <- ggplot() +
                   group = group), 
               alpha = 0.2,
               fill = "grey") +
-  geom_line(data = pluck(kelp_models, 6, 2), 
+  geom_line(data = pluck(kelp_models, 6, 1), 
             aes(x = x, 
                 y = predicted, 
                 color = group, 
@@ -204,6 +198,13 @@ overall_kelp_predictions <- ggplot() +
                   group = group), 
               alpha = 0.2,
               fill = "grey") +
+  geom_line(data = pluck(kelp_models, 6, 2), 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+
   # theming
   model_predictions_theme +
   model_predictions_aesthetics +
@@ -225,12 +226,7 @@ recovery_kelp_only <- ggplot() +
              size = 0.75) +
   
   # model predictions
-  geom_line(data = pluck(kelp_models, 6, 2), 
-            aes(x = x, 
-                y = predicted, 
-                color = group, 
-                linetype = group), 
-            linewidth = 1) +
+  # 
   geom_ribbon(data = pluck(kelp_models, 6, 2), 
               aes(x = x, 
                   ymax = conf.high, 
@@ -238,6 +234,13 @@ recovery_kelp_only <- ggplot() +
                   group = group), 
               alpha = 0.2,
               fill = "grey") +
+  geom_line(data = pluck(kelp_models, 6, 2), 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+
   # theming
   model_predictions_theme +
   scale_color_manual(values = c(reference = reference_col, 

@@ -252,20 +252,14 @@ overall_algae_predictions <- ggplot() +
              size = 0.75) +
   
   # model predictions
-  geom_line(data = models[[9]][[1]], 
-            aes(x = x, 
-                y = predicted, 
-                color = group, 
-                linetype = group), 
-            linewidth = 1) +
   geom_ribbon(data = models[[9]][[1]], 
               aes(x = x, 
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.2,
+              alpha = 0.1,
               fill = "grey") +
-  geom_line(data = models[[10]][[1]], 
+  geom_line(data = models[[9]][[1]], 
             aes(x = x, 
                 y = predicted, 
                 color = group, 
@@ -276,14 +270,22 @@ overall_algae_predictions <- ggplot() +
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.2,
+              alpha = 0.1,
               fill = "grey") +
+  geom_line(data = models[[10]][[1]], 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+
   # theming
   model_predictions_theme + 
   model_predictions_aesthetics + 
   transparent_theme +
   coord_cartesian(ylim = c(30, 800)) +
-  labs(y = "") 
+  labs(x = "Time since end of removal (years)", 
+       y = "Biomass (dry g/m\U00B2)") 
 
 ggsave(
   plot = overall_algae_predictions,
@@ -311,20 +313,14 @@ overall_epi_predictions <- ggplot() +
              size = 0.75) +
   
   # model predictions
-  geom_line(data = models[[9]][[2]], 
-            aes(x = x, 
-                y = predicted, 
-                color = group, 
-                linetype = group), 
-            linewidth = 1) +
   geom_ribbon(data = models[[9]][[2]], 
               aes(x = x, 
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.15,
+              alpha = 0.1,
               fill = "grey") +
-  geom_line(data = models[[10]][[2]], 
+  geom_line(data = models[[9]][[2]], 
             aes(x = x, 
                 y = predicted, 
                 color = group, 
@@ -335,14 +331,22 @@ overall_epi_predictions <- ggplot() +
                   ymax = conf.high, 
                   ymin = conf.low, 
                   group = group), 
-              alpha = 0.15,
+              alpha = 0.1,
               fill = "grey") +
+  geom_line(data = models[[10]][[2]], 
+            aes(x = x, 
+                y = predicted, 
+                color = group, 
+                linetype = group), 
+            linewidth = 1) +
+
   # theming
   model_predictions_theme + 
   model_predictions_aesthetics + 
   transparent_theme + 
   coord_cartesian(ylim = c(5, 155)) +
-  labs(y = "") 
+  labs(x = "Time since end of removal (years)", 
+       y = "Biomass (dry g/m\U00B2)") 
 
 ggsave(
   plot = overall_epi_predictions,
