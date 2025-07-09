@@ -31,6 +31,7 @@ library(performance)
 
 library(ggeffects)
 library(broom.mixed)
+library(emmeans) # for comparison of slope estimates
 
 # ⟞ e. community analysis -------------------------------------------------
 

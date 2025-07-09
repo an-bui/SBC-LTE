@@ -703,4 +703,215 @@ model_summary_table <- bind_rows(
 #     "ms-tables",
 #     paste("tbl-S1_", today(), ".docx", sep = "")
 #     ))
- 
+
+
+# ⟞ d. slope estimates ----------------------------------------------------
+
+kelp_during_slopes_pairs <- pairs(emtrends(pluck(kelp_models, 3, 1),
+                                     specs = "treatment",
+                                     var = "time_since_end")) |> 
+  as.data.frame() |> 
+  mutate(group = "kelp") |> 
+  mutate(exp_dates = "during") |> 
+  select(contrast, estimate, SE, p.value, group, exp_dates)
+
+kelp_after_slopes_pairs <- pairs(emtrends(pluck(kelp_models, 3, 2),
+                                     specs = "treatment",
+                                     var = "time_since_end")) |> 
+  as.data.frame() |> 
+  mutate(group = "kelp") |> 
+  mutate(exp_dates = "after") |> 
+  select(contrast, estimate, SE, p.value, group, exp_dates) |>  
+  bind_rows(kelp_during_slopes_pairs)
+
+algae_during_slopes_pairs <- pairs(emtrends(pluck(models, 3, 1),
+                                      specs = "treatment", 
+                                      var = "time_since_end")) |> 
+  as.data.frame() |> 
+  mutate(group = "algae") |> 
+  mutate(exp_dates = "during") |> 
+  select(contrast, estimate, SE, p.value, group, exp_dates) 
+
+algae_after_slopes_pairs <- pairs(emtrends(pluck(models, 4, 1),
+                                     specs = "treatment", 
+                                     var = "time_since_end")) |> 
+  as.data.frame() |> 
+  mutate(group = "algae") |> 
+  mutate(exp_dates = "after") |> 
+  select(contrast, estimate, SE, p.value, group, exp_dates) |>  
+  bind_rows(algae_during_slopes_pairs)
+
+inverts_during_slopes_pairs <- pairs(emtrends(pluck(models, 3, 2),
+                                        specs = "treatment", 
+                                        var = "time_since_end")) |> 
+  as.data.frame() |>
+  mutate(group = "inverts") |> 
+  mutate(exp_dates = "during") |> 
+  select(contrast, estimate, SE, p.value, group, exp_dates) 
+
+inverts_after_slopes_pairs <- pairs(emtrends(pluck(models, 4, 2),
+                                       specs = "treatment", 
+                                       var = "time_since_end")) |> 
+  as.data.frame() |> 
+  mutate(group = "inverts") |> 
+  mutate(exp_dates = "after") |> 
+  select(contrast, estimate, SE, p.value, group, exp_dates) |>  
+  bind_rows(inverts_during_slopes_pairs)
+
+slope_pairs_table <- bind_rows(
+  kelp_during_slopes_pairs,
+  kelp_after_slopes_pairs,
+  algae_during_slopes_pairs,
+  algae_after_slopes_pairs,
+  inverts_during_slopes_pairs,
+  inverts_after_slopes_pairs
+) |> 
+  mutate(exp_dates_label = case_match(
+    exp_dates,
+    "during" ~ "Experimental removal",
+    "after" ~ "Recovery"
+  )) |> 
+  mutate(group = fct_relevel(
+    as.factor(group), "kelp", "algae", "inverts"
+  ))
+
+ggplot(data = slope_pairs_table,
+       aes(x = exp_dates_label,
+           y = estimate)) +
+  geom_hline(yintercept = 0,
+             lty = 2) + 
+  geom_pointrange(aes(y = estimate, 
+                      ymin = estimate - SE,
+                      ymax = estimate + SE)) +
+  facet_wrap(vars(group),
+             labeller = labeller(group = c("kelp" = "(a) Giant kelp", 
+                                           "algae" = "(b) Understory macroalgae", 
+                                           "inverts" = "(c) Sessile invertebrates"))) +
+  labs(x = "Experimental removal period",
+       y = "Reference slope - removal slope \U00B1 SE") +
+  scale_x_discrete(labels = scales::label_wrap(10)) +
+  model_predictions_theme +
+  theme(strip.text = element_text(hjust = 0, size = 12),
+        strip.background = element_blank(),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14))
+
+kelp_during_slopes <- emtrends(pluck(kelp_models, 3, 1),
+                               specs = "treatment",
+                               var = "time_since_end") |> 
+  as.data.frame() |> 
+  mutate(group = "kelp") |> 
+  mutate(exp_dates = "during") |> 
+  select(treatment, time_since_end.trend, SE, asymp.LCL, asymp.UCL, group, exp_dates)
+
+kelp_after_slopes <- emtrends(pluck(kelp_models, 3, 2),
+                              specs = "treatment",
+                              var = "time_since_end") |> 
+  as.data.frame() |> 
+  mutate(group = "kelp") |> 
+  mutate(exp_dates = "after") |> 
+  select(treatment, time_since_end.trend, SE, asymp.LCL, asymp.UCL, group, exp_dates) |>  
+  bind_rows(kelp_during_slopes)
+
+algae_during_slopes <- emtrends(pluck(models, 3, 1),
+                                specs = "treatment", 
+                                var = "time_since_end") |> 
+  as.data.frame() |> 
+  mutate(group = "algae") |> 
+  mutate(exp_dates = "during") |> 
+  select(treatment, time_since_end.trend, SE, asymp.LCL, asymp.UCL, group, exp_dates) 
+
+algae_after_slopes <- emtrends(pluck(models, 4, 1),
+                               specs = "treatment", 
+                               var = "time_since_end") |> 
+  as.data.frame() |> 
+  mutate(group = "algae") |> 
+  mutate(exp_dates = "after") |> 
+  select(treatment, time_since_end.trend, SE, asymp.LCL, asymp.UCL, group, exp_dates) |>  
+  bind_rows(algae_during_slopes)
+
+inverts_during_slopes <- emtrends(pluck(models, 3, 2),
+                                  specs = "treatment", 
+                                  var = "time_since_end") |> 
+  as.data.frame() |>
+  mutate(group = "inverts") |> 
+  mutate(exp_dates = "during") |> 
+  select(treatment, time_since_end.trend, SE, asymp.LCL, asymp.UCL, group, exp_dates)
+
+inverts_after_slopes <- emtrends(pluck(models, 4, 2),
+                                 specs = "treatment", 
+                                 var = "time_since_end") |> 
+  as.data.frame() |> 
+  mutate(group = "inverts") |> 
+  mutate(exp_dates = "after") |> 
+  select(treatment, time_since_end.trend, SE, asymp.LCL, asymp.UCL, group, exp_dates) |>  
+  bind_rows(inverts_during_slopes)
+
+slopes_figures <- bind_rows(
+  kelp_during_slopes,
+  kelp_after_slopes,
+  algae_during_slopes,
+  algae_after_slopes,
+  inverts_during_slopes,
+  inverts_after_slopes
+) |> 
+  mutate(treatment = str_to_title(treatment)) |> 
+  mutate(exp_dates_label = case_match(
+    exp_dates,
+    "during" ~ "Experimental removal",
+    "after" ~ "Recovery"
+  )) |>
+  mutate(group = fct_relevel(
+    as.factor(group), "kelp", "algae", "inverts"
+  )) |> 
+  mutate(zero_yn = 0 >= asymp.LCL & 0 <= asymp.UCL) |> 
+  mutate(zero_yn = case_when(
+    zero_yn == TRUE ~ "includes zero",
+    zero_yn == FALSE ~ "does not include zero"
+  )) |> 
+  nest(.by = group,
+       data = everything()) |> 
+  mutate(title = case_match(
+    group,
+    "kelp" ~ "(a) Giant kelp",
+    "algae" ~ "(b) Understory macroalgae",
+    "inverts" ~ "(c) Sessile invertebrates"
+  )) |> 
+  mutate(slope_figure = pmap(
+    list(x = data, y = title),
+    function(x, y) ggplot(data = x,
+             aes(x = treatment,
+                 y = time_since_end.trend,
+                 color = zero_yn)) +
+      geom_hline(yintercept = 0,
+                 lty = 2) +
+      geom_pointrange(aes(y = time_since_end.trend,
+                          ymin = asymp.LCL,
+                          ymax = asymp.UCL),
+                      shape = 16) +
+      scale_color_manual(values = c("does not include zero" = "black", 
+                                    "includes zero" = "darkgrey"),
+                         guide = "none") +
+      facet_wrap(~exp_dates_label) +
+      labs(x = "Treatment",
+           y = "Slope estimate\n(log link scale)",
+           title = y) +
+      model_predictions_theme +
+      theme(strip.background = element_blank())
+  ))
+
+kelp_slopes <- slopes_figures[[4]][[1]]
+
+algae_slopes <- slopes_figures[[4]][[2]]
+
+invert_slopes <- slopes_figures[[4]][[3]]
+
+slope_estimates_figure <- kelp_slopes/algae_slopes/invert_slopes
+
+slope_estimates_figure
+
+# ggsave(here("figures", "ms-figures", paste0("slope-estimates_", today(), ".jpg")),
+#        width = 10,
+#        height = 16,
+#        units = "cm",
+#        dpi = 300)
