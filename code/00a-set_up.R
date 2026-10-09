@@ -31,6 +31,7 @@ library(performance)
 
 library(ggeffects)
 library(broom.mixed)
+library(emmeans) # for comparison of slope estimates
 
 # ⟞ e. community analysis -------------------------------------------------
 
@@ -242,8 +243,8 @@ guilds <- read_csv(here::here("code", "resources", "castorani", "LTE_guild_data.
 
 biomass <- read_csv(here::here("data",
                                "all-species-biomass",
-                               "knb-lter-sbc.119.13",
-                               "LTE_All_Species_Biomass_at_transect_20241115.csv")) %>%
+                               "knb-lter-sbc.119.16",
+                               "LTE_All_Species_Biomass_at_transect_20260928.csv")) %>%
   clean_names() %>%
   # replace NA sp_code with Nandersoniana
   mutate(sp_code = case_when(
