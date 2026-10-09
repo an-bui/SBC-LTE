@@ -325,14 +325,12 @@ algae_permanova_results <- pluck(comm_permanova, 24, 2)
 
 epi_permanova_results <- pluck(comm_permanova, 24, 1)
 
-# PERMANOVA results indicated that there was no interaction between treatment 
-# and time period for understory algae though there was a significant 
-# interaction between these two terms for sessile inverts.
+# PERMANOVA results indicated that there was a significant interaction between
+# treatment and time period for algae and sessile inverts.
 
-# Thus, in this next section, I compared beta dispersion for treatment and time
-# period independently for understory algae, and in combination for sessile
-# invertebrates, following guidance by Marti Anderson in this R-sig-eco forum
-# post from 2010-09-02: 
+# Thus, in this next section, I compared beta dispersion in combination for 
+# both treatment and time period following guidance by Marti Anderson in this 
+# R-sig-eco forum post from 2010-09-02: 
 # https://stat.ethz.ch/pipermail/r-sig-ecology/2010-September/001524.html
 
 set.seed(1)
@@ -355,24 +353,17 @@ comm_betadisper <- comm_df_nested %>%
 set.seed(1)
 
 # calculating beta dispersion between treatments for algae
-algae_betadisper_treatment <- betadisper(
+algae_betadisper_combo <- betadisper(
   comm_betadisper[[5]][[2]], 
-  comm_betadisper[[3]][[2]]$treatment) 
+  comm_betadisper[[3]][[2]]$combo) 
 
-permutest(algae_betadisper_treatment)
-# difference in dispersion between reference and removal (so differences
-# in community composition could be due to changes in location and dispersion)
+permutest(algae_betadisper_combo)
+# there is a difference in dispersions
 
-set.seed(1)
-
-# calculating beta dispersion between time periods for algae
-algae_betadisper_time <- betadisper(
-  comm_betadisper[[5]][[2]], 
-  comm_betadisper[[3]][[2]]$comp_3yrs) 
-
-permutest(algae_betadisper_time)
-# no difference in dispersion through time (so differences in community 
-# composition are due to changes in location, not dispersion)
+TukeyHSD(algae_betadisper_combo)
+# during-control-during-continual
+# start-control-during-continual 
+# start-continual-during-control 
 
 set.seed(1)
 

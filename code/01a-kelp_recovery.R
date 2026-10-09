@@ -50,31 +50,6 @@ delta_continual <- biomass %>%
   drop_na(delta_continual) %>% 
   unite("sample_ID_short", site, date, sep = "_", remove = FALSE)
 
-  # take out years where continual removal hadn't happened yet
-  # drop_na(delta_continual) %>% 
-  # mutate(exp_dates = case_when(
-  #   # after removal ended
-  #   site == "aque" & date >= aque_after_date_continual ~ "after",
-  #   site == "napl" & date >= napl_after_date_continual ~ "after",
-  #   site == "mohk" & date >= mohk_after_date_continual ~ "after",
-  #   site == "carp" & date >= carp_after_date_continual ~ "after",
-  #   # everything else is "during" removal
-  #   TRUE ~ "during"
-  # ),
-  # exp_dates = fct_relevel(exp_dates, c("during", "after"))) %>% 
-  # time_since_columns_continual() %>% 
-  # kelp_year_column() %>% 
-  # comparison_column_continual_new() %>% 
-  # left_join(., site_quality, by = "site") %>% 
-  # left_join(., enframe(sites_full), by = c("site" = "name")) %>% 
-  # rename("site_full" = value) %>% 
-  # mutate(site_full = fct_relevel(
-  #   site_full, 
-  #   "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
-  # mutate(site = fct_relevel(
-  #   site, 
-  #   "aque", "napl", "mohk", "carp"))
-
 # ⟞ b. kelp biomass in long format ----------------------------------------
 
 # kelp biomass in long format
