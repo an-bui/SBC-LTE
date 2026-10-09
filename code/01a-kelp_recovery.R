@@ -82,7 +82,7 @@ continual_long <- delta_continual %>%
   select(!delta_continual) %>% 
   pivot_longer(cols = c(control, continual)) %>% 
   rename(kelp_biomass = value, treatment = name) %>% 
-  mutate(treatment = case_match(
+  mutate(treatment = recode_values(
     treatment, 
     "control" ~ "reference", 
     "continual" ~ "removal"),

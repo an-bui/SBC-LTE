@@ -144,7 +144,7 @@ algae_predictions_with_outliers <- ggpredict(
 
 algae_vs_kelp_plot <- pluck(delta_biomass, 2, 1) %>% 
   filter(exp_dates == "after" & 
-           sample_ID_short %!in% c("napl_2023-05-18", "mohk_2019-11-19")) %>% 
+           !(sample_ID_short %in% c("napl_2023-05-18", "mohk_2019-11-19"))) %>% 
   ggplot(aes(x = delta_kelp, y = delta_group)) +
   geom_vline(xintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
   geom_hline(yintercept = 0, linewidth = 0.5, linetype = 2, color = "grey") +
@@ -194,7 +194,6 @@ group_vs_kelp <- plot_grid(algae_vs_kelp_plot, epi_vs_kelp_plot, ncol = 2)
 #        dpi = 300)
 
 # outlier checks
-
 # ggsave(here::here("figures", "ms-figures",
 #                   paste0("outlier-checks_", today(), ".jpg", sep = "")),
 #        plot = outlier_check,
