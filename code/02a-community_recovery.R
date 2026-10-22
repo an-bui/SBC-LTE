@@ -84,7 +84,7 @@ delta_biomass_wrangle <- function(df) {
     rename("site_full" = value) %>% 
     mutate(site_full = fct_relevel(
       site_full, 
-      "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+      "Arroyo Quemada", "Naples", "Mohawk", "Carpinteria")) %>% 
     mutate(site = fct_relevel(site, "aque", "napl", "mohk", "carp"))
 }
 
@@ -480,7 +480,7 @@ all_columns_with_legend <- plot_grid(kelp_column,
 
 algae_biomass_timeseries <- algae_continual_long %>% 
   mutate(strip = case_when(
-    site == "aque" ~ "(a) Arroyo Quemado",
+    site == "aque" ~ "(a) Arroyo Quemada",
     site == "napl" ~ "(b) Naples",
     site == "mohk" ~ "(c) Mohawk",
     site == "carp" ~ "(d) Carpinteria"
@@ -525,7 +525,7 @@ algae_biomass_timeseries <- algae_continual_long %>%
 
 epi_biomass_timeseries <- epi_continual_long %>% 
   mutate(strip = case_when(
-    site == "aque" ~ "(a) Arroyo Quemado",
+    site == "aque" ~ "(a) Arroyo Quemada",
     site == "napl" ~ "(b) Naples",
     site == "mohk" ~ "(c) Mohawk",
     site == "carp" ~ "(d) Carpinteria"

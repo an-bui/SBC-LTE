@@ -45,7 +45,7 @@ library(flextable)
 # ------------------------- 2. start and end dates ------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# ⟞ a. Arroyo Quemado (AQUE) ---------------------------------------------
+# ⟞ a. Arroyo Quemada (AQUE) ---------------------------------------------
 
 # date of first removal: 2010-01-29
 # first survey after first removal: 2010-04-26
@@ -407,12 +407,12 @@ model_predictions_background <- list(
 
 # ⟞ b. site full names ----------------------------------------------------
 
-aque_full <- "Arroyo Quemado"
+aque_full <- "Arroyo Quemada"
 napl_full <- "Naples"
 mohk_full <- "Mohawk"
 carp_full <- "Carpinteria"
 
-sites_full <- setNames(c("Arroyo Quemado",
+sites_full <- setNames(c("Arroyo Quemada",
                          "Naples",
                          "Isla Vista",
                          "Mohawk",

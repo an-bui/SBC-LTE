@@ -42,7 +42,7 @@ delta_continual <- biomass %>%
   rename("site_full" = value) %>% 
   mutate(site_full = fct_relevel(
     site_full, 
-    "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>% 
+    "Arroyo Quemada", "Naples", "Mohawk", "Carpinteria")) %>% 
   mutate(site = fct_relevel(
     site, 
     "aque", "napl", "mohk", "carp")) %>% 
@@ -378,11 +378,11 @@ reference_variation <- ggplot(variation_site %>% filter(treatment == "reference"
 
 variation_plots <- recovery_variation + reference_variation
 
-# ggsave(here::here("figures", "ms-figures",
-#                   paste("cov_plot_", today(), ".jpg", sep = "")),
-#        plot = variation_plots,
-#        height = 7, width = 14, units = "cm",
-#        dpi = 300)
+ggsave(here::here("figures", "ms-figures",
+                  paste("cov_plot_", today(), ".jpg", sep = "")),
+       plot = variation_plots,
+       height = 7, width = 14, units = "cm",
+       dpi = 300)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ----------------------------- 6. means plots ----------------------------

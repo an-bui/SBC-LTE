@@ -237,7 +237,7 @@ biomass.pcbacips <- function(df) {
 # --------------------------- 2. model selection --------------------------
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# ⟞ a. Arroyo Quemado -----------------------------------------------------
+# ⟞ a. Arroyo Quemada -----------------------------------------------------
 
 aque_biomass_continual <- time.model.fxn.new("aque", "continual", "all")
 
@@ -408,7 +408,7 @@ bacips_aesthetics <- list(
   scale_alpha_discrete(range = c("during" = 0.3, "after" = 1))
 )
 
-# ⟞ b. Arroyo Quemado -----------------------------------------------------
+# ⟞ b. Arroyo Quemada -----------------------------------------------------
 
 # ⟞ ⟞ i. time.model -------------------------------------------------------
 
@@ -430,7 +430,7 @@ aque_bacips_plot <- aque_biomass_continual %>%
               alpha = 0.1) +
   bacips_aesthetics + 
   bacips_labs + 
-  labs(title = "(a) Arroyo Quemado") +
+  labs(title = "(a) Arroyo Quemada") +
   bacips_theme
 
 # ⟞ ⟞ ii. time_since_end --------------------------------------------------
@@ -460,7 +460,7 @@ aque_time_since_end <- aque_biomass_continual %>%
               alpha = 0.1) +
   bacips_aesthetics +
   time_since_end_labs + 
-  labs(title = "(a) Arroyo Quemado") +
+  labs(title = "(a) Arroyo Quemada") +
   bacips_theme
 
 # ⟞ c. Naples -------------------------------------------------------------
@@ -678,7 +678,7 @@ bacips_table <- function(site) {
   
   # select the right name for a given site
   site_full <- if(site == "aque") {
-    "Arroyo Quemado"
+    "Arroyo Quemada"
   } else if(site == "napl") {
     "Naples"
   } else if(site == "mohk") {

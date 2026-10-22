@@ -97,7 +97,7 @@ comm_df <- biomass %>%
   rename(site_full = value) %>% 
   mutate(site_full = fct_relevel(
     site_full, 
-    "Arroyo Quemado", "Naples", "Mohawk", "Carpinteria")) %>%
+    "Arroyo Quemada", "Naples", "Mohawk", "Carpinteria")) %>%
   # create new sample ID with treatment
   unite("sample_ID", site, treatment, date, remove = FALSE) %>% 
   # only include 3 year sampling sites
