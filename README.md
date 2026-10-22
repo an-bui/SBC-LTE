@@ -1,6 +1,6 @@
 # Foundation species recovery yields inconsistent recovery of associated community: a long-term experiment
 
-**last updated: 2024-11-26**  
+**last updated: 2026-10-22**  
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14165444.svg)](https://doi.org/10.5281/zenodo.14165444)
 
@@ -8,7 +8,7 @@ This is a repository for analyzing kelp and kelp-associated community recovery d
 
 ## Data citation
 
-This analysis relies on data from: Reed, D. and R. Miller. 2024. SBC LTER: Reef: Long-term experiment: biomass of kelp forest species, ongoing since 2008 ver 13. Environmental Data Initiative. https://doi.org/10.6073/pasta/4c63cd36279b7e8448d09651a51ed8a6 (Accessed 2024-11-26).  
+This analysis relies on data from: Reed, D. and R. Miller. 2026. SBC LTER: Reef: Long-term experiment: biomass of kelp forest species ver 16. Environmental Data Initiative. https://doi.org/10.6073/pasta/9c2001b2540f2f064c98d40cc2795362 (Accessed 2026-10-22).
 
 Please see the README in the [`data`](https://github.com/an-bui/SBC-LTE/tree/submission/data) directory for information on downloading the data from EDI.
 
